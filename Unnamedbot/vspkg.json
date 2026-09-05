@@ -1,0 +1,10 @@
+{
+  "name": "unnamedbot",
+  "version": "0.1.0",
+  "dependencies": [
+    "sqlite3",
+    "nlohmann-json",
+    "cpr",
+    "openssl"
+  ]
+}
