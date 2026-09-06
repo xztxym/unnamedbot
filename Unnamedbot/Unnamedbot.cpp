@@ -1,27 +1,34 @@
-﻿#include <iostream>
-#include <nlohmann/json.hpp>
-#include <sqlite3.h>
-#include <cpr/cpr.h>
+﻿#include "include/AppCore.h"
+#include "include/Logger.h"
+#include <Windows.h>
 
-using json = nlohmann::json;
+using namespace UnnamedBot;
 
-int main() {
-    std::cout << "=== unnamedbot 完整验证 ===\n";
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    // 设置控制台输出（Debug模式下）
+#ifdef _DEBUG
+    AllocConsole();
+    FILE* fDummy;
+    freopen_s(&fDummy, "CONOUT$", "w", stdout);
+    freopen_s(&fDummy, "CONOUT$", "w", stderr);
+#endif
 
-    // 测试 nlohmann/json
-    json j = { {"status", "ok"}, {"lib", "nlohmann-json"} };
-    std::cout << "JSON: " << j.dump(2) << std::endl;
+    // 初始化应用程序
+    auto& app = AppCore::Instance();
+    if (!app.Initialize(hInstance, nCmdShow)) {
+        LOG_ERROR("Main", "Failed to initialize application.");
+        return 1;
+    }
 
-    // 测试 SQLite3
-    sqlite3* db = nullptr;
-    int rc = sqlite3_open(":memory:", &db);
-    std::cout << "SQLite3: " << (rc == SQLITE_OK ? "成功" : "失败") << std::endl;
-    if (rc == SQLITE_OK) sqlite3_close(db);
+    // 运行应用程序
+    int result = app.Run();
 
-    // 测试 CPR + libcurl（网络请求）
-    auto response = cpr::Get(cpr::Url{ "https://httpbin.org/get" });
-    std::cout << "CPR HTTP: " << response.status_code << std::endl;
+    // 关闭应用程序
+    app.Shutdown();
 
-    std::cout << "所有依赖库验证通过！\n";
-    return 0;
+#ifdef _DEBUG
+    FreeConsole();
+#endif
+
+    return result;
 }
