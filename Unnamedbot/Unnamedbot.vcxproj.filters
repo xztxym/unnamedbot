@@ -18,5 +18,121 @@
     <ClCompile Include="Unnamedbot.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\AIClient.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\AppCore.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\AttachmentManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ConfigManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Database.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\HotkeyManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Live2DManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Logger.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MCPTool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MessageBoxWindow.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MessageHandler.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Model.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Renderer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SecurityUtils.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TaskScheduler.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TrayIcon.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\UpdateManager.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utils.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Window.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\AIClient.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AppCore.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AttachmentManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ConfigManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Database.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\HotkeyManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Live2DManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Logger.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MCPTool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MessageBoxWindow.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\MessageHandler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Model.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Renderer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\SecurityUtils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TaskScheduler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\TrayIcon.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\UpdateManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Window.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

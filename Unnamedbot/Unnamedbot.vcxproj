@@ -157,7 +157,47 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\AIClient.cpp" />
+    <ClCompile Include="src\AppCore.cpp" />
+    <ClCompile Include="src\AttachmentManager.cpp" />
+    <ClCompile Include="src\ConfigManager.cpp" />
+    <ClCompile Include="src\Database.cpp" />
+    <ClCompile Include="src\HotkeyManager.cpp" />
+    <ClCompile Include="src\Live2DManager.cpp" />
+    <ClCompile Include="src\Logger.cpp" />
+    <ClCompile Include="src\MCPTool.cpp" />
+    <ClCompile Include="src\MessageBoxWindow.cpp" />
+    <ClCompile Include="src\MessageHandler.cpp" />
+    <ClCompile Include="src\Model.cpp" />
+    <ClCompile Include="src\Renderer.cpp" />
+    <ClCompile Include="src\SecurityUtils.cpp" />
+    <ClCompile Include="src\TaskScheduler.cpp" />
+    <ClCompile Include="src\TrayIcon.cpp" />
+    <ClCompile Include="src\UpdateManager.cpp" />
+    <ClCompile Include="src\Utils.cpp" />
+    <ClCompile Include="src\Window.cpp" />
     <ClCompile Include="Unnamedbot.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\AIClient.h" />
+    <ClInclude Include="include\AppCore.h" />
+    <ClInclude Include="include\AttachmentManager.h" />
+    <ClInclude Include="include\ConfigManager.h" />
+    <ClInclude Include="include\Database.h" />
+    <ClInclude Include="include\HotkeyManager.h" />
+    <ClInclude Include="include\Live2DManager.h" />
+    <ClInclude Include="include\Logger.h" />
+    <ClInclude Include="include\MCPTool.h" />
+    <ClInclude Include="include\MessageBoxWindow.h" />
+    <ClInclude Include="include\MessageHandler.h" />
+    <ClInclude Include="include\Model.h" />
+    <ClInclude Include="include\Renderer.h" />
+    <ClInclude Include="include\SecurityUtils.h" />
+    <ClInclude Include="include\TaskScheduler.h" />
+    <ClInclude Include="include\TrayIcon.h" />
+    <ClInclude Include="include\UpdateManager.h" />
+    <ClInclude Include="include\Utils.h" />
+    <ClInclude Include="include\Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
