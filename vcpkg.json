@@ -1,0 +1,11 @@
+{
+  "name": "unnamedbot",
+  "version-string": "0.1.0",
+  "description": "Desktop pet AI assistant powered by Live2D and OpenAI-compatible LLM API",
+  "supports": "windows & !uwp",
+  "dependencies": [
+    "nlohmann-json",
+    "cpr",
+    "sqlite3"
+  ]
+}
