@@ -16,8 +16,8 @@ namespace UnnamedBot {
     public:
         static Live2DManager& Instance();
 
-        // 初始化Live2D框架
-        bool Initialize();
+        // 初始化Live2D框架（必须在加载模型前调用，需要传入已初始化的 D3D11 渲染器）
+        bool Initialize(Renderer* renderer);
 
         // 销毁Live2D框架
         void Shutdown();
@@ -118,7 +118,11 @@ namespace UnnamedBot {
         std::wstring modelDirectory_ = L"./models";
 
         // 互斥锁
-        mutable std::mutex mutex_;
+        // 说明：本类的公开方法之间会互相调用（例如 Initialize 会调用
+        // RestoreModelState/ScanModelDirectory，后者又调用 LoadModel，
+        // 而 LoadModel 内部还会调用 IsModelLoaded），因此必须使用可重入锁，
+        // 否则同一线程会重复加锁导致启动时死锁。
+        mutable std::recursive_mutex mutex_;
     };
 
 } // namespace UnnamedBot

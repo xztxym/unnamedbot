@@ -91,8 +91,8 @@ namespace UnnamedBot {
         }
         LOG_INFO("AppCore", "Renderer initialized.");
 
-        // 初始化Live2D
-        if (!Live2DManager::Instance().Initialize()) {
+        // 初始化Live2D框架；D3D11 渲染器需要在加载模型前拿到设备
+        if (!Live2DManager::Instance().Initialize(&renderer_)) {
             LOG_ERROR("AppCore", "Failed to initialize Live2D.");
             return false;
         }
@@ -371,7 +371,7 @@ namespace UnnamedBot {
     }
 
     bool AppCore::InitializeLive2D() {
-        return Live2DManager::Instance().Initialize();
+        return Live2DManager::Instance().Initialize(&renderer_);
     }
 
     bool AppCore::InitializeAIClient() {
@@ -409,7 +409,7 @@ namespace UnnamedBot {
 
         if (!std::filesystem::exists(modelPath)) {
             // 尝试扫描模型目录
-            Live2DManager::Instance().Initialize();
+            Live2DManager::Instance().Initialize(&renderer_);
             // 如果没有找到模型，使用Haru示例
             std::wstring haruPath = L"./models/Haru/Haru.model3.json";
             if (std::filesystem::exists(haruPath)) {

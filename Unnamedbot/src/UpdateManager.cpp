@@ -16,7 +16,7 @@ namespace UnnamedBot {
     }
 
     void UpdateManager::Initialize() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         // 获取当前版本
         currentVersion_ = GetVersionFromResource();
@@ -29,14 +29,14 @@ namespace UnnamedBot {
     }
 
     void UpdateManager::Shutdown() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         latestUpdate_.reset();
         status_ = UpdateStatus::Idle;
         LOG_INFO("UpdateManager", "Shut down.");
     }
 
     bool UpdateManager::CheckUpdate() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!autoCheckEnabled_) {
             LOG_DEBUG("UpdateManager", "Auto check disabled.");
@@ -119,12 +119,12 @@ namespace UnnamedBot {
     }
 
     std::shared_ptr<UpdateInfo> UpdateManager::GetLatestUpdate() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return latestUpdate_;
     }
 
     bool UpdateManager::DownloadUpdate(const std::string& url, const std::wstring& savePath) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (url.empty() || savePath.empty()) {
             lastError_ = "Invalid download URL or save path.";
@@ -186,7 +186,7 @@ namespace UnnamedBot {
     }
 
     bool UpdateManager::InstallUpdate(const std::wstring& updatePath) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!std::filesystem::exists(updatePath)) {
             lastError_ = "Update file not found: " + Utils::PathToUtf8(updatePath);
@@ -214,44 +214,44 @@ namespace UnnamedBot {
     }
 
     void UpdateManager::OnUpdateAvailable(std::function<void(const UpdateInfo&)> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onUpdateAvailable_ = callback;
     }
 
     void UpdateManager::OnDownloadProgress(std::function<void(int64_t, int64_t)> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onDownloadProgress_ = callback;
     }
 
     void UpdateManager::OnUpdateInstalled(std::function<void()> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onUpdateInstalled_ = callback;
     }
 
     std::string UpdateManager::GetCurrentVersion() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return currentVersion_;
     }
 
     void UpdateManager::SetUpdateServerUrl(const std::string& url) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         updateServerUrl_ = url;
         LOG_DEBUG("UpdateManager", "Update server URL: " + url);
     }
 
     void UpdateManager::SetAutoCheck(bool enabled) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         autoCheckEnabled_ = enabled;
         ConfigManager::Instance().SetBool(ConfigManager::KEY_AUTO_UPDATE_CHECK, enabled);
     }
 
     bool UpdateManager::IsAutoCheckEnabled() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return autoCheckEnabled_;
     }
 
     void UpdateManager::SkipVersion(const std::string& version) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (!IsVersionSkipped(version)) {
             skippedVersions_.push_back(version);
             LOG_DEBUG("UpdateManager", "Skipped version: " + version);
@@ -259,7 +259,7 @@ namespace UnnamedBot {
     }
 
     bool UpdateManager::IsVersionSkipped(const std::string& version) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         for (const auto& v : skippedVersions_) {
             if (v == version) {
                 return true;

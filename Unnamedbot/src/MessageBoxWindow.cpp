@@ -3,11 +3,9 @@
 #include "../include/ConfigManager.h"
 #include "../include/Utils.h"
 #include <commctrl.h>
-#include <richedit.h>
 #include <string>
 
 #pragma comment(lib, "comctl32.lib")
-#pragma comment(lib, "riched32.lib")
 
 namespace UnnamedBot {
 
@@ -278,8 +276,7 @@ namespace UnnamedBot {
     }
 
     void MessageBoxWindow::CreateControls() {
-        // 创建RichEdit控件用于消息列表（支持多行、带滚动条）
-        LoadLibraryW(L"riched32.dll");
+        // 消息列表（标准 LISTBOX 控件，见下方 LB_* 消息；不需要 Rich Edit）
 
         // 消息列表
         listMessages_ = CreateWindowExW(
@@ -458,7 +455,7 @@ namespace UnnamedBot {
                 ofn.lpstrTitle = L"Select files to attach";
 
                 if (GetOpenFileNameW(&ofn)) {
-                    LOG_DEBUG("MessageBoxWindow", "File attached: " + std::wstring(fileName));
+                    LOG_DEBUG("MessageBoxWindow", std::string("File attached: ") + Utils::WideToUtf8(fileName));
                     // TODO: 处理附件
                 }
                 return 0;

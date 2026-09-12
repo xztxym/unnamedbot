@@ -12,6 +12,7 @@
 #include <Motion/CubismExpressionMotionManager.hpp>
 #include <Model/CubismMoc.hpp>
 #include <Physics/CubismPhysics.hpp>
+#include <CubismDefaultParameterId.hpp>
 #include <Id/CubismIdManager.hpp>
 #include <filesystem>
 #include <fstream>
@@ -160,11 +161,13 @@ namespace {
             _pose->UpdateParameters(model, deltaTime);
         }
 
-        // 更新模型矩阵
+        // 更新模型矩阵：每帧都必须从 SDK 基准归一化重新推导，
+        // 否则绝对赋值式的 Scale 会把“画布高度 -> 2 个单位”的归一化覆盖掉，模型将不可见。
         CubismModelMatrix* const modelMatrix = GetModelMatrix();
         if (modelMatrix) {
+            modelMatrix->SetHeight(2.0f);
+            modelMatrix->ScaleRelative(scale_, scale_);
             modelMatrix->SetPosition(positionX_, positionY_);
-            modelMatrix->Scale(scale_, scale_);
             modelMatrix->SetCenterPosition(0.0f, 0.0f);
         }
 
@@ -177,7 +180,8 @@ namespace {
 
     CubismRenderer_D3D11* Model::GetRenderer() const {
         std::lock_guard<std::mutex> lock(mutex_);
-        return dynamic_cast<CubismRenderer_D3D11*>(_renderer);
+        // _renderer 是 CubismUserModel 的私有成员，只能通过其公开的模板访问器获取。
+        return const_cast<Model*>(this)->CubismUserModel::GetRenderer<CubismRenderer_D3D11>();
     }
 
     bool Model::HitTest(float x, float y) const {
@@ -381,8 +385,11 @@ namespace {
         scale_ = std::clamp(scale, 0.5f, 2.0f);
         CubismModelMatrix* const modelMatrix = GetModelMatrix();
         if (modelMatrix) {
-            // CubismModelMatrix 没有 SetScale，缩放通过基类 CubismMatrix44::Scale 实现
-            modelMatrix->Scale(scale_, scale_);
+            // 从 SDK 基准归一化重新推导，避免反复调用时累积；与加载路径保持一致
+            modelMatrix->SetHeight(2.0f);
+            modelMatrix->ScaleRelative(scale_, scale_);
+            modelMatrix->SetPosition(positionX_, positionY_);
+            modelMatrix->SetCenterPosition(0.0f, 0.0f);
         }
     }
 
@@ -412,7 +419,7 @@ namespace {
             return;
         }
 
-        model->SetParameterValueById(idManager->GetId(parameterId.c_str()), value);
+        model->SetParameterValue(idManager->GetId(parameterId.c_str()), value);
     }
 
     float Model::GetParameterValue(const std::string& parameterId) const {
@@ -424,7 +431,7 @@ namespace {
             return 0.0f;
         }
 
-        return model->GetParameterValueById(idManager->GetId(parameterId.c_str()));
+        return model->GetParameterValue(idManager->GetId(parameterId.c_str()));
     }
 
     void Model::SetPartOpacity(const std::string& partId, float opacity) {
@@ -436,7 +443,7 @@ namespace {
             return;
         }
 
-        model->SetPartOpacityById(idManager->GetId(partId.c_str()), opacity);
+        model->SetPartOpacity(idManager->GetId(partId.c_str()), opacity);
     }
 
     float Model::GetPartOpacity(const std::string& partId) const {
@@ -448,7 +455,7 @@ namespace {
             return 1.0f;
         }
 
-        return model->GetPartOpacityById(idManager->GetId(partId.c_str()));
+        return model->GetPartOpacity(idManager->GetId(partId.c_str()));
     }
 
     void Model::ResetParameters() {
@@ -480,68 +487,112 @@ namespace {
     }
 
     void Model::CreateRenderer() {
-        if (!userModel_ || !userModel_->GetModel()) {
+        CubismModel* const model = GetModel();
+        if (!model) {
             LOG_ERROR("Model", "Cannot create renderer: model not loaded.");
             return;
         }
 
-        // 创建D3D11渲染器
-        renderer_ = new CubismRenderer_D3D11();
-        renderer_->Initialize(userModel_->GetModel());
+        // 通过基类创建平台渲染器：CubismUserModel::CreateRenderer 内部调用
+        // CubismRenderer::Create（D3D11 实现）；CubismRenderer_D3D11 没有公开默认构造函数。
+        const csmUint32 width = static_cast<csmUint32>(model->GetCanvasWidthPixel());
+        const csmUint32 height = static_cast<csmUint32>(model->GetCanvasHeightPixel());
+        CubismUserModel::CreateRenderer(width, height);
 
-        // 设置渲染器参数
-        renderer_->SetOpacity(opacity_);
-        renderer_->SetModelMatrix(userModel_->GetModelMatrix());
-
-        // 设置纹理（需要从外部加载）
-        // 实际应该从模型文件加载纹理
-        // 这里简化处理
         LOG_DEBUG("Model", "D3D11 renderer created.");
     }
 
     bool Model::LoadModelData(const std::wstring& modelPath) {
-        if (!userModel_ || !CubismFramework::IsStarted()) {
-            LOG_ERROR("Model", "Live2D framework not started or user model invalid.");
+        if (!CubismFramework::IsStarted()) {
+            LOG_ERROR("Model", "Live2D framework not started.");
             return false;
         }
 
-        // 加载模型文件
-        std::string pathStr = Utils::PathToUtf8(modelPath);
-        if (!userModel_->LoadModelJson(pathStr.c_str())) {
-            LOG_ERROR("Model", "Failed to load model JSON: " + pathStr);
+        const std::filesystem::path path(modelPath);
+
+        // 读取并解析 model3.json：它只是清单，真正的模型数据在 FileReferences.Moc 指向的 .moc3 里。
+        std::string settingBuffer;
+        if (!ReadFileToBuffer(path, settingBuffer)) {
+            LOG_ERROR("Model", "Failed to read model file: " + Utils::PathToUtf8(modelPath));
             return false;
         }
 
-        // 初始化模型矩阵
-        userModel_->GetModelMatrix()->SetPosition(positionX_, positionY_);
-        userModel_->GetModelMatrix()->SetScale(scale_, scale_);
-        userModel_->GetModelMatrix()->SetCenterPosition(0.0f, 0.0f);
+        const std::filesystem::path directory = path.parent_path();
+        std::filesystem::path mocPath;
+        std::filesystem::path physicsPath;
+        std::filesystem::path posePath;
+        try {
+            const nlohmann::json setting = nlohmann::json::parse(settingBuffer);
+            const auto& fileRefs = setting.at("FileReferences");
+
+            mocPath = directory / Utils::Utf8ToWide(fileRefs.at("Moc").get<std::string>());
+            if (fileRefs.contains("Physics")) {
+                physicsPath = directory / Utils::Utf8ToWide(fileRefs.at("Physics").get<std::string>());
+            }
+            if (fileRefs.contains("Pose")) {
+                posePath = directory / Utils::Utf8ToWide(fileRefs.at("Pose").get<std::string>());
+            }
+        }
+        catch (const std::exception& e) {
+            LOG_ERROR("Model", "Invalid model3.json: " + std::string(e.what()));
+            return false;
+        }
+
+        // 读取 .moc3（CubismUserModel::LoadModel 需要的是 moc3 二进制，而不是 model3.json）
+        std::string mocBuffer;
+        if (!ReadFileToBuffer(mocPath, mocBuffer)) {
+            LOG_ERROR("Model", "Failed to read moc file: " + Utils::PathToUtf8(mocPath));
+            return false;
+        }
+
+        // 解析并创建 _moc / _model / _modelMatrix
+        CubismUserModel::LoadModel(
+            reinterpret_cast<const csmByte*>(mocBuffer.data()),
+            static_cast<csmSizeInt>(mocBuffer.size())
+        );
+
+        CubismModel* const model = GetModel();
+        if (!model) {
+            LOG_ERROR("Model", "Failed to parse model: " + Utils::PathToUtf8(modelPath));
+            return false;
+        }
+
+        // 初始化模型矩阵：先恢复 SDK 在构造时建立的“画布高度 -> 2 个单位”归一化
+        // （CubismModelMatrix 继承的 Scale 是绝对赋值，会覆盖该归一化，因此必须用 ScaleRelative 叠加用户缩放）。
+        CubismModelMatrix* const modelMatrix = GetModelMatrix();
+        if (modelMatrix) {
+            modelMatrix->SetHeight(2.0f);
+            modelMatrix->ScaleRelative(scale_, scale_);
+            modelMatrix->SetPosition(positionX_, positionY_);
+            modelMatrix->SetCenterPosition(0.0f, 0.0f);
+        }
 
         // 创建物理（如果存在）
-        std::string physicsPath = Utils::PathToUtf8(std::filesystem::path(modelPath).parent_path()) + "/" +
-            Utils::PathToUtf8(std::filesystem::path(modelPath).stem()) + ".physics3.json";
-        if (std::filesystem::exists(physicsPath)) {
-            auto physics = CubismPhysics::Create(physicsPath.c_str());
-            if (physics) {
-                userModel_->SetPhysics(physics);
+        if (!physicsPath.empty() && std::filesystem::exists(physicsPath)) {
+            std::string physicsBuffer;
+            if (ReadFileToBuffer(physicsPath, physicsBuffer)) {
+                CubismUserModel::LoadPhysics(
+                    reinterpret_cast<const csmByte*>(physicsBuffer.data()),
+                    static_cast<csmSizeInt>(physicsBuffer.size())
+                );
             }
         }
 
         // 创建姿势（如果存在）
-        std::string posePath = Utils::PathToUtf8(std::filesystem::path(modelPath).parent_path()) + "/" +
-            Utils::PathToUtf8(std::filesystem::path(modelPath).stem()) + ".pose3.json";
-        if (std::filesystem::exists(posePath)) {
-            auto pose = CubismPose::Create(posePath.c_str());
-            if (pose) {
-                userModel_->SetPose(pose);
+        if (!posePath.empty() && std::filesystem::exists(posePath)) {
+            std::string poseBuffer;
+            if (ReadFileToBuffer(posePath, poseBuffer)) {
+                CubismUserModel::LoadPose(
+                    reinterpret_cast<const csmByte*>(poseBuffer.data()),
+                    static_cast<csmSizeInt>(poseBuffer.size())
+                );
             }
         }
 
-        // 初始化自动眨眼
-        SetAutoBlink(true);
-
-        // 初始化呼吸效果
-        SetBreathEffect(true);
+        // 初始化自动眨眼与呼吸效果
+        // Load() 已持有 mutex_，此处必须调用内部实现（公开的 SetAutoBlink/SetBreathEffect 会重复加锁造成自死锁）
+        ApplyAutoBlink();
+        ApplyBreathEffect();
 
         LOG_INFO("Model", "Model data loaded successfully.");
         return true;
@@ -596,7 +647,7 @@ namespace {
     }
 
     void Model::SetInitialParameters() {
-        if (!userModel_ || !userModel_->GetModel()) {
+        if (!GetModel()) {
             return;
         }
 

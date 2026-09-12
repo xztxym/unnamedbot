@@ -399,9 +399,12 @@ namespace UnnamedBot {
             return false;
         }
 
+        // D3D_FEATURE_LEVEL 的高位字节编码为 0xMM00（如 0xB100 表示 11.1），
+        // 主版本在高 4 位、次版本在次高 4 位，不能直接取高低 16 位。
+        const unsigned level = static_cast<unsigned>(selectedLevel);
         LOG_INFO("Renderer", "D3D11 device created. Feature Level: " +
-            std::to_string(static_cast<int>(selectedLevel) >> 16) + "." +
-            std::to_string(static_cast<int>(selectedLevel) & 0xFFFF));
+            std::to_string((level >> 12) & 0xF) + "." +
+            std::to_string((level >> 8) & 0xF));
         return true;
     }
 
@@ -438,7 +441,7 @@ namespace UnnamedBot {
         scDesc.SampleDesc.Count = 1;
         scDesc.SampleDesc.Quality = 0;
         scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        scDesc.BufferCount = 2;
+        scDesc.BufferCount = BACK_BUFFER_COUNT;
         scDesc.OutputWindow = hwnd;
         scDesc.Windowed = TRUE;
         scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;

@@ -68,23 +68,23 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\VSProject\Live2D_Cubism_SDK_for_Native_R5\Core\include;D:\VSProject\Live2D_Cubism_SDK_for_Native_R5\Framework\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\include;$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Live2DCubismCore_MDd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\VSProject\Unnamedbot\Unnamedbot\ThirdParty\CubismSdkForNative-5-r.5\Core\lib\windows\x86_64\143;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\lib\windows\x86_64\143;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -93,46 +93,46 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\VSProject\Live2D_Cubism_SDK_for_Native_R5\Core\include;D:\VSProject\Live2D_Cubism_SDK_for_Native_R5\Framework\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\include;$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Live2DCubismCore_MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\VSProject\Unnamedbot\Unnamedbot\ThirdParty\CubismSdkForNative-5-r.5\Core\lib\windows\x86_64\143;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\lib\windows\x86_64\143;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\VSProject\Live2D_Cubism_SDK_for_Native_R5\Core\include;D:\VSProject\Live2D_Cubism_SDK_for_Native_R5\Framework\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\include;$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Live2DCubismCore_MDd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\VSProject\Unnamedbot\Unnamedbot\ThirdParty\CubismSdkForNative-5-r.5\Core\lib\windows\x86_64\143;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\lib\windows\x86_64\143;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,23 +141,23 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\VSProject\Live2D_Cubism_SDK_for_Native_R5\Core\include;D:\VSProject\Live2D_Cubism_SDK_for_Native_R5\Framework\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\include;$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Live2DCubismCore_MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\VSProject\Unnamedbot\Unnamedbot\ThirdParty\CubismSdkForNative-5-r.5\Core\lib\windows\x86_64\143;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\lib\windows\x86_64\143;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -181,6 +181,63 @@
     <ClCompile Include="src\Utils.cpp" />
     <ClCompile Include="src\Window.cpp" />
     <ClCompile Include="Unnamedbot.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\CubismCdiJson.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\CubismDefaultParameterId.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\CubismFramework.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\CubismModelSettingJson.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Effect\CubismBreath.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Effect\CubismEyeBlink.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Effect\CubismLook.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Effect\CubismPose.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Id\CubismId.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Id\CubismIdManager.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Math\CubismMath.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Math\CubismMatrix44.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Math\CubismModelMatrix.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Math\CubismTargetPoint.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Math\CubismVector2.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Math\CubismViewMatrix.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Model\CubismMoc.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Model\CubismModel.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Model\CubismModelMultiplyAndScreenColor.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Model\CubismModelUserData.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Model\CubismModelUserDataJson.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Model\CubismUserModel.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\ACubismMotion.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismBreathUpdater.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismExpressionMotion.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismExpressionMotionManager.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismExpressionUpdater.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismEyeBlinkUpdater.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismLipSyncUpdater.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismLookUpdater.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismMotion.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismMotionJson.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismMotionManager.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismMotionQueueEntry.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismMotionQueueManager.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismPhysicsUpdater.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismPoseUpdater.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\CubismUpdateScheduler.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\ICubismUpdater.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Motion\IParameterProvider.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Physics\CubismPhysics.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Physics\CubismPhysicsJson.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\csmBlendMode.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\CubismRenderer.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\CubismDeviceInfo_D3D11.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\CubismOffscreenManager_D3D11.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\CubismOffscreenRenderTarget_D3D11.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\CubismOffscreenSurface_D3D11.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\CubismRenderer_D3D11.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\CubismRenderState_D3D11.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\CubismRenderTarget_D3D11.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\CubismShader_D3D11.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Type\csmRectF.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Type\csmString.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Utils\CubismDebug.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Utils\CubismJson.cpp" />
+    <ClCompile Include="ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Utils\CubismString.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\AIClient.h" />

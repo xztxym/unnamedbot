@@ -6,46 +6,133 @@
 #include <CubismFramework.hpp>
 #include <CubismDefaultParameterId.hpp>
 #include <Rendering/D3D11/CubismRenderer_D3D11.hpp>
+#include <Math/CubismMatrix44.hpp>
+#include <Math/CubismModelMatrix.hpp>
+#include <ICubismAllocator.hpp>
+#include <cstdlib>
+#include <malloc.h>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
 
 namespace UnnamedBot {
 
+namespace {
+
+    // Cubism 框架在 StartUp 时要求提供一个非空的内存分配器实现。
+    class CubismAllocator : public Csm::ICubismAllocator {
+    public:
+        void* Allocate(const Csm::csmSizeType size) override {
+            return std::malloc(size);
+        }
+
+        void Deallocate(void* memory) override {
+            std::free(memory);
+        }
+
+        void* AllocateAligned(const Csm::csmSizeType size, const Csm::csmUint32 alignment) override {
+            return _aligned_malloc(size, alignment);
+        }
+
+        void DeallocateAligned(void* alignedMemory) override {
+            _aligned_free(alignedMemory);
+        }
+    };
+
+    // D3D11 渲染器创建着色器时，会通过框架的文件加载回调读取相对路径
+    // "FrameworkShaders/CubismEffect.fx"。该路径先按当前工作目录解析，
+    // 再按可执行文件所在目录解析（VS 调试时的工作目录默认是工程目录，而非 exe 目录）。
+    Csm::csmByte* LoadFrameworkFile(const std::string filePath, Csm::csmSizeInt* outSize) {
+        if (outSize == nullptr) {
+            return nullptr;
+        }
+        *outSize = 0;
+
+        std::vector<std::filesystem::path> candidates;
+        candidates.push_back(std::filesystem::path(Utils::Utf8ToWide(filePath)));
+
+        wchar_t exePath[MAX_PATH] = {};
+        if (::GetModuleFileNameW(nullptr, exePath, MAX_PATH) != 0) {
+            candidates.push_back(std::filesystem::path(exePath).parent_path() / Utils::Utf8ToWide(filePath));
+        }
+
+        for (const auto& candidate : candidates) {
+            std::ifstream file(candidate, std::ios::binary | std::ios::ate);
+            if (!file.is_open()) {
+                continue;
+            }
+
+            const std::streamoff size = file.tellg();
+            if (size <= 0) {
+                continue;
+            }
+
+            // 框架要求该缓冲区由其自身分配器分配，并由 ReleaseBytesFunction 释放。
+            auto* bytes = static_cast<Csm::csmByte*>(
+                Csm::CubismFramework::Allocate(static_cast<Csm::csmSizeType>(size)));
+            if (bytes == nullptr) {
+                continue;
+            }
+
+            file.seekg(0, std::ios::beg);
+            if (file.read(reinterpret_cast<char*>(bytes), size)) {
+                *outSize = static_cast<Csm::csmSizeInt>(size);
+                return bytes;
+            }
+
+            Csm::CubismFramework::Deallocate(bytes);
+        }
+
+        LOG_WARN("Live2DManager", "Failed to load Live2D framework file: " + filePath);
+        return nullptr;
+    }
+
+    void ReleaseFrameworkFile(Csm::csmByte* byteData) {
+        if (byteData != nullptr) {
+            Csm::CubismFramework::Deallocate(byteData);
+        }
+    }
+
+} // namespace
+
     Live2DManager& Live2DManager::Instance() {
         static Live2DManager instance;
         return instance;
     }
 
-    bool Live2DManager::Initialize() {
-        std::lock_guard<std::mutex> lock(mutex_);
+    bool Live2DManager::Initialize(Renderer* renderer) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (initialized_) {
             LOG_WARN("Live2DManager", "Live2D framework already initialized.");
             return true;
         }
 
-        // 初始化Live2D框架
+        // 启动并初始化 Live2D 框架。
+        // R5 版 API 需要先通过 StartUp 传入内存分配器与配置（日志回调/日志级别），
+        // 之后才能调用 Initialize()。StartUp 只保存 Option 指针，因此二者必须是静态存储。
+        static CubismAllocator s_allocator;
+        static Csm::CubismFramework::Option s_option;
+        s_option.LogFunction = [](const char* message) {
+            std::string msg = message ? message : "";
+            LOG_DEBUG("Live2D", msg);
+        };
+        s_option.LoggingLevel = Csm::CubismFramework::Option::LogLevel_Warning;
+        // 不设置文件加载回调时，D3D11 渲染器读不到着色器源码，模型不会被绘制。
+        s_option.LoadFileFunction = LoadFrameworkFile;
+        s_option.ReleaseBytesFunction = ReleaseFrameworkFile;
+
+        Csm::CubismFramework::StartUp(&s_allocator, &s_option);
         Csm::CubismFramework::Initialize();
 
-        // 设置日志回调
-        Csm::CubismFramework::SetLogFunction([](Csm::csmLogLevel level, const Csm::csmChar* message) {
-            std::string msg = message ? message : "";
-            switch (level) {
-            case Csm::csmLogLevel_Verbose:
-                LOG_DEBUG("Live2D", msg);
-                break;
-            case Csm::csmLogLevel_Info:
-                LOG_INFO("Live2D", msg);
-                break;
-            case Csm::csmLogLevel_Warning:
-                LOG_WARN("Live2D", msg);
-                break;
-            case Csm::csmLogLevel_Error:
-                LOG_ERROR("Live2D", msg);
-                break;
-            }
-            });
+        // D3D11 渲染器创建实例前必须知道使用哪个设备和缓冲数量，
+        // 否则内部初始化会因设备为空而直接失败（模型不会被绘制）。
+        if (renderer == nullptr || renderer->GetDevice() == nullptr) {
+            LOG_ERROR("Live2DManager", "Valid D3D11 renderer is required to initialize Live2D.");
+            return false;
+        }
+        Csm::Rendering::CubismRenderer_D3D11::SetConstantSettings(
+            Renderer::BACK_BUFFER_COUNT, renderer->GetDevice());
 
         initialized_ = true;
         LOG_INFO("Live2DManager", "Live2D framework initialized.");
@@ -60,7 +147,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::Shutdown() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         // 卸载所有模型
         for (auto& pair : models_) {
@@ -78,7 +165,7 @@ namespace UnnamedBot {
     }
 
     bool Live2DManager::LoadModel(const std::string& modelId, const std::wstring& modelPath) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             LOG_ERROR("Live2DManager", "Live2D framework not initialized.");
@@ -111,7 +198,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::UnloadModel(const std::string& modelId) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto it = models_.find(modelId);
         if (it == models_.end()) {
@@ -131,7 +218,7 @@ namespace UnnamedBot {
     }
 
     bool Live2DManager::SwitchModel(const std::string& modelId) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             LOG_ERROR("Live2DManager", "Live2D framework not initialized.");
@@ -170,7 +257,7 @@ namespace UnnamedBot {
     }
 
     std::vector<std::string> Live2DManager::GetLoadedModelIds() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         std::vector<std::string> ids;
         for (const auto& pair : models_) {
             ids.push_back(pair.first);
@@ -179,12 +266,12 @@ namespace UnnamedBot {
     }
 
     bool Live2DManager::IsModelLoaded(const std::string& modelId) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return models_.find(modelId) != models_.end();
     }
 
     void Live2DManager::Update(float deltaTime) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             currentModel_->Update(deltaTime);
@@ -192,7 +279,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::Render(Renderer* renderer) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!renderer || !currentModel_) {
             return;
@@ -212,14 +299,44 @@ namespace UnnamedBot {
 
         // 设置渲染目标
         auto renderTarget = renderer->GetRenderTargetView();
-        if (renderTarget) {
-            // 使用Live2D渲染器绘制
-            cubismRenderer->DrawModel();
+        if (!renderTarget) {
+            return;
         }
+
+        // Cubism 的 D3D11 渲染器要求每帧先 StartFrame 绑定设备上下文，
+        // 绘制结束后 EndFrame 释放；否则 DrawModel 会解引用空上下文而崩溃。
+        int width = 0, height = 0;
+        renderer->GetSize(width, height);
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+        cubismRenderer->SetRenderTargetSize(static_cast<Csm::csmUint32>(width),
+                                            static_cast<Csm::csmUint32>(height));
+
+        cubismRenderer->StartFrame(context);
+
+        // 必须每帧通过 SetMvpMatrix 提交 MVP：渲染器内部的矩阵默认为单位阵，
+        // 而模型顶点位于画布像素坐标系，不提交会因超出裁剪空间而不可见。
+        Csm::CubismModelMatrix* const modelMatrix = currentModel_->GetModelMatrix();
+        if (modelMatrix) {
+            Csm::CubismMatrix44 projection;
+            if (width < height) {
+                // 竖长窗口：以模型宽度适配，横向按窗口比例压缩
+                projection.Scale(1.0f, static_cast<float>(width) / static_cast<float>(height));
+            } else {
+                // 横长窗口：以模型高度适配，纵向按窗口比例压缩
+                projection.Scale(static_cast<float>(height) / static_cast<float>(width), 1.0f);
+            }
+            projection.MultiplyByMatrix(modelMatrix);
+            cubismRenderer->SetMvpMatrix(&projection);
+        }
+
+        cubismRenderer->DrawModel();
+        cubismRenderer->EndFrame();
     }
 
     bool Live2DManager::HitTest(int x, int y) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!currentModel_) {
             return false;
@@ -241,7 +358,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::SetModelPosition(float x, float y) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             currentModel_->SetPosition(x, y);
@@ -252,7 +369,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::GetModelPosition(float& x, float& y) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             currentModel_->GetPosition(x, y);
@@ -264,7 +381,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::SetModelScale(float scale) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             scale = std::clamp(scale, 0.5f, 2.0f);
@@ -274,7 +391,7 @@ namespace UnnamedBot {
     }
 
     float Live2DManager::GetModelScale() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             return currentModel_->GetScale();
@@ -283,7 +400,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::SetModelOpacity(float opacity) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             opacity = std::clamp(opacity, 0.2f, 1.0f);
@@ -293,7 +410,7 @@ namespace UnnamedBot {
     }
 
     float Live2DManager::GetModelOpacity() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             return currentModel_->GetOpacity();
@@ -302,7 +419,7 @@ namespace UnnamedBot {
     }
 
     bool Live2DManager::PlayExpression(const std::string& expressionName) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!currentModel_) {
             LOG_WARN("Live2DManager", "No current model to play expression.");
@@ -313,7 +430,7 @@ namespace UnnamedBot {
     }
 
     bool Live2DManager::PlayMotion(const std::string& motionName, bool loop) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!currentModel_) {
             LOG_WARN("Live2DManager", "No current model to play motion.");
@@ -324,7 +441,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::StopAllMotions() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             currentModel_->StopAllMotions();
@@ -332,7 +449,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::SetAutoBlink(bool enabled) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             currentModel_->SetAutoBlink(enabled);
@@ -340,7 +457,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::SetBreathEffect(bool enabled) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             currentModel_->SetBreathEffect(enabled);
@@ -348,7 +465,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::SetLipSync(bool enabled) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (currentModel_) {
             currentModel_->SetLipSync(enabled);
@@ -356,7 +473,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::SaveModelState() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!currentModel_) {
             return;
@@ -377,7 +494,7 @@ namespace UnnamedBot {
     }
 
     void Live2DManager::RestoreModelState() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         std::string modelId = ConfigManager::Instance().GetString(ConfigManager::KEY_MODEL_DEFAULT_ID, "Haru");
         float x = ConfigManager::Instance().GetDouble("model.position_x", 0.0);

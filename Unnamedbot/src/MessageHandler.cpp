@@ -17,7 +17,7 @@ namespace UnnamedBot {
     }
 
     void MessageHandler::Initialize() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (initialized_) {
             LOG_WARN("MessageHandler", "Already initialized.");
@@ -84,7 +84,7 @@ namespace UnnamedBot {
     }
 
     void MessageHandler::Shutdown() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         // 保存当前会话状态
         if (currentSession_) {
@@ -102,7 +102,7 @@ namespace UnnamedBot {
     // ============ 会话管理 ============
 
     int64_t MessageHandler::CreateSession(const std::string& name) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         int64_t now = GetCurrentTimestamp();
 
@@ -144,7 +144,7 @@ namespace UnnamedBot {
     }
 
     bool MessageHandler::SwitchSession(int64_t sessionId) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto it = sessions_.find(sessionId);
         if (it == sessions_.end()) {
@@ -186,12 +186,12 @@ namespace UnnamedBot {
     }
 
     std::shared_ptr<Session> MessageHandler::GetCurrentSession() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return currentSession_;
     }
 
     std::vector<Session> MessageHandler::GetAllSessions() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         std::vector<Session> result;
         for (const auto& pair : sessions_) {
             result.push_back(*pair.second);
@@ -200,7 +200,7 @@ namespace UnnamedBot {
     }
 
     bool MessageHandler::DeleteSession(int64_t sessionId) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (sessionId == currentSessionId_) {
             LOG_ERROR("MessageHandler", "Cannot delete current session.");
@@ -225,7 +225,7 @@ namespace UnnamedBot {
     }
 
     bool MessageHandler::RenameSession(int64_t sessionId, const std::string& newName) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto it = sessions_.find(sessionId);
         if (it == sessions_.end()) {
@@ -244,7 +244,7 @@ namespace UnnamedBot {
     }
 
     bool MessageHandler::ClearSessionMessages(int64_t sessionId) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto it = sessions_.find(sessionId);
         if (it == sessions_.end()) {
@@ -276,7 +276,7 @@ namespace UnnamedBot {
         const std::string& triggerSource,
         bool isActiveTrigger
     ) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!currentSession_) {
             LOG_ERROR("MessageHandler", "No active session.");
@@ -331,7 +331,7 @@ namespace UnnamedBot {
         int limit,
         int offset
     ) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto it = sessions_.find(sessionId);
         if (it == sessions_.end()) {
@@ -384,7 +384,7 @@ namespace UnnamedBot {
     }
 
     std::vector<ConversationMessage> MessageHandler::GetCurrentMessages(int limit) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (!currentSession_) {
             return {};
         }
@@ -392,7 +392,7 @@ namespace UnnamedBot {
     }
 
     bool MessageHandler::DeleteMessage(int64_t messageId) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         // 从数据库删除
         Database::Instance().Execute(
@@ -419,7 +419,7 @@ namespace UnnamedBot {
     }
 
     std::vector<ConversationMessage> MessageHandler::GetHistoryForAI(int64_t sessionId) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto messages = GetSessionMessages(sessionId, 0);
 
@@ -569,7 +569,7 @@ namespace UnnamedBot {
     // ============ 主动触发管理 ============
 
     bool MessageHandler::HandleTriggerEvent(const TriggerEvent& event) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         // 检查冷却
         if (IsInCooldown()) {
@@ -597,17 +597,17 @@ namespace UnnamedBot {
     }
 
     void MessageHandler::SetTriggerCallback(TriggerCallback callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         triggerCallback_ = callback;
     }
 
     void MessageHandler::SetAIRequestCallback(AIRequestCallback callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         aiRequestCallback_ = callback;
     }
 
     bool MessageHandler::IsInCooldown() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (lastTriggerTime_ == 0) {
             return false;
@@ -620,12 +620,12 @@ namespace UnnamedBot {
     }
 
     int64_t MessageHandler::GetLastTriggerTime() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return lastTriggerTime_;
     }
 
     void MessageHandler::ResetCooldown() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         lastTriggerTime_ = 0;
         LOG_DEBUG("MessageHandler", "Cooldown reset.");
     }
@@ -633,7 +633,7 @@ namespace UnnamedBot {
     // ============ 事件监听 ============
 
     void MessageHandler::OnNewMessage(NewMessageCallback callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         newMessageCallback_ = callback;
     }
 
@@ -644,7 +644,7 @@ namespace UnnamedBot {
         const std::string& keyword,
         int limit
     ) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         std::vector<ConversationMessage> result;
 
@@ -679,7 +679,7 @@ namespace UnnamedBot {
     }
 
     bool MessageHandler::ExportSession(int64_t sessionId, const std::wstring& filePath) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto messages = GetSessionMessages(sessionId, 0);
         if (messages.empty()) {
@@ -727,7 +727,7 @@ namespace UnnamedBot {
     }
 
     bool MessageHandler::ImportSession(const std::wstring& filePath) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         try {
             std::ifstream file(filePath);
@@ -781,7 +781,7 @@ namespace UnnamedBot {
     // ============ 配置 ============
 
     void MessageHandler::UpdateSessionConfig(int64_t sessionId, const nlohmann::json& config) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto it = sessions_.find(sessionId);
         if (it == sessions_.end()) {
@@ -798,7 +798,7 @@ namespace UnnamedBot {
     }
 
     nlohmann::json MessageHandler::GetSessionConfig(int64_t sessionId) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto it = sessions_.find(sessionId);
         if (it == sessions_.end()) {

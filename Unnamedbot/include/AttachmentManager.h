@@ -115,7 +115,7 @@ namespace UnnamedBot {
 
         // 附件缓存
         std::map<int64_t, std::shared_ptr<Attachment>> attachments_;
-        mutable std::mutex mutex_;
+        mutable std::recursive_mutex mutex_;
 
         // 配置
         std::wstring attachmentRoot_ = L"./attachments";

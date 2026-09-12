@@ -114,7 +114,7 @@ namespace UnnamedBot {
         std::function<void()> onUpdateInstalled_;
 
         // 线程安全
-        mutable std::mutex mutex_;
+        mutable std::recursive_mutex mutex_;
 
         // 上次检查时间
         int64_t lastCheckTime_ = 0;

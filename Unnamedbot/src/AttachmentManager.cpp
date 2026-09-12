@@ -28,7 +28,7 @@ namespace UnnamedBot {
     }
 
     void AttachmentManager::Initialize() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (initialized_) {
             return;
@@ -60,7 +60,7 @@ namespace UnnamedBot {
     }
 
     void AttachmentManager::Shutdown() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         attachments_.clear();
         initialized_ = false;
         LOG_INFO("AttachmentManager", "Shut down.");
@@ -72,7 +72,7 @@ namespace UnnamedBot {
         const std::wstring& sourcePath,
         const std::string& mimeType
     ) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             LOG_ERROR("AttachmentManager", "Not initialized.");
@@ -165,7 +165,7 @@ namespace UnnamedBot {
         const std::vector<BYTE>& data,
         const std::string& mimeType
     ) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             LOG_ERROR("AttachmentManager", "Not initialized.");
@@ -238,7 +238,7 @@ namespace UnnamedBot {
     }
 
     std::shared_ptr<Attachment> AttachmentManager::GetAttachment(int64_t attachmentId) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto it = attachments_.find(attachmentId);
         if (it != attachments_.end()) {
@@ -248,7 +248,7 @@ namespace UnnamedBot {
     }
 
     std::vector<std::shared_ptr<Attachment>> AttachmentManager::GetAttachmentsForMessage(int64_t messageId) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         std::vector<std::shared_ptr<Attachment>> result;
         for (const auto& pair : attachments_) {
@@ -260,7 +260,7 @@ namespace UnnamedBot {
     }
 
     std::vector<std::shared_ptr<Attachment>> AttachmentManager::GetAttachmentsForSession(int64_t sessionId) const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         std::vector<std::shared_ptr<Attachment>> result;
         for (const auto& pair : attachments_) {
@@ -272,7 +272,7 @@ namespace UnnamedBot {
     }
 
     bool AttachmentManager::DeleteAttachment(int64_t attachmentId) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto it = attachments_.find(attachmentId);
         if (it == attachments_.end()) {
@@ -302,7 +302,7 @@ namespace UnnamedBot {
     }
 
     bool AttachmentManager::DeleteAttachmentsForMessage(int64_t messageId) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         auto attachments = GetAttachmentsForMessage(messageId);
         for (const auto& att : attachments) {
@@ -321,7 +321,7 @@ namespace UnnamedBot {
     }
 
     int64_t AttachmentManager::GetTotalAttachmentSize() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         int64_t totalSize = 0;
         for (const auto& pair : attachments_) {
@@ -331,7 +331,7 @@ namespace UnnamedBot {
     }
 
     int AttachmentManager::CleanupOldAttachments(int retentionDays) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (retentionDays < 0) return 0;
 
@@ -355,7 +355,7 @@ namespace UnnamedBot {
     }
 
     int AttachmentManager::CleanupByQuota(int64_t maxTotalSizeMB) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         int64_t maxSizeBytes = maxTotalSizeMB * 1024 * 1024;
         int64_t currentSize = GetTotalAttachmentSize();
@@ -412,12 +412,12 @@ namespace UnnamedBot {
     }
 
     std::vector<std::string> AttachmentManager::GetAllowedExtensions() const {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         return allowedExtensions_;
     }
 
     void AttachmentManager::SetAllowedExtensions(const std::vector<std::string>& extensions) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         allowedExtensions_ = extensions;
     }
 

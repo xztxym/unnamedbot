@@ -148,7 +148,7 @@ namespace UnnamedBot {
         std::function<void()> onExit_;
 
         // 线程安全
-        mutable std::mutex mutex_;
+        mutable std::recursive_mutex mutex_;
 
         // 通知ID（用于区分多个通知）
         int notificationId_ = 0;

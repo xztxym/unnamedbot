@@ -245,7 +245,7 @@ namespace UnnamedBot {
         AIRequestCallback aiRequestCallback_;
 
         // 线程安全
-        mutable std::mutex mutex_;
+        mutable std::recursive_mutex mutex_;
 
         // 初始化标志
         bool initialized_ = false;

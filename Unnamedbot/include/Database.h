@@ -56,7 +56,7 @@ namespace UnnamedBot {
         bool IsOpen() const;
 
         sqlite3* db_ = nullptr;
-        std::mutex mutex_;
+        std::recursive_mutex mutex_;
         std::wstring dbPath_;
         bool inTransaction_ = false;
     };

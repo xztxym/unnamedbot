@@ -18,7 +18,7 @@ namespace UnnamedBot {
     }
 
     bool Database::Initialize(const std::wstring& dbPath) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (db_) {
             // 已经初始化，直接返回成功
             return true;
@@ -59,7 +59,7 @@ namespace UnnamedBot {
     }
 
     void Database::Close() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (db_) {
             sqlite3_close(db_);
             db_ = nullptr;
@@ -68,7 +68,7 @@ namespace UnnamedBot {
     }
 
     int Database::Execute(const std::string& sql, const std::vector<std::string>& params) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (!db_) {
             LOG_ERROR("Database", "Database not initialized.");
             return -1;
@@ -107,7 +107,7 @@ namespace UnnamedBot {
     }
 
     QueryResult Database::Query(const std::string& sql, const std::vector<std::string>& params) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         QueryResult result;
         if (!db_) {
             LOG_ERROR("Database", "Database not initialized.");
@@ -152,13 +152,13 @@ namespace UnnamedBot {
     }
 
     int64_t Database::GetLastInsertRowId() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (!db_) return -1;
         return sqlite3_last_insert_rowid(db_);
     }
 
     bool Database::BeginTransaction() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (!db_) return false;
         if (inTransaction_) return true; // 已在事务中
         int rc = sqlite3_exec(db_, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
@@ -170,7 +170,7 @@ namespace UnnamedBot {
     }
 
     bool Database::CommitTransaction() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (!db_ || !inTransaction_) return false;
         int rc = sqlite3_exec(db_, "COMMIT;", nullptr, nullptr, nullptr);
         if (rc == SQLITE_OK) {
@@ -181,7 +181,7 @@ namespace UnnamedBot {
     }
 
     bool Database::RollbackTransaction() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (!db_ || !inTransaction_) return false;
         int rc = sqlite3_exec(db_, "ROLLBACK;", nullptr, nullptr, nullptr);
         if (rc == SQLITE_OK) {

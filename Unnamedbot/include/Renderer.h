@@ -19,6 +19,10 @@ namespace UnnamedBot {
     // 渲染器类 - 管理DX11设备、交换链、渲染目标
     class Renderer {
     public:
+        // 交换链后台缓冲数量；Live2D D3D11 渲染器要求在加载模型前
+        // 通过 SetConstantSettings 传入与交换链一致的缓冲数量及设备。
+        static constexpr UINT BACK_BUFFER_COUNT = 2;
+
         Renderer();
         ~Renderer();
 

@@ -15,7 +15,7 @@ namespace UnnamedBot {
     }
 
     bool TrayIcon::Initialize(HWND hwnd, UINT callbackMessage, HICON icon) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (initialized_) {
             LOG_WARN("TrayIcon", "Tray icon already initialized.");
@@ -67,7 +67,7 @@ namespace UnnamedBot {
     }
 
     void TrayIcon::Shutdown() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             return;
@@ -87,7 +87,7 @@ namespace UnnamedBot {
     }
 
     void TrayIcon::Show(bool show) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             LOG_WARN("TrayIcon", "Tray icon not initialized.");
@@ -108,7 +108,7 @@ namespace UnnamedBot {
     }
 
     void TrayIcon::SetTooltip(const std::wstring& tooltip) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             return;
@@ -120,7 +120,7 @@ namespace UnnamedBot {
     }
 
     void TrayIcon::SetIcon(HICON icon) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             return;
@@ -137,7 +137,7 @@ namespace UnnamedBot {
         DWORD infoFlags,
         DWORD timeout
     ) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             LOG_WARN("TrayIcon", "Tray icon not initialized.");
@@ -182,17 +182,17 @@ namespace UnnamedBot {
     // ============ 菜单管理 ============
 
     void TrayIcon::SetMenuItems(const std::vector<TrayMenuItem>& items) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         menuItems_ = items;
     }
 
     void TrayIcon::AddMenuItem(const TrayMenuItem& item) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         menuItems_.push_back(item);
     }
 
     void TrayIcon::InsertMenuItem(int index, const TrayMenuItem& item) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         if (index < 0 || index > static_cast<int>(menuItems_.size())) {
             menuItems_.push_back(item);
         }
@@ -202,7 +202,7 @@ namespace UnnamedBot {
     }
 
     void TrayIcon::RemoveMenuItem(int id) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         menuItems_.erase(
             std::remove_if(menuItems_.begin(), menuItems_.end(),
                 [id](const TrayMenuItem& item) { return item.id == id; }),
@@ -211,12 +211,12 @@ namespace UnnamedBot {
     }
 
     void TrayIcon::ClearMenu() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         menuItems_.clear();
     }
 
     void TrayIcon::UpdateMenuItem(int id, const std::wstring& text, bool checked, bool enabled) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         for (auto& item : menuItems_) {
             if (item.id == id) {
                 item.text = text;
@@ -228,7 +228,7 @@ namespace UnnamedBot {
     }
 
     void TrayIcon::ShowContextMenu() {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             LOG_WARN("TrayIcon", "Tray icon not initialized.");
@@ -274,7 +274,7 @@ namespace UnnamedBot {
     // ============ 事件处理 ============
 
     void TrayIcon::HandleTrayMessage(WPARAM wParam, LPARAM lParam) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {
             return;
@@ -321,42 +321,42 @@ namespace UnnamedBot {
     }
 
     void TrayIcon::OnMenuItemClick(std::function<void(int menuId)> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onMenuItemClick_ = callback;
     }
 
     void TrayIcon::OnTrayIconDoubleClick(std::function<void()> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onTrayIconDoubleClick_ = callback;
     }
 
     void TrayIcon::OnShowPet(std::function<void()> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onShowPet_ = callback;
     }
 
     void TrayIcon::OnHidePet(std::function<void()> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onHidePet_ = callback;
     }
 
     void TrayIcon::OnOpenMessageBox(std::function<void()> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onOpenMessageBox_ = callback;
     }
 
     void TrayIcon::OnOpenConfig(std::function<void()> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onOpenConfig_ = callback;
     }
 
     void TrayIcon::OnSwitchModel(std::function<void()> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onSwitchModel_ = callback;
     }
 
     void TrayIcon::OnExit(std::function<void()> callback) {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
         onExit_ = callback;
     }
 
