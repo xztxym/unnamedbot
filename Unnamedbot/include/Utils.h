@@ -6,6 +6,7 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <filesystem>
 
 namespace UnnamedBot {
 	namespace Utils {
@@ -38,6 +39,13 @@ namespace UnnamedBot {
 		std::vector<uint8_t> Base64Decode(const std::string& base64);
 		std::string UrlEncode(const std::string& str);
 		std::string UrlDecode(const std::string& str);
+
+		// 路径/文本编码转换
+		// C++20 下 path::u8string() 返回 std::u8string，不能隐式转换为 std::string，
+		// 因此统一通过该函数获取 UTF-8 字节串（sqlite3、日志、HTTP 均需要 UTF-8）。
+		std::string PathToUtf8(const std::filesystem::path& path);
+		std::string WideToUtf8(const std::wstring& wstr);
+		std::wstring Utf8ToWide(const std::string& str);
 
 		// 系统工具
 		std::string GetOSVersion();

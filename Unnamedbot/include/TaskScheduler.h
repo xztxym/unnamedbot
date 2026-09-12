@@ -92,7 +92,7 @@ namespace UnnamedBot {
         void CheckAndExecuteTasks();
 
         // 解析Cron表达式
-        bool ParseCron(const std::string& cron, int& minute, int& hour, int& day, int& month, int& dayOfWeek);
+        bool ParseCron(const std::string& cron, int& minute, int& hour, int& day, int& month, int& dayOfWeek) const;
 
         // 计算下一个匹配的时间
         int64_t GetNextMatch(const std::string& cron, int64_t fromTime) const;

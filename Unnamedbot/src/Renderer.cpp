@@ -349,7 +349,6 @@ namespace UnnamedBot {
             ComPtr<IDXGIAdapter> adapter;
             hr = dxgiDevice->GetAdapter(&adapter);
             if (SUCCEEDED(hr)) {
-                DXGI_QUERY_VIDEO_MEMORY_INFO memoryInfo = {};
                 // 注意：此函数仅在Windows 10 20H2+支持
                 // 可以尝试使用GetDesc获取总显存
                 DXGI_ADAPTER_DESC desc;

@@ -77,7 +77,7 @@ namespace UnnamedBot {
         MessageBoxWindow& operator=(const MessageBoxWindow&) = delete;
 
         // 创建窗口
-        bool CreateWindow(HINSTANCE hInstance, HWND parentHwnd);
+        bool CreateMessageBoxWindow(HINSTANCE hInstance, HWND parentHwnd);
 
         // 注册窗口类
         bool RegisterWindowClass(HINSTANCE hInstance);

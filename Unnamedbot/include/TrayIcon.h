@@ -104,6 +104,9 @@ namespace UnnamedBot {
         // 创建菜单
         HMENU CreateMenu();
 
+        // 创建默认菜单项（调用者需已持有 mutex_）
+        void SetDefaultMenuItems();
+
         // 更新托盘图标
         bool UpdateTrayIcon(DWORD message);
 

@@ -5,6 +5,8 @@
 #include <regex>
 #include <codecvt>
 #include <locale>
+#include <algorithm>
+#include <nlohmann/json.hpp>
 
 namespace UnnamedBot {
     namespace Utils {
@@ -13,13 +15,15 @@ namespace UnnamedBot {
 
         std::string ToLower(const std::string& str) {
             std::string result = str;
-            std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+            std::transform(result.begin(), result.end(), result.begin(),
+                [](unsigned char c) { return static_cast<char>(::tolower(c)); });
             return result;
         }
 
         std::string ToUpper(const std::string& str) {
             std::string result = str;
-            std::transform(result.begin(), result.end(), result.begin(), ::toupper);
+            std::transform(result.begin(), result.end(), result.begin(),
+                [](unsigned char c) { return static_cast<char>(::toupper(c)); });
             return result;
         }
 
@@ -225,4 +229,135 @@ namespace UnnamedBot {
 
         std::string UrlDecode(const std::string& str) {
             std::string result;
-            for (size_t i
+            result.reserve(str.size());
+
+            auto hexValue = [](char ch) -> int {
+                if (ch >= '0' && ch <= '9') return ch - '0';
+                if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+                if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+                return -1;
+            };
+
+            for (size_t i = 0; i < str.size(); ++i) {
+                char c = str[i];
+                if (c == '+') {
+                    result += ' ';
+                }
+                else if (c == '%' && i + 2 < str.size()) {
+                    int high = hexValue(str[i + 1]);
+                    int low = hexValue(str[i + 2]);
+                    if (high >= 0 && low >= 0) {
+                        result += static_cast<char>((high << 4) | low);
+                        i += 2;
+                    }
+                    else {
+                        // 无效的百分号转义，按原样保留
+                        result += c;
+                    }
+                }
+                else {
+                    result += c;
+                }
+            }
+
+            return result;
+        }
+
+        // ============ 路径/文本编码转换 ============
+
+        std::string PathToUtf8(const std::filesystem::path& path) {
+            const std::u8string utf8 = path.u8string();
+            return std::string(utf8.begin(), utf8.end());
+        }
+
+        std::string WideToUtf8(const std::wstring& wstr) {
+            if (wstr.empty()) return "";
+
+            const int sizeNeeded = WideCharToMultiByte(
+                CP_UTF8, 0,
+                wstr.c_str(), static_cast<int>(wstr.size()),
+                nullptr, 0,
+                nullptr, nullptr
+            );
+            if (sizeNeeded <= 0) return "";
+
+            std::string result(static_cast<size_t>(sizeNeeded), '\0');
+            WideCharToMultiByte(
+                CP_UTF8, 0,
+                wstr.c_str(), static_cast<int>(wstr.size()),
+                &result[0], sizeNeeded,
+                nullptr, nullptr
+            );
+            return result;
+        }
+
+        std::wstring Utf8ToWide(const std::string& str) {
+            if (str.empty()) return L"";
+
+            const int sizeNeeded = MultiByteToWideChar(
+                CP_UTF8, 0,
+                str.c_str(), static_cast<int>(str.size()),
+                nullptr, 0
+            );
+            if (sizeNeeded <= 0) return L"";
+
+            std::wstring result(static_cast<size_t>(sizeNeeded), L'\0');
+            MultiByteToWideChar(
+                CP_UTF8, 0,
+                str.c_str(), static_cast<int>(str.size()),
+                &result[0], sizeNeeded
+            );
+            return result;
+        }
+
+        // ============ 系统工具 ============
+
+        std::string GetOSVersion() {
+            using RtlGetVersionPtr = LONG(WINAPI*)(OSVERSIONINFOW*);
+
+            HMODULE ntdll = GetModuleHandleW(L"ntdll.dll");
+            if (ntdll) {
+                auto rtlGetVersion = reinterpret_cast<RtlGetVersionPtr>(
+                    GetProcAddress(ntdll, "RtlGetVersion"));
+                if (rtlGetVersion) {
+                    OSVERSIONINFOW osvi = {};
+                    osvi.dwOSVersionInfoSize = sizeof(osvi);
+                    if (rtlGetVersion(&osvi) == 0) {
+                        return "Windows " + std::to_string(osvi.dwMajorVersion) + "." +
+                            std::to_string(osvi.dwMinorVersion) + " (Build " +
+                            std::to_string(osvi.dwBuildNumber) + ")";
+                    }
+                }
+            }
+
+            return "Windows";
+        }
+
+        std::string GetComputerName() {
+            wchar_t buffer[MAX_COMPUTERNAME_LENGTH + 1] = {};
+            DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
+            if (!::GetComputerNameW(buffer, &size)) {
+                return "";
+            }
+            return WideToUtf8(std::wstring(buffer, size));
+        }
+
+        std::string GetUserName() {
+            DWORD size = 0;
+            // 首次调用仅用于获取所需缓冲区长度（返回 FALSE，错误码 ERROR_MORE_DATA）
+            ::GetUserNameW(nullptr, &size);
+            if (size == 0) {
+                return "";
+            }
+
+            std::wstring buffer(size, L'\0');
+            if (!::GetUserNameW(&buffer[0], &size)) {
+                return "";
+            }
+            // 成功时 size 包含结尾的空字符
+            buffer.resize(size > 0 ? size - 1 : 0);
+            return WideToUtf8(buffer);
+        }
+
+    } // namespace Utils
+} // namespace UnnamedBot

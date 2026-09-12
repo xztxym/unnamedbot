@@ -5,6 +5,7 @@
 #include <map>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <cpr/cpr.h>
 

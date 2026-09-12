@@ -4,15 +4,23 @@
 #include <Model/CubismUserModel.hpp>
 #include <Rendering/D3D11/CubismRenderer_D3D11.hpp>
 #include <string>
+#include <vector>
 #include <memory>
+#include <mutex>
 
 namespace UnnamedBot {
 
     // Live2D模型封装
-    class Model {
+    // 继承 CubismUserModel：框架只把模型资源（动作/表情/眨眼/呼吸/姿势/物理）
+    // 作为 protected 成员暴露，必须通过派生类访问。
+    class Model : public Csm::CubismUserModel {
     public:
         Model();
-        ~Model();
+        ~Model() override;
+
+        // CubismUserModel 已删除拷贝构造与赋值
+        Model(const Model&) = delete;
+        Model& operator=(const Model&) = delete;
 
         // 加载模型
         bool Load(const std::wstring& modelPath);
@@ -102,11 +110,13 @@ namespace UnnamedBot {
         // 设置初始参数
         void SetInitialParameters();
 
-        // Live2D用户模型
-        std::unique_ptr<Csm::CubismUserModel> userModel_;
+        // 以下两个方法要求调用者已持有 mutex_（供 LoadModelData 内部调用）
+        void ApplyAutoBlink();
+        void ApplyBreathEffect();
 
-        // 渲染器
-        Csm::Rendering::CubismRenderer_D3D11* renderer_ = nullptr;
+        // 资源目录（按名称解析表情/动作文件时需要）
+        std::wstring expressionDirectory_;
+        std::wstring motionDirectory_;
 
         // 模型状态
         float positionX_ = 0.0f;

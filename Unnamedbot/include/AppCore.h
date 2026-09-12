@@ -7,6 +7,11 @@
 #include <thread>
 #include <chrono>
 
+#include "Window.h"
+#include "Renderer.h"
+#include "AIClient.h"
+#include "MessageHandler.h"
+
 namespace UnnamedBot {
 
     // 应用核心控制器（单例）
@@ -49,6 +54,9 @@ namespace UnnamedBot {
 
         // 初始化各个模块
         bool InitializeModules();
+
+        // 设置各模块之间的回调
+        void SetupCallbacks();
 
         // 创建主窗口
         bool CreateMainWindow(HINSTANCE hInstance);
@@ -111,9 +119,15 @@ namespace UnnamedBot {
         std::atomic<bool> isRunning_ = false;
         std::atomic<bool> isShuttingDown_ = false;
 
-        // 窗口句柄
-        HWND mainWindow_ = nullptr;
+        // 窗口
+        std::unique_ptr<Window> mainWindow_;
         HINSTANCE instance_ = nullptr;
+
+        // 渲染器
+        Renderer renderer_;
+
+        // AI客户端
+        AIClient aiClient_;
 
         // 更新线程
         std::thread updateThread_;
@@ -139,9 +153,8 @@ namespace UnnamedBot {
         // 窗口类名
         static const wchar_t* WINDOW_CLASS_NAME;
 
-        // 托盘消息ID
-        static const UINT WM_TRAYICON = WM_USER + 100;
-        static const UINT WM_HOTKEY = WM_USER + 101;
+        // 托盘消息ID（WM_HOTKEY 是系统宏，不能作为成员名，热键消息直接使用系统 WM_HOTKEY）
+        static constexpr UINT WM_TRAYICON = WM_USER + 100;
 
         // 热键ID
         static const int HOTKEY_TOGGLE_MESSAGEBOX = 1;

@@ -4,9 +4,12 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 
 namespace UnnamedBot {
+
+    class Renderer;
 
     // Live2D模型管理器 - 管理所有模型实例
     class Live2DManager {

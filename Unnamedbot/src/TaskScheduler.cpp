@@ -119,7 +119,7 @@ namespace UnnamedBot {
             }
         );
 
-        LOG_DEBUG("TaskScheduler", (enabled ? "Enabled" : "Disabled") + " task: " + std::to_string(taskId));
+        LOG_DEBUG("TaskScheduler", std::string(enabled ? "Enabled" : "Disabled") + " task: " + std::to_string(taskId));
         return true;
     }
 
@@ -342,7 +342,7 @@ namespace UnnamedBot {
         return fromTime + 3600;
     }
 
-    bool TaskScheduler::ParseCron(const std::string& cron, int& minute, int& hour, int& day, int& month, int& dayOfWeek) {
+    bool TaskScheduler::ParseCron(const std::string& cron, int& minute, int& hour, int& day, int& month, int& dayOfWeek) const {
         // 解析Cron表达式：分 时 日 月 周
         std::istringstream iss(cron);
         std::vector<std::string> parts;

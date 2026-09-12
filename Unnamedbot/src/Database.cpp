@@ -1,5 +1,6 @@
 #include "../include/Database.h"
 #include "../include/Logger.h"
+#include "../include/Utils.h"
 #include <sqlite3.h>
 #include <sstream>
 #include <filesystem>
@@ -36,7 +37,7 @@ namespace UnnamedBot {
         }
 
         // 打开数据库
-        std::string utf8Path = std::filesystem::path(dbPath_).u8string();
+        std::string utf8Path = Utils::PathToUtf8(dbPath_);
         int rc = sqlite3_open(utf8Path.c_str(), &db_);
         if (rc != SQLITE_OK) {
             LOG_ERROR("Database", "Failed to open database: " + std::string(sqlite3_errmsg(db_)));
@@ -53,7 +54,7 @@ namespace UnnamedBot {
         // 创建表
         CreateTables();
 
-        LOG_INFO("Database", "Database initialized successfully: " + std::filesystem::path(dbPath_).u8string());
+        LOG_INFO("Database", "Database initialized successfully: " + Utils::PathToUtf8(dbPath_));
         return true;
     }
 

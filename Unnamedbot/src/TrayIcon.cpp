@@ -1,22 +1,13 @@
 #include "../include/TrayIcon.h"
 #include "../include/Logger.h"
 #include "../include/ConfigManager.h"
+#include "../include/Utils.h"
 #include <shellapi.h>
 #include <string>
 
 #pragma comment(lib, "shell32.lib")
 
 namespace UnnamedBot {
-
-    const int TrayIcon::MENU_ID_BASE = 1000;
-    const int TrayIcon::MENU_ID_SHOW_PET = 1001;
-    const int TrayIcon::MENU_ID_HIDE_PET = 1002;
-    const int TrayIcon::MENU_ID_TOGGLE_PET = 1003;
-    const int TrayIcon::MENU_ID_OPEN_MESSAGEBOX = 1004;
-    const int TrayIcon::MENU_ID_OPEN_CONFIG = 1005;
-    const int TrayIcon::MENU_ID_SWITCH_MODEL = 1006;
-    const int TrayIcon::MENU_ID_SEPARATOR = 1007;
-    const int TrayIcon::MENU_ID_EXIT = 1008;
 
     TrayIcon& TrayIcon::Instance() {
         static TrayIcon instance;
@@ -170,7 +161,7 @@ namespace UnnamedBot {
             LOG_ERROR("TrayIcon", "Failed to show notification. Error: " + std::to_string(GetLastError()));
         }
         else {
-            LOG_DEBUG("TrayIcon", "Notification shown: " + std::wstring_to_utf8(title) + " - " + std::wstring_to_utf8(message));
+            LOG_DEBUG("TrayIcon", "Notification shown: " + Utils::WideToUtf8(title) + " - " + Utils::WideToUtf8(message));
         }
     }
 
@@ -371,9 +362,8 @@ namespace UnnamedBot {
 
     // ============ 私有方法 ============
 
+    // 调用者需已持有 mutex_（Initialize 在持锁状态下调用）
     void TrayIcon::SetDefaultMenuItems() {
-        std::lock_guard<std::mutex> lock(mutex_);
-
         menuItems_.clear();
 
         // 显示/隐藏桌宠

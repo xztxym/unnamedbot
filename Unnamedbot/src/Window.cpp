@@ -3,6 +3,7 @@
 #include "../include/ConfigManager.h"
 #include <dwmapi.h>
 #include <shellapi.h>
+#include <windowsx.h>
 #include <vector>
 #include <string>
 
@@ -280,14 +281,15 @@ namespace UnnamedBot {
     }
 
     void Window::SetDPIAwareness() {
-        // 启用 Per-Monitor V2 DPI感知
+        // 启用 Per-Monitor V2 DPI感知（动态加载以兼容旧系统）
         HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
         if (hUser32) {
-            auto pSetProcessDPIAwarenessContext = reinterpret_cast<decltype(&SetProcessDPIAwarenessContext)>(
-                GetProcAddress(hUser32, "SetProcessDPIAwarenessContext")
+            using SetProcessDpiAwarenessContextFn = BOOL(WINAPI*)(DPI_AWARENESS_CONTEXT);
+            auto pSetProcessDpiAwarenessContext = reinterpret_cast<SetProcessDpiAwarenessContextFn>(
+                GetProcAddress(hUser32, "SetProcessDpiAwarenessContext")
                 );
-            if (pSetProcessDPIAwarenessContext) {
-                pSetProcessDPIAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+            if (pSetProcessDpiAwarenessContext) {
+                pSetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
                 LOG_DEBUG("Window", "DPI awareness set to Per-Monitor V2");
             }
         }
@@ -388,6 +390,22 @@ namespace UnnamedBot {
                 // 简化：显示默认箭头
                 SetCursor(LoadCursor(nullptr, IDC_ARROW));
             }
+            // 长按拖拽
+            if (isLeftDown_ && GetCapture() == hwnd) {
+                DWORD holdTime = GetTickCount64() - mouseDownTime_;
+                if (holdTime >= 200) {
+                    isDragging_ = true;
+                    // 计算新位置
+                    int deltaX = pt.x - dragStartX_;
+                    int deltaY = pt.y - dragStartY_;
+                    int newX = dragWinX_ + deltaX;
+                    int newY = dragWinY_ + deltaY;
+                    SetPosition(newX, newY);
+                    if (onMouseDrag_) {
+                        onMouseDrag_(newX, newY);
+                    }
+                }
+            }
             return 0;
         }
 
@@ -431,29 +449,6 @@ namespace UnnamedBot {
             }
             if (!clickThrough_) {
                 ReleaseCapture();
-            }
-            return 0;
-        }
-
-        case WM_MOUSEMOVE: {
-            if (isLeftDown_ && GetCapture() == hwnd) {
-                DWORD holdTime = GetTickCount64() - mouseDownTime_;
-                if (holdTime >= 200) {
-                    // 长按拖拽
-                    isDragging_ = true;
-                    POINT pt;
-                    pt.x = GET_X_LPARAM(lParam);
-                    pt.y = GET_Y_LPARAM(lParam);
-                    // 计算新位置
-                    int deltaX = pt.x - dragStartX_;
-                    int deltaY = pt.y - dragStartY_;
-                    int newX = dragWinX_ + deltaX;
-                    int newY = dragWinY_ + deltaY;
-                    SetPosition(newX, newY);
-                    if (onMouseDrag_) {
-                        onMouseDrag_(newX, newY);
-                    }
-                }
             }
             return 0;
         }

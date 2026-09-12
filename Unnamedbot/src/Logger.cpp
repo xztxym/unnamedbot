@@ -1,4 +1,5 @@
 #include "../include/Logger.h"
+#include "../include/Utils.h"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -35,7 +36,7 @@ namespace UnnamedBot {
         fileStream_ = std::make_unique<std::ofstream>(path, std::ios::app);
         if (!fileStream_->is_open()) {
             // 如果文件无法打开，至少控制台输出
-            std::cerr << "[Logger] Failed to open log file: " << path.u8string() << std::endl;
+            std::cerr << "[Logger] Failed to open log file: " << Utils::PathToUtf8(path) << std::endl;
         }
     }
 
@@ -50,8 +51,6 @@ namespace UnnamedBot {
     }
 
     void Logger::Log(LogLevel level, const std::string& module, const std::string& message) {
-        if (level < minLevel_) return;
-
         // 获取当前时间
         auto now = std::chrono::system_clock::now();
         auto time_t_now = std::chrono::system_clock::to_time_t(now);
@@ -79,6 +78,9 @@ namespace UnnamedBot {
         std::string output = formatted.str();
 
         std::lock_guard<std::mutex> lock(mutex_);
+
+        // 最低级别过滤（minLevel_ 由 SetMinLevel 在锁内写入，这里必须在锁内读取）
+        if (level < minLevel_) return;
 
         // 输出到控制台
         if (consoleOutput_) {
@@ -120,7 +122,7 @@ namespace UnnamedBot {
             fileStream_ = std::make_unique<std::ofstream>(newPath, std::ios::app);
             if (!fileStream_->is_open()) {
                 // 无法打开，记错
-                std::cerr << "[Logger] Failed to open new log file: " << newPath.u8string() << std::endl;
+                std::cerr << "[Logger] Failed to open new log file: " << Utils::PathToUtf8(newPath) << std::endl;
                 return;
             }
             // 清理过期日志（每天切换时清理一次）
@@ -155,18 +157,12 @@ namespace UnnamedBot {
 
         for (auto& entry : std::filesystem::directory_iterator(logDir_, ec)) {
             if (!entry.is_regular_file(ec)) continue;
-            auto filename = entry.path().filename().u8string();
+            auto filename = Utils::PathToUtf8(entry.path().filename());
             // 只删除 app_YYYY-MM-DD.log 格式文件
             if (filename.rfind("app_", 0) == 0 && filename.length() >= 15 && filename.substr(filename.length() - 4) == ".log") {
                 auto lastWrite = entry.last_write_time(ec);
-                // 将file_time转换为system_clock::time_point（粗略）
-                auto sys_time = std::chrono::file_clock::to_sys(lastWrite); // C++20? 但在VS2022支持
-                // 但C++17没有to_sys，需要转换。用简单方式：获取文件修改时间（我们使用Windows API更可靠）
-                // 为了简化，我们可以直接使用Windows API获取文件时间
-                // 但这里为了跨平台（仅Windows），我们使用std::filesystem::last_write_time，然后转换为time_t
-                // 这里简化：用duration_cast，但需要处理file_clock和system_clock的关系，在Windows下通常一致。
-                // 更安全的是用GetFileTime，但为保持简洁，我们使用C++20的to_sys（如果启用）。由于我们使用C++17，可能不支持，我们改用Windows API。
-                // 这里我改用Win32 API获取文件修改时间。
+                // std::filesystem 使用 file_clock，与 system_clock 无保证的可移植换算，
+                // 这里统一使用 Win32 API 获取文件修改时间。
                 HANDLE hFile = CreateFileW(entry.path().c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
                 if (hFile == INVALID_HANDLE_VALUE) continue;
                 FILETIME ftWrite;

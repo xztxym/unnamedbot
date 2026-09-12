@@ -1,6 +1,7 @@
 #include "../include/MCPTool.h"
 #include "../include/Logger.h"
 #include "../include/ConfigManager.h"
+#include "../include/Utils.h"
 #include <Windows.h>
 #include <Psapi.h>
 #include <tlhelp32.h>
@@ -551,15 +552,27 @@ namespace UnnamedBot {
                 return false;
             }
 
-            // 获取输出
-            IDXGIOutput* output = nullptr;
-            hr = adapter->EnumOutputs(0, &output);
+            // 获取输出（DuplicateOutput 定义在 IDXGIOutput1 上）
+            IDXGIOutput* outputBase = nullptr;
+            hr = adapter->EnumOutputs(0, &outputBase);
             if (FAILED(hr)) {
                 device->Release();
                 context->Release();
                 adapter->Release();
                 factory->Release();
                 LOG_ERROR("MCPUtils", "Failed to enumerate outputs.");
+                return false;
+            }
+
+            IDXGIOutput1* output = nullptr;
+            hr = outputBase->QueryInterface(IID_PPV_ARGS(&output));
+            outputBase->Release();
+            if (FAILED(hr)) {
+                device->Release();
+                context->Release();
+                adapter->Release();
+                factory->Release();
+                LOG_ERROR("MCPUtils", "Failed to query IDXGIOutput1.");
                 return false;
             }
 
@@ -669,12 +682,12 @@ namespace UnnamedBot {
                 DWORD size = MAX_PATH;
                 if (QueryFullProcessImageNameW(hProcess, 0, exePath, &size)) {
                     std::wstring exePathW = exePath;
-                    std::string exeName = std::filesystem::path(exePathW).filename().u8string();
+                    std::string exeName = Utils::PathToUtf8(std::filesystem::path(exePathW).filename());
 
                     std::map<std::string, std::string> proc;
-                    proc["title"] = std::wstring_to_utf8(titleW);
+                    proc["title"] = Utils::WideToUtf8(titleW);
                     proc["name"] = exeName;
-                    proc["path"] = std::filesystem::path(exePathW).u8string();
+                    proc["path"] = Utils::PathToUtf8(std::filesystem::path(exePathW));
                     proc["pid"] = std::to_string(pid);
                     processesPtr->push_back(proc);
                 }

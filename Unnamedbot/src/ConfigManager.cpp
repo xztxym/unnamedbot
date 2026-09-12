@@ -1,6 +1,7 @@
 #include "../include/ConfigManager.h"
 #include "../include/Database.h"
 #include "../include/Logger.h"
+#include "../include/Utils.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <filesystem>
@@ -180,11 +181,11 @@ namespace UnnamedBot {
         try {
             std::ofstream file(filePath);
             if (!file.is_open()) {
-                LOG_ERROR("ConfigManager", "Failed to open file for export: " + std::filesystem::path(filePath).u8string());
+                LOG_ERROR("ConfigManager", "Failed to open file for export: " + Utils::PathToUtf8(filePath));
                 return false;
             }
             file << std::setw(4) << jsonObj << std::endl;
-            LOG_INFO("ConfigManager", "Config exported to " + std::filesystem::path(filePath).u8string());
+            LOG_INFO("ConfigManager", "Config exported to " + Utils::PathToUtf8(filePath));
             return true;
         }
         catch (const std::exception& e) {
@@ -198,7 +199,7 @@ namespace UnnamedBot {
         try {
             std::ifstream file(filePath);
             if (!file.is_open()) {
-                LOG_ERROR("ConfigManager", "Failed to open file for import: " + std::filesystem::path(filePath).u8string());
+                LOG_ERROR("ConfigManager", "Failed to open file for import: " + Utils::PathToUtf8(filePath));
                 return false;
             }
             nlohmann::json jsonObj;
@@ -228,7 +229,7 @@ namespace UnnamedBot {
                 }
             }
             Database::Instance().CommitTransaction();
-            LOG_INFO("ConfigManager", "Config imported from " + std::filesystem::path(filePath).u8string());
+            LOG_INFO("ConfigManager", "Config imported from " + Utils::PathToUtf8(filePath));
             return true;
         }
         catch (const std::exception& e) {

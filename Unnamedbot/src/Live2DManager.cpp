@@ -2,6 +2,7 @@
 #include "../include/Logger.h"
 #include "../include/ConfigManager.h"
 #include "../include/Renderer.h"
+#include "../include/Utils.h"
 #include <CubismFramework.hpp>
 #include <CubismDefaultParameterId.hpp>
 #include <Rendering/D3D11/CubismRenderer_D3D11.hpp>
@@ -89,7 +90,7 @@ namespace UnnamedBot {
             return true;
         }
 
-        LOG_INFO("Live2DManager", "Loading model: " + modelId + " from " + std::filesystem::path(modelPath).u8string());
+        LOG_INFO("Live2DManager", "Loading model: " + modelId + " from " + Utils::PathToUtf8(modelPath));
 
         // 创建模型实例
         auto model = std::make_shared<Model>();
@@ -417,17 +418,17 @@ namespace UnnamedBot {
     void Live2DManager::ScanModelDirectory() {
         // 扫描模型目录，自动加载所有模型
         if (!std::filesystem::exists(modelDirectory_)) {
-            LOG_WARN("Live2DManager", "Model directory not found: " + std::filesystem::path(modelDirectory_).u8string());
+            LOG_WARN("Live2DManager", "Model directory not found: " + Utils::PathToUtf8(modelDirectory_));
             return;
         }
 
         try {
             for (const auto& entry : std::filesystem::directory_iterator(modelDirectory_)) {
                 if (entry.is_directory()) {
-                    std::string modelName = entry.path().filename().u8string();
+                    std::string modelName = Utils::PathToUtf8(entry.path().filename());
                     std::wstring modelPath = entry.path() / (entry.path().filename().wstring() + L".model3.json");
                     if (std::filesystem::exists(modelPath)) {
-                        LOG_INFO("Live2DManager", "Found model: " + modelName + " at " + std::filesystem::path(modelPath).u8string());
+                        LOG_INFO("Live2DManager", "Found model: " + modelName + " at " + Utils::PathToUtf8(modelPath));
                         // 加载模型（但不自动切换）
                         LoadModel(modelName, modelPath);
                     }

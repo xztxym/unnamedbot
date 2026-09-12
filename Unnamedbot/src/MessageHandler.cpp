@@ -2,6 +2,7 @@
 #include "../include/Database.h"
 #include "../include/Logger.h"
 #include "../include/ConfigManager.h"
+#include "../include/Utils.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <filesystem>
@@ -344,8 +345,9 @@ namespace UnnamedBot {
             if (limit <= 0) {
                 return messages;
             }
-            int start = std::max(0, static_cast<int>(messages.size()) - limit - offset);
-            int end = std::min(static_cast<int>(messages.size()), start + limit);
+            // 注意：Windows.h 的 min/max 宏会破坏 std::max/std::min，这里用带括号形式规避
+            int start = (std::max)(0, static_cast<int>(messages.size()) - limit - offset);
+            int end = (std::min)(static_cast<int>(messages.size()), start + limit);
             return std::vector<ConversationMessage>(messages.begin() + start, messages.begin() + end);
         }
 
@@ -539,7 +541,6 @@ namespace UnnamedBot {
             Message aiMsg;
             aiMsg.role = msg.role;
             aiMsg.content = msg.content;
-            aiMsg.extraData = msg.extraData;
 
             // 处理工具调用结果
             if (msg.role == MessageRole::Tool) {
@@ -712,11 +713,11 @@ namespace UnnamedBot {
         try {
             std::ofstream file(filePath);
             if (!file.is_open()) {
-                LOG_ERROR("MessageHandler", "Failed to open file for export: " + std::filesystem::path(filePath).u8string());
+                LOG_ERROR("MessageHandler", "Failed to open file for export: " + Utils::PathToUtf8(filePath));
                 return false;
             }
             file << std::setw(2) << exportData << std::endl;
-            LOG_INFO("MessageHandler", "Exported session to: " + std::filesystem::path(filePath).u8string());
+            LOG_INFO("MessageHandler", "Exported session to: " + Utils::PathToUtf8(filePath));
             return true;
         }
         catch (const std::exception& e) {
@@ -731,7 +732,7 @@ namespace UnnamedBot {
         try {
             std::ifstream file(filePath);
             if (!file.is_open()) {
-                LOG_ERROR("MessageHandler", "Failed to open file for import: " + std::filesystem::path(filePath).u8string());
+                LOG_ERROR("MessageHandler", "Failed to open file for import: " + Utils::PathToUtf8(filePath));
                 return false;
             }
 
@@ -768,7 +769,7 @@ namespace UnnamedBot {
                 AddMessage(role, content, extraData, triggerSource, isActiveTrigger);
             }
 
-            LOG_INFO("MessageHandler", "Imported session from: " + std::filesystem::path(filePath).u8string());
+            LOG_INFO("MessageHandler", "Imported session from: " + Utils::PathToUtf8(filePath));
             return true;
         }
         catch (const std::exception& e) {

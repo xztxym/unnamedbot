@@ -9,15 +9,9 @@
 #include <chrono>
 #include <nlohmann/json.hpp>
 
-namespace UnnamedBot {
+#include "AIClient.h"   // MessageRole / Message / ToolDefinition
 
-    // 消息角色（与AIClient保持一致）
-    enum class MessageRole {
-        System,
-        User,
-        Assistant,
-        Tool
-    };
+namespace UnnamedBot {
 
     // 单条对话消息（扩展版）
     struct ConversationMessage {

@@ -77,13 +77,13 @@ namespace UnnamedBot {
         HotkeyManager& operator=(const HotkeyManager&) = delete;
 
         // 辅助：字符串转虚拟键码
-        UINT StringToVirtualKey(const std::string& keyStr);
+        UINT StringToVirtualKey(const std::string& keyStr) const;
 
         // 辅助：虚拟键码转字符串
-        std::string VirtualKeyToString(UINT key);
+        std::string VirtualKeyToString(UINT key) const;
 
         // 辅助：修饰符转字符串
-        std::string ModifiersToString(UINT modifiers);
+        std::string ModifiersToString(UINT modifiers) const;
 
         HWND hwnd_ = nullptr;
         std::map<int, std::shared_ptr<HotkeyInfo>> hotkeys_;

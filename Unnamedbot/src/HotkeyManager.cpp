@@ -6,8 +6,6 @@
 
 namespace UnnamedBot {
 
-    const int HotkeyManager::HOTKEY_ID_BASE = 1000;
-
     HotkeyManager& HotkeyManager::Instance() {
         static HotkeyManager instance;
         return instance;
@@ -237,7 +235,7 @@ namespace UnnamedBot {
 
     // ============ 辅助函数 ============
 
-    UINT HotkeyManager::StringToVirtualKey(const std::string& keyStr) {
+    UINT HotkeyManager::StringToVirtualKey(const std::string& keyStr) const {
         std::string str = keyStr;
         std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 
@@ -281,7 +279,7 @@ namespace UnnamedBot {
         return 0;
     }
 
-    std::string HotkeyManager::VirtualKeyToString(UINT key) {
+    std::string HotkeyManager::VirtualKeyToString(UINT key) const {
         // 字母和数字
         if (key >= 'A' && key <= 'Z') {
             return std::string(1, static_cast<char>(key));
@@ -320,7 +318,7 @@ namespace UnnamedBot {
         return it != keyMap.end() ? it->second : "Unknown";
     }
 
-    std::string HotkeyManager::ModifiersToString(UINT modifiers) {
+    std::string HotkeyManager::ModifiersToString(UINT modifiers) const {
         std::string result;
         if (modifiers & MOD_CONTROL) result += "Ctrl";
         if (modifiers & MOD_ALT) {

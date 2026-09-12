@@ -1,5 +1,6 @@
 #include "../include/Model.h"
 #include "../include/Logger.h"
+#include "../include/Utils.h"
 #include <Rendering/D3D11/CubismRenderer_D3D11.hpp>
 #include <Rendering/D3D11/CubismShader_D3D11.hpp>
 #include <Effect/CubismBreath.hpp>
@@ -9,6 +10,8 @@
 #include <Motion/CubismMotionManager.hpp>
 #include <Motion/CubismExpressionMotion.hpp>
 #include <Motion/CubismExpressionMotionManager.hpp>
+#include <Model/CubismMoc.hpp>
+#include <Physics/CubismPhysics.hpp>
 #include <Id/CubismIdManager.hpp>
 #include <filesystem>
 #include <fstream>
@@ -19,8 +22,22 @@ using namespace Csm::Rendering;
 
 namespace UnnamedBot {
 
+namespace {
+
+    // 动作优先级（对应官方样例 LAppDefine 中的 Priority* 常量）
+    constexpr csmInt32 kPriorityNone = 0;
+    constexpr csmInt32 kPriorityIdle = 1;
+    constexpr csmInt32 kPriorityNormal = 2;
+    constexpr csmInt32 kPriorityForce = 3;
+
+    // 将文件读入内存：Cubism 的工厂函数需要内存缓冲区而不是文件路径
+    bool ReadFileToBuffer(const std::filesystem::path& path, std::string& buffer) {
+        return Utils::ReadFileToString(path.wstring(), buffer);
+    }
+
+} // namespace
+
     Model::Model() {
-        userModel_ = std::make_unique<CubismUserModel>();
     }
 
     Model::~Model() {
@@ -35,7 +52,7 @@ namespace UnnamedBot {
             return true;
         }
 
-        LOG_INFO("Model", "Loading model from: " + std::filesystem::path(modelPath).u8string());
+        LOG_INFO("Model", "Loading model from: " + Utils::PathToUtf8(modelPath));
 
         if (!LoadModelData(modelPath)) {
             LOG_ERROR("Model", "Failed to load model data.");
@@ -62,19 +79,49 @@ namespace UnnamedBot {
     void Model::Release() {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        if (renderer_) {
-            renderer_->Release();
-            delete renderer_;
-            renderer_ = nullptr;
+        if (!loaded_) {
+            return;
         }
 
-        if (userModel_) {
-            userModel_->DeleteRenderer();
-            // 释放模型资源
-            // 注意：CubismUserModel::~CubismUserModel会释放资源
-            userModel_.reset();
-            userModel_ = std::make_unique<CubismUserModel>();
+        // 停止动作与表情
+        if (_motionManager) {
+            _motionManager->StopAllMotions();
         }
+        if (_expressionManager) {
+            _expressionManager->StopAllMotions();
+        }
+
+        DeleteRenderer();
+
+        // 以下释放顺序与 CubismUserModel::~CubismUserModel 保持一致；
+        // 各 Delete 对空指针安全，因此置空后基类析构不会重复释放。
+        CubismPose::Delete(_pose);
+        _pose = nullptr;
+
+        CubismEyeBlink::Delete(_eyeBlink);
+        _eyeBlink = nullptr;
+
+        CubismBreath::Delete(_breath);
+        _breath = nullptr;
+
+        CubismPhysics::Delete(_physics);
+        _physics = nullptr;
+
+        if (_model && _moc) {
+            _moc->DeleteModel(_model);
+        }
+        _model = nullptr;
+
+        CubismMoc::Delete(_moc);
+        _moc = nullptr;
+
+        CSM_DELETE(_modelMatrix);
+        _modelMatrix = nullptr;
+
+        expressionNames_.clear();
+        motionNames_.clear();
+        expressionDirectory_.clear();
+        motionDirectory_.clear();
 
         loaded_ = false;
         LOG_INFO("Model", "Model released.");
@@ -83,64 +130,61 @@ namespace UnnamedBot {
     void Model::Update(float deltaTime) {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        if (!loaded_ || !userModel_ || !userModel_->GetModel()) {
+        CubismModel* const model = GetModel();
+        if (!loaded_ || !model) {
             return;
         }
 
-        // 更新模型
-        userModel_->Update();
-
-        // 更新自动眨眼
-        if (autoBlink_ && userModel_->GetEyeBlink()) {
-            userModel_->GetEyeBlink()->UpdateParameters(userModel_->GetModel(), deltaTime);
+        // 参数应用顺序遵循官方样例：动作 → 表情 → 呼吸 → 眨眼 → 物理 → 姿势 → 应用
+        if (_motionManager) {
+            _motionManager->UpdateMotion(model, deltaTime);
         }
 
-        // 更新呼吸效果
-        if (breathEffect_ && userModel_->GetBreath()) {
-            userModel_->GetBreath()->UpdateParameters(userModel_->GetModel(), deltaTime);
+        if (_expressionManager) {
+            _expressionManager->UpdateMotion(model, deltaTime);
         }
 
-        // 更新动作
-        if (userModel_->GetMotionManager()) {
-            userModel_->GetMotionManager()->UpdateMotion(userModel_->GetModel(), deltaTime);
+        if (breathEffect_ && _breath) {
+            _breath->UpdateParameters(model, deltaTime);
         }
 
-        // 更新表情
-        if (userModel_->GetExpressionManager()) {
-            userModel_->GetExpressionManager()->UpdateMotion(userModel_->GetModel(), deltaTime);
+        if (autoBlink_ && _eyeBlink) {
+            _eyeBlink->UpdateParameters(model, deltaTime);
         }
 
-        // 更新姿势
-        if (userModel_->GetPose()) {
-            userModel_->GetPose()->UpdateParameters(userModel_->GetModel(), deltaTime);
+        if (_physics) {
+            _physics->Evaluate(model, deltaTime);
         }
 
-        // 应用物理
-        if (userModel_->GetPhysics()) {
-            userModel_->GetPhysics()->Evaluate(userModel_->GetModel(), deltaTime);
+        if (_pose) {
+            _pose->UpdateParameters(model, deltaTime);
         }
 
         // 更新模型矩阵
-        userModel_->GetModelMatrix()->SetPosition(positionX_, positionY_);
-        userModel_->GetModelMatrix()->SetScale(scale_, scale_);
-        userModel_->GetModelMatrix()->SetCenterPosition(0.0f, 0.0f);
-
-        // 更新渲染器
-        if (renderer_) {
-            renderer_->SetOpacity(opacity_);
-            renderer_->SetModelMatrix(userModel_->GetModelMatrix());
+        CubismModelMatrix* const modelMatrix = GetModelMatrix();
+        if (modelMatrix) {
+            modelMatrix->SetPosition(positionX_, positionY_);
+            modelMatrix->Scale(scale_, scale_);
+            modelMatrix->SetCenterPosition(0.0f, 0.0f);
         }
+
+        // 将本帧参数应用到模型
+        model->Update();
+
+        // 透明度由 CubismUserModel / CubismModel 管理，渲染器本身没有透明度接口
+        CubismUserModel::SetOpacity(opacity_);
     }
 
     CubismRenderer_D3D11* Model::GetRenderer() const {
         std::lock_guard<std::mutex> lock(mutex_);
-        return renderer_;
+        return dynamic_cast<CubismRenderer_D3D11*>(_renderer);
     }
 
     bool Model::HitTest(float x, float y) const {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        if (!loaded_ || !userModel_ || !userModel_->GetModel()) {
+        const CubismModel* const model = GetModel();
+        if (!loaded_ || !model) {
             return false;
         }
 
@@ -152,8 +196,8 @@ namespace UnnamedBot {
         float radius = 100.0f;
 
         // 获取模型尺寸
-        float modelWidth = userModel_->GetModel()->GetCanvasWidth();
-        float modelHeight = userModel_->GetModel()->GetCanvasHeight();
+        float modelWidth = model->GetCanvasWidth();
+        float modelHeight = model->GetCanvasHeight();
 
         // 将坐标转换到模型空间
         float scale = scale_;
@@ -176,60 +220,77 @@ namespace UnnamedBot {
     bool Model::PlayExpression(const std::string& expressionName) {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        if (!loaded_ || !userModel_ || !userModel_->GetExpressionManager()) {
+        if (!loaded_ || !_expressionManager) {
             LOG_WARN("Model", "Cannot play expression: model not ready.");
             return false;
         }
 
-        // 查找表情
-        auto expression = CubismExpressionMotion::Create(
-            (std::filesystem::path(expressionName) / (expressionName + ".exp3.json")).string().c_str()
-        );
+        // 表情文件位于模型目录的 expressions 子目录
+        const std::filesystem::path expressionPath =
+            std::filesystem::path(expressionDirectory_) / (Utils::Utf8ToWide(expressionName) + L".exp3.json");
 
-        if (expression) {
-            userModel_->GetExpressionManager()->StartMotionPriority(
-                expression,
-                CubismMotionPriority::PriorityForce
-            );
-            LOG_DEBUG("Model", "Playing expression: " + expressionName);
-            return true;
+        std::string buffer;
+        if (!ReadFileToBuffer(expressionPath, buffer)) {
+            LOG_WARN("Model", "Expression not found: " + expressionName);
+            return false;
         }
 
-        LOG_WARN("Model", "Expression not found: " + expressionName);
-        return false;
+        auto* expression = CubismExpressionMotion::Create(
+            reinterpret_cast<const csmByte*>(buffer.data()),
+            static_cast<csmSizeInt>(buffer.size())
+        );
+
+        if (!expression) {
+            LOG_WARN("Model", "Failed to parse expression: " + expressionName);
+            return false;
+        }
+
+        // 表情由管理器接管（autoDelete=true），播完自动释放
+        _expressionManager->StartMotion(expression, true);
+        LOG_DEBUG("Model", "Playing expression: " + expressionName);
+        return true;
     }
 
     bool Model::PlayMotion(const std::string& motionName, bool loop) {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        if (!loaded_ || !userModel_ || !userModel_->GetMotionManager()) {
+        if (!loaded_ || !_motionManager) {
             LOG_WARN("Model", "Cannot play motion: model not ready.");
             return false;
         }
 
-        // 查找动作
-        std::string motionPath = "./motions/" + motionName + ".motion3.json";
-        auto motion = CubismMotion::Create(motionPath.c_str());
+        // 动作文件位于模型目录的 motions 子目录
+        const std::filesystem::path motionPath =
+            std::filesystem::path(motionDirectory_) / (Utils::Utf8ToWide(motionName) + L".motion3.json");
 
-        if (motion) {
-            motion->SetIsLoop(loop);
-            userModel_->GetMotionManager()->StartMotionPriority(
-                motion,
-                CubismMotionPriority::PriorityForce
-            );
-            LOG_DEBUG("Model", "Playing motion: " + motionName + (loop ? " (loop)" : ""));
-            return true;
+        std::string buffer;
+        if (!ReadFileToBuffer(motionPath, buffer)) {
+            LOG_WARN("Model", "Motion not found: " + motionName);
+            return false;
         }
 
-        LOG_WARN("Model", "Motion not found: " + motionName);
-        return false;
+        auto* motion = CubismMotion::Create(
+            reinterpret_cast<const csmByte*>(buffer.data()),
+            static_cast<csmSizeInt>(buffer.size())
+        );
+
+        if (!motion) {
+            LOG_WARN("Model", "Failed to parse motion: " + motionName);
+            return false;
+        }
+
+        motion->SetLoop(loop);
+        // 注意参数顺序：StartMotionPriority(motion, autoDelete, priority)
+        _motionManager->StartMotionPriority(motion, true, kPriorityForce);
+        LOG_DEBUG("Model", "Playing motion: " + motionName + (loop ? " (loop)" : ""));
+        return true;
     }
 
     void Model::StopAllMotions() {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        if (userModel_ && userModel_->GetMotionManager()) {
-            userModel_->GetMotionManager()->StopAllMotions();
+        if (_motionManager) {
+            _motionManager->StopAllMotions();
             LOG_DEBUG("Model", "All motions stopped.");
         }
     }
@@ -237,29 +298,60 @@ namespace UnnamedBot {
     void Model::SetAutoBlink(bool enabled) {
         std::lock_guard<std::mutex> lock(mutex_);
         autoBlink_ = enabled;
-        if (enabled && userModel_ && !userModel_->GetEyeBlink()) {
-            userModel_->SetEyeBlink(new CubismEyeBlink());
-            userModel_->GetEyeBlink()->SetParameterIds(
-                CubismDefaultParameterId::ParamEyeLOpen,
-                CubismDefaultParameterId::ParamEyeROpen
-            );
+        ApplyAutoBlink();
+    }
+
+    void Model::ApplyAutoBlink() {
+        if (!autoBlink_ || _eyeBlink) {
+            return;
         }
+
+        CubismIdManager* const idManager = CubismFramework::GetIdManager();
+        if (!idManager) {
+            return;
+        }
+
+        _eyeBlink = CubismEyeBlink::Create();
+
+        // 未传入 model3.json 设置时框架不会登记默认参数 ID，这里手动指定双眼开合参数
+        csmVector<CubismIdHandle> parameterIds;
+        parameterIds.PushBack(idManager->GetId(DefaultParameterId::ParamEyeLOpen));
+        parameterIds.PushBack(idManager->GetId(DefaultParameterId::ParamEyeROpen));
+        _eyeBlink->SetParameterIds(parameterIds);
     }
 
     void Model::SetBreathEffect(bool enabled) {
         std::lock_guard<std::mutex> lock(mutex_);
         breathEffect_ = enabled;
-        if (enabled && userModel_ && !userModel_->GetBreath()) {
-            userModel_->SetBreath(new CubismBreath());
-            // 配置呼吸参数
-            auto breath = userModel_->GetBreath();
-            breath->SetParameters({
-                {CubismDefaultParameterId::ParamBreath, 0.5f, 0.5f, 0.5f, 1.0f},
-                {CubismDefaultParameterId::ParamAngleX, 0.0f, 0.0f, 0.0f, 1.0f},
-                {CubismDefaultParameterId::ParamAngleY, 0.0f, 0.0f, 0.0f, 1.0f},
-                {CubismDefaultParameterId::ParamAngleZ, 0.0f, 0.0f, 0.0f, 1.0f}
-                });
+        ApplyBreathEffect();
+    }
+
+    void Model::ApplyBreathEffect() {
+        if (!breathEffect_ || _breath) {
+            return;
         }
+
+        CubismIdManager* const idManager = CubismFramework::GetIdManager();
+        if (!idManager) {
+            return;
+        }
+
+        _breath = CubismBreath::Create();
+
+        // 呼吸参数采用官方样例的默认值（参数ID, 偏移, 峰值, 周期, 权重）
+        csmVector<CubismBreath::BreathParameterData> parameters;
+        parameters.PushBack(CubismBreath::BreathParameterData(
+            idManager->GetId(DefaultParameterId::ParamAngleX), 0.0f, 15.0f, 6.5345f, 0.5f));
+        parameters.PushBack(CubismBreath::BreathParameterData(
+            idManager->GetId(DefaultParameterId::ParamAngleY), 0.0f, 8.0f, 3.5345f, 0.5f));
+        parameters.PushBack(CubismBreath::BreathParameterData(
+            idManager->GetId(DefaultParameterId::ParamAngleZ), 0.0f, 10.0f, 5.5345f, 0.5f));
+        parameters.PushBack(CubismBreath::BreathParameterData(
+            idManager->GetId(DefaultParameterId::ParamBodyAngleX), 0.0f, 4.0f, 15.5345f, 0.5f));
+        parameters.PushBack(CubismBreath::BreathParameterData(
+            idManager->GetId(DefaultParameterId::ParamBreath), 0.5f, 0.5f, 3.2345f, 0.5f));
+
+        _breath->SetParameters(parameters);
     }
 
     void Model::SetLipSync(bool enabled) {
@@ -272,8 +364,9 @@ namespace UnnamedBot {
         std::lock_guard<std::mutex> lock(mutex_);
         positionX_ = x;
         positionY_ = y;
-        if (userModel_ && userModel_->GetModelMatrix()) {
-            userModel_->GetModelMatrix()->SetPosition(x, y);
+        CubismModelMatrix* const modelMatrix = GetModelMatrix();
+        if (modelMatrix) {
+            modelMatrix->SetPosition(x, y);
         }
     }
 
@@ -286,8 +379,10 @@ namespace UnnamedBot {
     void Model::SetScale(float scale) {
         std::lock_guard<std::mutex> lock(mutex_);
         scale_ = std::clamp(scale, 0.5f, 2.0f);
-        if (userModel_ && userModel_->GetModelMatrix()) {
-            userModel_->GetModelMatrix()->SetScale(scale_, scale_);
+        CubismModelMatrix* const modelMatrix = GetModelMatrix();
+        if (modelMatrix) {
+            // CubismModelMatrix 没有 SetScale，缩放通过基类 CubismMatrix44::Scale 实现
+            modelMatrix->Scale(scale_, scale_);
         }
     }
 
@@ -299,9 +394,8 @@ namespace UnnamedBot {
     void Model::SetOpacity(float opacity) {
         std::lock_guard<std::mutex> lock(mutex_);
         opacity_ = std::clamp(opacity, 0.2f, 1.0f);
-        if (renderer_) {
-            renderer_->SetOpacity(opacity_);
-        }
+        // 必须限定基类：不限定会递归调用到本函数
+        CubismUserModel::SetOpacity(opacity_);
     }
 
     float Model::GetOpacity() const {
@@ -311,50 +405,64 @@ namespace UnnamedBot {
 
     void Model::SetParameterValue(const std::string& parameterId, float value) {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (userModel_ && userModel_->GetModel()) {
-            userModel_->GetModel()->SetParameterValueById(
-                CubismIdManager::GetInstance()->GetId(parameterId.c_str()),
-                value
-            );
+
+        CubismModel* const model = GetModel();
+        CubismIdManager* const idManager = CubismFramework::GetIdManager();
+        if (!model || !idManager) {
+            return;
         }
+
+        model->SetParameterValueById(idManager->GetId(parameterId.c_str()), value);
     }
 
     float Model::GetParameterValue(const std::string& parameterId) const {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (userModel_ && userModel_->GetModel()) {
-            return userModel_->GetModel()->GetParameterValueById(
-                CubismIdManager::GetInstance()->GetId(parameterId.c_str())
-            );
+
+        CubismModel* const model = GetModel();
+        CubismIdManager* const idManager = CubismFramework::GetIdManager();
+        if (!model || !idManager) {
+            return 0.0f;
         }
-        return 0.0f;
+
+        return model->GetParameterValueById(idManager->GetId(parameterId.c_str()));
     }
 
     void Model::SetPartOpacity(const std::string& partId, float opacity) {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (userModel_ && userModel_->GetModel()) {
-            userModel_->GetModel()->SetPartOpacityById(
-                CubismIdManager::GetInstance()->GetId(partId.c_str()),
-                opacity
-            );
+
+        CubismModel* const model = GetModel();
+        CubismIdManager* const idManager = CubismFramework::GetIdManager();
+        if (!model || !idManager) {
+            return;
         }
+
+        model->SetPartOpacityById(idManager->GetId(partId.c_str()), opacity);
     }
 
     float Model::GetPartOpacity(const std::string& partId) const {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (userModel_ && userModel_->GetModel()) {
-            return userModel_->GetModel()->GetPartOpacityById(
-                CubismIdManager::GetInstance()->GetId(partId.c_str())
-            );
+
+        CubismModel* const model = GetModel();
+        CubismIdManager* const idManager = CubismFramework::GetIdManager();
+        if (!model || !idManager) {
+            return 1.0f;
         }
-        return 1.0f;
+
+        return model->GetPartOpacityById(idManager->GetId(partId.c_str()));
     }
 
     void Model::ResetParameters() {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (userModel_ && userModel_->GetModel()) {
-            userModel_->GetModel()->ResetParameters();
-            LOG_DEBUG("Model", "Parameters reset.");
+
+        CubismModel* const model = GetModel();
+        if (!model) {
+            return;
         }
+
+        // CubismModel 没有“重置参数”接口：
+        // LoadModel 时已保存初始参数快照，LoadParameters 即可恢复到该快照。
+        model->LoadParameters();
+        LOG_DEBUG("Model", "Parameters reset.");
     }
 
     void Model::SaveState() {
@@ -398,7 +506,7 @@ namespace UnnamedBot {
         }
 
         // 加载模型文件
-        std::string pathStr = std::filesystem::path(modelPath).u8string();
+        std::string pathStr = Utils::PathToUtf8(modelPath);
         if (!userModel_->LoadModelJson(pathStr.c_str())) {
             LOG_ERROR("Model", "Failed to load model JSON: " + pathStr);
             return false;
@@ -410,8 +518,8 @@ namespace UnnamedBot {
         userModel_->GetModelMatrix()->SetCenterPosition(0.0f, 0.0f);
 
         // 创建物理（如果存在）
-        std::string physicsPath = std::filesystem::path(modelPath).parent_path().u8string() + "/" +
-            std::filesystem::path(modelPath).stem().u8string() + ".physics3.json";
+        std::string physicsPath = Utils::PathToUtf8(std::filesystem::path(modelPath).parent_path()) + "/" +
+            Utils::PathToUtf8(std::filesystem::path(modelPath).stem()) + ".physics3.json";
         if (std::filesystem::exists(physicsPath)) {
             auto physics = CubismPhysics::Create(physicsPath.c_str());
             if (physics) {
@@ -420,8 +528,8 @@ namespace UnnamedBot {
         }
 
         // 创建姿势（如果存在）
-        std::string posePath = std::filesystem::path(modelPath).parent_path().u8string() + "/" +
-            std::filesystem::path(modelPath).stem().u8string() + ".pose3.json";
+        std::string posePath = Utils::PathToUtf8(std::filesystem::path(modelPath).parent_path()) + "/" +
+            Utils::PathToUtf8(std::filesystem::path(modelPath).stem()) + ".pose3.json";
         if (std::filesystem::exists(posePath)) {
             auto pose = CubismPose::Create(posePath.c_str());
             if (pose) {
@@ -452,7 +560,7 @@ namespace UnnamedBot {
         try {
             for (const auto& entry : std::filesystem::directory_iterator(expDir)) {
                 if (entry.is_regular_file() && entry.path().extension() == L".exp3.json") {
-                    std::string expName = entry.path().stem().u8string();
+                    std::string expName = Utils::PathToUtf8(entry.path().stem());
                     expressionNames_.push_back(expName);
                     LOG_DEBUG("Model", "Found expression: " + expName);
                 }
@@ -476,7 +584,7 @@ namespace UnnamedBot {
         try {
             for (const auto& entry : std::filesystem::directory_iterator(motionDir)) {
                 if (entry.is_regular_file() && entry.path().extension() == L".motion3.json") {
-                    std::string motionName = entry.path().stem().u8string();
+                    std::string motionName = Utils::PathToUtf8(entry.path().stem());
                     motionNames_.push_back(motionName);
                     LOG_DEBUG("Model", "Found motion: " + motionName);
                 }

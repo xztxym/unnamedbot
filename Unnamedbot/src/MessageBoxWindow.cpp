@@ -1,6 +1,7 @@
 #include "../include/MessageBoxWindow.h"
 #include "../include/Logger.h"
 #include "../include/ConfigManager.h"
+#include "../include/Utils.h"
 #include <commctrl.h>
 #include <richedit.h>
 #include <string>
@@ -33,7 +34,7 @@ namespace UnnamedBot {
         }
 
         // 创建窗口
-        if (!CreateWindow(hInstance, parentHwnd)) {
+        if (!CreateMessageBoxWindow(hInstance, parentHwnd)) {
             LOG_ERROR("MessageBoxWindow", "Failed to create window.");
             return false;
         }
@@ -244,7 +245,7 @@ namespace UnnamedBot {
         return true;
     }
 
-    bool MessageBoxWindow::CreateWindow(HINSTANCE hInstance, HWND parentHwnd) {
+    bool MessageBoxWindow::CreateMessageBoxWindow(HINSTANCE hInstance, HWND parentHwnd) {
         hwnd_ = CreateWindowExW(
             WS_EX_LAYERED | WS_EX_TOOLWINDOW,
             WINDOW_CLASS_NAME,

@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <functional>
+#include <mutex>
 #include <nlohmann/json.hpp>
 
 namespace UnnamedBot {

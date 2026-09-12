@@ -2,6 +2,7 @@
 #include "../include/Database.h"
 #include "../include/Logger.h"
 #include "../include/ConfigManager.h"
+#include "../include/Utils.h"
 #include <fstream>
 #include <filesystem>
 #include <chrono>
@@ -17,6 +18,9 @@ namespace UnnamedBot {
         ".mp3", ".wav", ".flac",
         ".mp4", ".avi", ".mkv"
     };
+
+    // GetMimeType 定义于文件末尾，这里前置声明以供上方使用
+    std::string GetMimeType(const std::string& filename);
 
     AttachmentManager& AttachmentManager::Instance() {
         static AttachmentManager instance;
@@ -77,7 +81,7 @@ namespace UnnamedBot {
 
         // 检查文件是否存在
         if (!std::filesystem::exists(sourcePath)) {
-            LOG_ERROR("AttachmentManager", "Source file not found: " + std::filesystem::path(sourcePath).u8string());
+            LOG_ERROR("AttachmentManager", "Source file not found: " + Utils::PathToUtf8(sourcePath));
             return false;
         }
 
@@ -96,7 +100,7 @@ namespace UnnamedBot {
         }
 
         // 验证文件类型
-        std::string filename = std::filesystem::path(sourcePath).filename().u8string();
+        std::string filename = Utils::PathToUtf8(std::filesystem::path(sourcePath).filename());
         if (!ValidateFileType(filename)) {
             LOG_WARN("AttachmentManager", "File type not allowed: " + filename);
             // 不阻止，仅警告
@@ -137,7 +141,7 @@ namespace UnnamedBot {
         attachment.messageId = messageId;
         attachment.sessionId = sessionId;
         attachment.filename = filename;
-        attachment.filepath = std::filesystem::path(destPath).u8string();
+        attachment.filepath = Utils::PathToUtf8(destPath);
         attachment.mimeType = mimeType.empty() ? GetMimeType(filename) : mimeType;
         attachment.size = fileSize;
         attachment.uploadedAt = GetCurrentTimestamp();
@@ -217,7 +221,7 @@ namespace UnnamedBot {
         attachment.messageId = messageId;
         attachment.sessionId = sessionId;
         attachment.filename = filename;
-        attachment.filepath = std::filesystem::path(destPath).u8string();
+        attachment.filepath = Utils::PathToUtf8(destPath);
         attachment.mimeType = mimeType.empty() ? GetMimeType(filename) : mimeType;
         attachment.size = static_cast<int64_t>(data.size());
         attachment.uploadedAt = GetCurrentTimestamp();
@@ -396,12 +400,10 @@ namespace UnnamedBot {
             return true; // 没有限制
         }
 
-        std::string ext = std::filesystem::path(filename).extension().u8string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        const std::string ext = Utils::ToLower(Utils::PathToUtf8(std::filesystem::path(filename).extension()));
 
         for (const auto& allowed : allowedExtensions_) {
-            std::string allowedLower = allowed;
-            std::transform(allowedLower.begin(), allowedLower.end(), allowedLower.begin(), ::tolower);
+            std::string allowedLower = Utils::ToLower(allowed);
             if (ext == allowedLower) {
                 return true;
             }
@@ -502,8 +504,7 @@ namespace UnnamedBot {
     }
 
     std::string GetMimeType(const std::string& filename) {
-        std::string ext = std::filesystem::path(filename).extension().u8string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        const std::string ext = Utils::ToLower(Utils::PathToUtf8(std::filesystem::path(filename).extension()));
 
         static std::map<std::string, std::string> mimeTypes = {
             {".jpg", "image/jpeg"},

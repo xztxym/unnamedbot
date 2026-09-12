@@ -1,6 +1,7 @@
 #include "../include/UpdateManager.h"
 #include "../include/Logger.h"
 #include "../include/ConfigManager.h"
+#include "../include/Utils.h"
 #include <cpr/cpr.h>
 #include <fstream>
 #include <filesystem>
@@ -150,9 +151,11 @@ namespace UnnamedBot {
             auto response = cpr::Download(
                 file,
                 cpr::Url{ url },
-                cpr::ProgressCallback([this](cpr::cpr_off_t downloadTotal, cpr::cpr_off_t downloadNow) {
+                cpr::ProgressCallback([this](cpr::cpr_pf_arg_t downloadTotal, cpr::cpr_pf_arg_t downloadNow,
+                                             cpr::cpr_pf_arg_t /*uploadTotal*/, cpr::cpr_pf_arg_t /*uploadNow*/,
+                                             intptr_t /*userdata*/) {
                     if (onDownloadProgress_) {
-                        onDownloadProgress_(downloadNow, downloadTotal);
+                        onDownloadProgress_(static_cast<int64_t>(downloadNow), static_cast<int64_t>(downloadTotal));
                     }
                     return true;
                     }),
@@ -163,7 +166,7 @@ namespace UnnamedBot {
 
             if (response.status_code == 200) {
                 status_ = UpdateStatus::Downloaded;
-                LOG_INFO("UpdateManager", "Update downloaded: " + std::filesystem::path(savePath).u8string());
+                LOG_INFO("UpdateManager", "Update downloaded: " + Utils::PathToUtf8(savePath));
                 return true;
             }
             else {
@@ -186,13 +189,13 @@ namespace UnnamedBot {
         std::lock_guard<std::mutex> lock(mutex_);
 
         if (!std::filesystem::exists(updatePath)) {
-            lastError_ = "Update file not found: " + std::filesystem::path(updatePath).u8string();
+            lastError_ = "Update file not found: " + Utils::PathToUtf8(updatePath);
             LOG_ERROR("UpdateManager", lastError_);
             return false;
         }
 
         status_ = UpdateStatus::Installing;
-        LOG_INFO("UpdateManager", "Installing update: " + std::filesystem::path(updatePath).u8string());
+        LOG_INFO("UpdateManager", "Installing update: " + Utils::PathToUtf8(updatePath));
 
         if (!ExecuteInstaller(updatePath)) {
             status_ = UpdateStatus::Error;
@@ -322,7 +325,7 @@ namespace UnnamedBot {
         auto parts1 = parseVersion(v1);
         auto parts2 = parseVersion(v2);
 
-        size_t maxSize = std::max(parts1.size(), parts2.size());
+        size_t maxSize = (std::max)(parts1.size(), parts2.size());
         for (size_t i = 0; i < maxSize; ++i) {
             int p1 = i < parts1.size() ? parts1[i] : 0;
             int p2 = i < parts2.size() ? parts2[i] : 0;
@@ -348,7 +351,8 @@ namespace UnnamedBot {
         sei.nShow = SW_SHOWNORMAL;
 
         if (!ShellExecuteExW(&sei)) {
-            lastError_ = "Failed to execute installer. Error: " + std::to_string(GetLastError());
+            // 注意：本类有同名成员 GetLastError()（返回 lastError_），必须用 :: 限定调用 Win32 API
+            lastError_ = "Failed to execute installer. Error: " + std::to_string(::GetLastError());
             LOG_ERROR("UpdateManager", lastError_);
             return false;
         }

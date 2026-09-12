@@ -29,8 +29,6 @@
 namespace UnnamedBot {
 
     const wchar_t* AppCore::WINDOW_CLASS_NAME = L"UnnamedBotAppClass";
-    const UINT AppCore::WM_TRAYICON = WM_USER + 100;
-    const UINT AppCore::WM_HOTKEY = WM_USER + 101;
 
     AppCore& AppCore::Instance() {
         static AppCore instance;
@@ -186,7 +184,7 @@ namespace UnnamedBot {
         // 保存所有状态
         SaveState();
         Live2DManager::Instance().SaveModelState();
-        Window::Instance().SaveState();
+        mainWindow_->SaveState();
 
         // 注销热键
         UnregisterHotkeys();
@@ -199,7 +197,6 @@ namespace UnnamedBot {
         renderer_.Shutdown();
         TrayIcon::Instance().Shutdown();
         Database::Instance().Close();
-        Logger::Instance().~Logger();
 
         isRunning_ = false;
         LOG_INFO("AppCore", "Application shut down.");
@@ -211,7 +208,7 @@ namespace UnnamedBot {
         // 保存所有状态
         SaveState();
         Live2DManager::Instance().SaveModelState();
-        Window::Instance().SaveState();
+        mainWindow_->SaveState();
 
         // 发送退出消息
         PostQuitMessage(0);
@@ -222,9 +219,9 @@ namespace UnnamedBot {
         ConfigManager::Instance().Initialize();
         // 重新应用配置
         bool topmost = ConfigManager::Instance().GetBool(ConfigManager::KEY_FEATURE_ALWAYS_ON_TOP, true);
-        Window::Instance().SetAlwaysOnTop(topmost);
+        mainWindow_->SetAlwaysOnTop(topmost);
         bool clickThrough = ConfigManager::Instance().GetBool(ConfigManager::KEY_FEATURE_CLICK_THROUGH, true);
-        Window::Instance().SetClickThrough(clickThrough);
+        mainWindow_->SetClickThrough(clickThrough);
 
         // 更新AI配置
         InitializeAIClient();
@@ -251,8 +248,8 @@ namespace UnnamedBot {
         }
         case HOTKEY_TOGGLE_TOPMOST: {
             // 切换置顶模式
-            bool current = Window::Instance().IsAlwaysOnTop();
-            Window::Instance().SetAlwaysOnTop(!current);
+            bool current = mainWindow_->IsAlwaysOnTop();
+            mainWindow_->SetAlwaysOnTop(!current);
             ConfigManager::Instance().SetBool(ConfigManager::KEY_FEATURE_ALWAYS_ON_TOP, !current);
             LOG_DEBUG("AppCore", "Hotkey: Toggle topmost to " + std::string(!current ? "true" : "false"));
             break;
@@ -752,7 +749,7 @@ namespace UnnamedBot {
 
     void AppCore::SaveState() {
         // 保存窗口状态
-        Window::Instance().SaveState();
+        mainWindow_->SaveState();
 
         // 保存模型状态
         Live2DManager::Instance().SaveModelState();
