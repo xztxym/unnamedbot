@@ -111,6 +111,9 @@ namespace UnnamedBot {
         std::shared_ptr<Model> currentModel_ = nullptr;
         std::string currentModelId_;
 
+        // 渲染设备（Initialize 时从 Renderer 取得），加载模型贴图时需要
+        ID3D11Device* device_ = nullptr;
+
         // Live2D框架是否已初始化
         bool initialized_ = false;
 

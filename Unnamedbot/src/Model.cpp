@@ -1,5 +1,6 @@
 #include "../include/Model.h"
 #include "../include/Logger.h"
+#include "../include/Renderer.h"
 #include "../include/Utils.h"
 #include <Rendering/D3D11/CubismRenderer_D3D11.hpp>
 #include <Rendering/D3D11/CubismShader_D3D11.hpp>
@@ -45,7 +46,7 @@ namespace {
         Release();
     }
 
-    bool Model::Load(const std::wstring& modelPath) {
+    bool Model::Load(const std::wstring& modelPath, ID3D11Device* device) {
         std::lock_guard<std::mutex> lock(mutex_);
 
         if (loaded_) {
@@ -72,6 +73,9 @@ namespace {
         // 创建渲染器
         CreateRenderer();
 
+        // 绑定贴图：没有贴图时 DrawModel 采样到空纹理，模型不可见
+        BindTextures(device);
+
         loaded_ = true;
         LOG_INFO("Model", "Model loaded successfully.");
         return true;
@@ -93,6 +97,10 @@ namespace {
         }
 
         DeleteRenderer();
+
+        // 渲染器已销毁，先释放贴图视图，避免留下悬空引用
+        textures_.clear();
+        texturePaths_.clear();
 
         // 以下释放顺序与 CubismUserModel::~CubismUserModel 保持一致；
         // 各 Delete 对空指针安全，因此置空后基类析构不会重复释放。
@@ -180,7 +188,12 @@ namespace {
 
     CubismRenderer_D3D11* Model::GetRenderer() const {
         std::lock_guard<std::mutex> lock(mutex_);
+        return GetRendererUnlocked();
+    }
+
+    CubismRenderer_D3D11* Model::GetRendererUnlocked() const {
         // _renderer 是 CubismUserModel 的私有成员，只能通过其公开的模板访问器获取。
+        // mutex_ 不是递归锁，已持有锁的调用方（如 Load）必须走这个不加锁的版本。
         return const_cast<Model*>(this)->CubismUserModel::GetRenderer<CubismRenderer_D3D11>();
     }
 
@@ -502,6 +515,42 @@ namespace {
         LOG_DEBUG("Model", "D3D11 renderer created.");
     }
 
+    void Model::BindTextures(ID3D11Device* device) {
+        if (device == nullptr) {
+            LOG_WARN("Model", "No D3D11 device supplied; model textures stay unbound.");
+            return;
+        }
+
+        // 注意：Model 自己声明的 GetRenderer() 会隐藏基类的模板版本，此处使用前者。
+        // 调用方（Load）已持有 mutex_，而 mutex_ 不是递归锁，必须用不加锁的版本。
+        CubismRenderer_D3D11* const renderer = GetRendererUnlocked();
+        if (renderer == nullptr) {
+            LOG_ERROR("Model", "Cannot bind textures: renderer is null.");
+            return;
+        }
+
+        if (texturePaths_.empty()) {
+            LOG_WARN("Model", "model3.json declares no textures.");
+            return;
+        }
+
+        // 依次绑定到渲染器的贴图槽位：槽位序号必须与 moc3 中引用的贴图索引一致。
+        // 这些贴图由 Model 持有（渲染器只保存裸指针，不负责任命周期）。
+        for (size_t i = 0; i < texturePaths_.size(); ++i) {
+            ComPtr<ID3D11ShaderResourceView> texture =
+                Renderer::CreateTexture(device, texturePaths_[i]);
+            if (!texture) {
+                LOG_ERROR("Model", "Failed to load texture: " + Utils::PathToUtf8(texturePaths_[i]));
+                continue;
+            }
+
+            renderer->BindTexture(static_cast<csmUint32>(i), texture.Get());
+            textures_.push_back(texture);
+        }
+
+        LOG_INFO("Model", "Bound " + std::to_string(textures_.size()) + " texture(s).");
+    }
+
     bool Model::LoadModelData(const std::wstring& modelPath) {
         if (!CubismFramework::IsStarted()) {
             LOG_ERROR("Model", "Live2D framework not started.");
@@ -531,6 +580,15 @@ namespace {
             }
             if (fileRefs.contains("Pose")) {
                 posePath = directory / Utils::Utf8ToWide(fileRefs.at("Pose").get<std::string>());
+            }
+
+            // 贴图列表：缺省（或为空）时模型无法绘制，因为着色器会采样空纹理。
+            texturePaths_.clear();
+            if (fileRefs.contains("Textures") && fileRefs.at("Textures").is_array()) {
+                for (const auto& textureName : fileRefs.at("Textures")) {
+                    texturePaths_.push_back(
+                        (directory / Utils::Utf8ToWide(textureName.get<std::string>())).wstring());
+                }
             }
         }
         catch (const std::exception& e) {

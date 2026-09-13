@@ -11,8 +11,9 @@
 namespace UnnamedBot {
 
     SecurityUtils& SecurityUtils::Instance() {
-        static SecurityUtils instance;
-        return instance;
+        // 不随静态存储期销毁：进程退出阶段仍可能被调用（见 AppCore::Instance）。
+        static SecurityUtils* instance = new SecurityUtils();
+        return *instance;
     }
 
     void SecurityUtils::Initialize() {

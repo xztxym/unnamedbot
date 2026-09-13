@@ -134,6 +134,9 @@ namespace {
         Csm::Rendering::CubismRenderer_D3D11::SetConstantSettings(
             Renderer::BACK_BUFFER_COUNT, renderer->GetDevice());
 
+        // 记录设备：之后加载模型时需要用它创建贴图纹理
+        device_ = renderer->GetDevice();
+
         initialized_ = true;
         LOG_INFO("Live2DManager", "Live2D framework initialized.");
 
@@ -181,7 +184,7 @@ namespace {
 
         // 创建模型实例
         auto model = std::make_shared<Model>();
-        if (!model->Load(modelPath)) {
+        if (!model->Load(modelPath, device_)) {
             LOG_ERROR("Live2DManager", "Failed to load model: " + modelId);
             return false;
         }

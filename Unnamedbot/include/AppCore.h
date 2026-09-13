@@ -119,6 +119,9 @@ namespace UnnamedBot {
         std::atomic<bool> isRunning_ = false;
         std::atomic<bool> isShuttingDown_ = false;
 
+        // COM 是否由本类初始化（用于配对 CoUninitialize）
+        bool comInitialized_ = false;
+
         // 窗口
         std::unique_ptr<Window> mainWindow_;
         HINSTANCE instance_ = nullptr;

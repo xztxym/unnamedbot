@@ -30,6 +30,9 @@
     <ClCompile Include="src\ConfigManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\ControlTerminalWindow.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="src\Database.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -87,6 +90,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="include\ConfigManager.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ControlTerminalWindow.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="include\Database.h">

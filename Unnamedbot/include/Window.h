@@ -95,6 +95,9 @@ namespace UnnamedBot {
         // 从配置恢复窗口位置和状态
         void RestoreState();
 
+        // 将窗口吸附到屏幕右上角（主窗口以纯黑方块呈现）
+        void SnapToTopRightOfScreen();
+
     private:
         // 窗口过程（静态）
         static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

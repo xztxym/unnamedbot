@@ -12,8 +12,10 @@ namespace UnnamedBot {
     const wchar_t* MessageBoxWindow::WINDOW_CLASS_NAME = L"UnnamedBotMessageBoxClass";
 
     MessageBoxWindow& MessageBoxWindow::Instance() {
-        static MessageBoxWindow instance;
-        return instance;
+        // 不随静态存储期销毁：进程退出阶段仍可能被调用（见 AppCore::Instance）。
+        // 资源释放由 Shutdown() 完成。
+        static MessageBoxWindow* instance = new MessageBoxWindow();
+        return *instance;
     }
 
     bool MessageBoxWindow::Initialize(HINSTANCE hInstance, HWND parentHwnd) {

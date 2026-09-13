@@ -23,8 +23,10 @@ namespace UnnamedBot {
     std::string GetMimeType(const std::string& filename);
 
     AttachmentManager& AttachmentManager::Instance() {
-        static AttachmentManager instance;
-        return instance;
+        // 不随静态存储期销毁：进程退出阶段仍可能被调用（见 AppCore::Instance）。
+        // 资源释放由 Shutdown() 完成。
+        static AttachmentManager* instance = new AttachmentManager();
+        return *instance;
     }
 
     void AttachmentManager::Initialize() {

@@ -3,6 +3,7 @@
 #include <CubismFramework.hpp>
 #include <Model/CubismUserModel.hpp>
 #include <Rendering/D3D11/CubismRenderer_D3D11.hpp>
+#include <wrl/client.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -22,8 +23,9 @@ namespace UnnamedBot {
         Model(const Model&) = delete;
         Model& operator=(const Model&) = delete;
 
-        // 加载模型
-        bool Load(const std::wstring& modelPath);
+        // 加载模型。device 用于加载并绑定贴图，缺省时模型几何仍然加载，
+        // 但没有贴图可采样，绘制结果为空。
+        bool Load(const std::wstring& modelPath, ID3D11Device* device);
 
         // 释放模型
         void Release();
@@ -101,6 +103,9 @@ namespace UnnamedBot {
         // 加载模型数据
         bool LoadModelData(const std::wstring& modelPath);
 
+        // 按 model3.json 中的 Textures 列表加载贴图并绑定到渲染器
+        void BindTextures(ID3D11Device* device);
+
         // 加载表情文件
         void LoadExpressions(const std::wstring& modelPath);
 
@@ -110,13 +115,20 @@ namespace UnnamedBot {
         // 设置初始参数
         void SetInitialParameters();
 
-        // 以下两个方法要求调用者已持有 mutex_（供 LoadModelData 内部调用）
+        // 以下三个方法要求调用者已持有 mutex_（供 LoadModelData / Load 内部调用）
         void ApplyAutoBlink();
         void ApplyBreathEffect();
+        Csm::Rendering::CubismRenderer_D3D11* GetRendererUnlocked() const;
 
         // 资源目录（按名称解析表情/动作文件时需要）
         std::wstring expressionDirectory_;
         std::wstring motionDirectory_;
+
+        // 贴图路径（已解析为绝对路径），在 CreateRenderer 之后绑定到渲染器
+        std::vector<std::wstring> texturePaths_;
+
+        // 已绑定的贴图视图。渲染器只保存裸指针，因此贴图必须由 Model 持有。
+        std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> textures_;
 
         // 模型状态
         float positionX_ = 0.0f;

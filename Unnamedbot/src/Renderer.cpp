@@ -1,6 +1,8 @@
 #include "../include/Renderer.h"
 #include "../include/Logger.h"
 #include <d3dcompiler.h>
+#include <wincodec.h>
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <vector>
@@ -69,6 +71,9 @@ namespace UnnamedBot {
         depthStencilView_.Reset();
         depthStencilBuffer_.Reset();
         renderTargetView_.Reset();
+        dcompVisual_.Reset();
+        dcompTarget_.Reset();
+        dcompDevice_.Reset();
         swapChain_.Reset();
         context_.Reset();
         device_.Reset();
@@ -195,12 +200,104 @@ namespace UnnamedBot {
     }
 
     ComPtr<ID3D11ShaderResourceView> Renderer::CreateTextureFromFile(const std::wstring& filePath) {
-        // 使用WIC加载纹理（简化版：使用DirectXTex或stb_image）
-        // 这里使用一个简化的方法：加载DDS或使用STB
-        // 实际项目中推荐使用DirectXTex库
-        // 本实现仅作占位，实际需集成stb_image
-        LOG_WARN("Renderer", "CreateTextureFromFile not fully implemented.");
-        return nullptr;
+        return CreateTexture(device_.Get(), filePath);
+    }
+
+    ComPtr<ID3D11ShaderResourceView> Renderer::CreateTexture(ID3D11Device* device, const std::wstring& filePath) {
+        if (!device || filePath.empty()) {
+            return nullptr;
+        }
+
+        // 用 WIC 把 PNG/JPG 解码为 32bpp BGRA。
+        // 必须保持直通（straight）alpha：Live2D 的 PixelNormal 着色器会自行
+        // 把 rgb 乘以 alpha，若此处预先乘算会重复相乘，边缘会发黑。
+        ComPtr<IWICImagingFactory> wicFactory;
+        HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                      IID_PPV_ARGS(&wicFactory));
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to create WIC imaging factory. Error: " + std::to_string(hr));
+            return nullptr;
+        }
+
+        ComPtr<IWICBitmapDecoder> decoder;
+        hr = wicFactory->CreateDecoderFromFilename(filePath.c_str(), nullptr, GENERIC_READ,
+                                                   WICDecodeMetadataCacheOnDemand, &decoder);
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to open texture file. Error: " + std::to_string(hr));
+            return nullptr;
+        }
+
+        ComPtr<IWICBitmapFrameDecode> frame;
+        hr = decoder->GetFrame(0, &frame);
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to decode texture frame. Error: " + std::to_string(hr));
+            return nullptr;
+        }
+
+        ComPtr<IWICFormatConverter> converter;
+        hr = wicFactory->CreateFormatConverter(&converter);
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to create WIC format converter. Error: " + std::to_string(hr));
+            return nullptr;
+        }
+
+        hr = converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppBGRA,
+                                   WICBitmapDitherTypeNone, nullptr, 0.0,
+                                   WICBitmapPaletteTypeCustom);
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to convert texture to BGRA. Error: " + std::to_string(hr));
+            return nullptr;
+        }
+
+        UINT textureWidth = 0;
+        UINT textureHeight = 0;
+        hr = converter->GetSize(&textureWidth, &textureHeight);
+        if (FAILED(hr) || textureWidth == 0 || textureHeight == 0) {
+            LOG_ERROR("Renderer", "Texture has invalid size.");
+            return nullptr;
+        }
+
+        const UINT stride = textureWidth * 4;
+        std::vector<BYTE> pixels(static_cast<size_t>(stride) * textureHeight);
+        hr = converter->CopyPixels(nullptr, stride,
+                                   static_cast<UINT>(pixels.size()), pixels.data());
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to copy texture pixels. Error: " + std::to_string(hr));
+            return nullptr;
+        }
+
+        D3D11_TEXTURE2D_DESC textureDesc = {};
+        textureDesc.Width = textureWidth;
+        textureDesc.Height = textureHeight;
+        textureDesc.MipLevels = 1;
+        textureDesc.ArraySize = 1;
+        textureDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        textureDesc.SampleDesc.Count = 1;
+        textureDesc.SampleDesc.Quality = 0;
+        textureDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        textureDesc.CPUAccessFlags = 0;
+        textureDesc.MiscFlags = 0;
+
+        D3D11_SUBRESOURCE_DATA initialData = {};
+        initialData.pSysMem = pixels.data();
+        initialData.SysMemPitch = stride;
+
+        ComPtr<ID3D11Texture2D> texture;
+        hr = device->CreateTexture2D(&textureDesc, &initialData, &texture);
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to create texture. Error: " + std::to_string(hr));
+            return nullptr;
+        }
+
+        ComPtr<ID3D11ShaderResourceView> textureView;
+        hr = device->CreateShaderResourceView(texture.Get(), nullptr, &textureView);
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to create texture view. Error: " + std::to_string(hr));
+            return nullptr;
+        }
+
+        return textureView;
     }
 
     ComPtr<ID3D11ShaderResourceView> Renderer::CreateTextureFromMemory(const void* data, size_t size) {
@@ -423,37 +520,83 @@ namespace UnnamedBot {
             return false;
         }
 
-        ComPtr<IDXGIFactory> factory;
+        ComPtr<IDXGIFactory2> factory;
         hr = adapter->GetParent(IID_PPV_ARGS(&factory));
         if (FAILED(hr)) {
             LOG_ERROR("Renderer", "Failed to get DXGI factory. Error: " + std::to_string(hr));
             return false;
         }
 
-        DXGI_SWAP_CHAIN_DESC scDesc = {};
-        scDesc.BufferDesc.Width = width_;
-        scDesc.BufferDesc.Height = height_;
-        scDesc.BufferDesc.RefreshRate.Numerator = 60;
-        scDesc.BufferDesc.RefreshRate.Denominator = 1;
-        scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-        scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-        scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+        // 桌宠需要逐像素透明：普通 HWND 交换链的 alpha 会被系统忽略（只能得到黑底），
+        // 只有以合成（composition）方式创建的交换链才会把 backbuffer 的 alpha 交给
+        // DWM 合成，从而实现「模型直接浮在桌面上」。
+        DXGI_SWAP_CHAIN_DESC1 scDesc = {};
+        scDesc.Width = width_;
+        scDesc.Height = height_;
+        scDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
         scDesc.SampleDesc.Count = 1;
         scDesc.SampleDesc.Quality = 0;
         scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         scDesc.BufferCount = BACK_BUFFER_COUNT;
-        scDesc.OutputWindow = hwnd;
-        scDesc.Windowed = TRUE;
-        scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-        scDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+        scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+        scDesc.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED;
 
-        hr = factory->CreateSwapChain(device_.Get(), &scDesc, &swapChain_);
+        ComPtr<IDXGISwapChain1> swapChain1;
+        hr = factory->CreateSwapChainForComposition(device_.Get(), &scDesc, nullptr, &swapChain1);
         if (FAILED(hr)) {
-            LOG_ERROR("Renderer", "Failed to create swap chain. Error: " + std::to_string(hr));
+            LOG_ERROR("Renderer", "Failed to create composition swap chain. Error: " + std::to_string(hr));
+            return false;
+        }
+        swapChain_ = swapChain1;
+
+        // 合成交换链不会自己上屏，必须挂到窗口的合成视觉上，否则窗口一片空白。
+        hr = DCompositionCreateDevice(dxgiDevice.Get(), IID_PPV_ARGS(&dcompDevice_));
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to create DirectComposition device. Error: " + std::to_string(hr));
             return false;
         }
 
+        hr = dcompDevice_->CreateTargetForHwnd(hwnd, TRUE, &dcompTarget_);
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to create DirectComposition target. Error: " + std::to_string(hr));
+            return false;
+        }
+
+        ComPtr<IDCompositionVisual> visual;
+        hr = dcompDevice_->CreateVisual(&visual);
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to create DirectComposition visual. Error: " + std::to_string(hr));
+            return false;
+        }
+
+        // 整窗不透明度不用 IDCompositionVisual3::SetOpacity：
+        // 实测 CreateVisual 返回的视觉在部分系统上无法 QI 到 Visual3（E_NOINTERFACE）。
+        // 改用自 Win8 起就有的效果组，并且它失败也不影响渲染。
+        hr = dcompDevice_->CreateEffectGroup(&dcompEffectGroup_);
+        if (FAILED(hr)) {
+            LOG_WARN("Renderer", "Failed to create DirectComposition effect group. Error: " + std::to_string(hr));
+            dcompEffectGroup_.Reset();
+        }
+
+        dcompVisual_ = visual;
+        if (dcompEffectGroup_) {
+            dcompVisual_->SetEffect(dcompEffectGroup_.Get());
+        }
+        dcompVisual_->SetContent(swapChain_.Get());
+        dcompTarget_->SetRoot(dcompVisual_.Get());
+        dcompDevice_->Commit();
+
         return true;
+    }
+
+    void Renderer::SetWindowOpacity(float opacity) {
+        if (!dcompEffectGroup_ || !dcompDevice_) {
+            return;
+        }
+
+        // SetOpacity 设置的是绝对不透明度，重复调用不会累乘，可安全用于配置重载。
+        dcompEffectGroup_->SetOpacity(std::clamp(opacity, 0.0f, 1.0f));
+        dcompDevice_->Commit();
     }
 
     bool Renderer::CreateRenderTargetView() {

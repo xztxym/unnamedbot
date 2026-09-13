@@ -64,8 +64,9 @@ namespace UnnamedBot {
     // 实现
 
     ConfigManager& ConfigManager::Instance() {
-        static ConfigManager instance;
-        return instance;
+        // 不随静态存储期销毁：进程退出阶段仍可能被调用（见 AppCore::Instance）。
+        static ConfigManager* instance = new ConfigManager();
+        return *instance;
     }
 
     void ConfigManager::Initialize() {

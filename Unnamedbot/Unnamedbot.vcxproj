@@ -165,6 +165,7 @@
     <ClCompile Include="src\AppCore.cpp" />
     <ClCompile Include="src\AttachmentManager.cpp" />
     <ClCompile Include="src\ConfigManager.cpp" />
+    <ClCompile Include="src\ControlTerminalWindow.cpp" />
     <ClCompile Include="src\Database.cpp" />
     <ClCompile Include="src\HotkeyManager.cpp" />
     <ClCompile Include="src\Live2DManager.cpp" />
@@ -244,6 +245,7 @@
     <ClInclude Include="include\AppCore.h" />
     <ClInclude Include="include\AttachmentManager.h" />
     <ClInclude Include="include\ConfigManager.h" />
+    <ClInclude Include="include\ControlTerminalWindow.h" />
     <ClInclude Include="include\Database.h" />
     <ClInclude Include="include\HotkeyManager.h" />
     <ClInclude Include="include\Live2DManager.h" />

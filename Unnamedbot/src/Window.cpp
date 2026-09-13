@@ -33,11 +33,18 @@ namespace UnnamedBot {
         wc.lpfnWndProc = WindowProc;
         wc.hInstance = GetModuleHandle(nullptr);
         wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+        // 不用背景刷：窗口以 WS_EX_NOREDIRECTIONBITMAP 创建，内容全部由
+        // DirectComposition 呈现。若在这里铺黑刷，渲染失败时就会退化成
+        // 一个黑色方块（正是要修掉的现象）。
+        wc.hbrBackground = nullptr;
         wc.lpszClassName = WINDOW_CLASS_NAME;
 
-        // 如果已经注册，则无需重复注册
-        if (FindWindowW(WINDOW_CLASS_NAME, nullptr)) {
+        // 只检查本模块是否已注册该窗口类。不能用 FindWindowW 探测：
+        // 它按类名在整个系统内查找，别的进程注册同名类时会让本进程跳过注册，
+        // 随后 CreateWindowExW 直接失败（错误 1407）。
+        WNDCLASSEXW existing = {};
+        existing.cbSize = sizeof(WNDCLASSEXW);
+        if (GetClassInfoExW(wc.hInstance, WINDOW_CLASS_NAME, &existing)) {
             return true;
         }
 
@@ -66,12 +73,15 @@ namespace UnnamedBot {
         int scaledX = static_cast<int>(x * dpiScale_);
         int scaledY = static_cast<int>(y * dpiScale_);
 
-        // 创建窗口：无边框、无标题栏、工具窗口
+        // 创建窗口：无边框、无标题栏、工具窗口。
+        // 使用 WS_EX_NOREDIRECTIONBITMAP 而非 WS_EX_LAYERED：窗口内容完全由
+        // DirectComposition 呈现，这样 backbuffer 的 alpha 才能实现逐像素透明，
+        // 而不是整窗铺一层黑底（WS_EX_LAYERED 只能做整体 alpha）。
         hwnd_ = CreateWindowExW(
-            WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+            WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
             WINDOW_CLASS_NAME,
             title_.c_str(),
-            WS_POPUP | WS_VISIBLE,
+            WS_POPUP,
             scaledX, scaledY,
             scaledWidth, scaledHeight,
             nullptr,
@@ -94,7 +104,8 @@ namespace UnnamedBot {
         SetAlwaysOnTop(alwaysOnTop_);
         SetClickThrough(clickThrough_);
 
-        visible_ = true;
+        // 创建时不显示：由调用方（AppCore）在用户确认后才显示桌宠
+        visible_ = false;
         isRunning_ = true;
 
         LOG_INFO("Window", "Window created successfully.");
@@ -171,9 +182,10 @@ namespace UnnamedBot {
     }
 
     void Window::SetOpacity(float opacity) {
-        if (!hwnd_) return;
         opacity_ = std::clamp(opacity, 0.2f, 1.0f);
-        SetLayeredWindowAttributes(hwnd_, 0, static_cast<BYTE>(opacity_ * 255), LWA_ALPHA);
+        // 窗口改用 DirectComposition 呈现（WS_EX_NOREDIRECTIONBITMAP），
+        // LWA_ALPHA 仅对分层窗口有效且会给整窗铺黑底，这里不再使用；
+        // 实际整窗透明度由 Renderer::SetWindowOpacity 通过合成视觉施加。
     }
 
     void Window::SetAlwaysOnTop(bool topmost) {
@@ -249,7 +261,12 @@ namespace UnnamedBot {
     }
 
     bool Window::IsVisible() const {
-        return visible_ && hwnd_ != nullptr;
+        // 以窗口真实状态为准：窗口也可能被系统或外部调用显示/隐藏，
+        // 仅缓存 visible_ 会与屏幕上的实际状态脱节（渲染循环按此决定是否绘制）。
+        if (!hwnd_) {
+            return false;
+        }
+        return IsWindowVisible(hwnd_) != FALSE;
     }
 
     bool Window::IsAlwaysOnTop() const {
@@ -331,6 +348,37 @@ namespace UnnamedBot {
         SetAlwaysOnTop(topmost);
         SetOpacity(opacity);
         LOG_DEBUG("Window", "Window state restored.");
+    }
+
+    void Window::SnapToTopRightOfScreen() {
+        if (!hwnd_) return;
+
+        // 进程启用了 Per-Monitor V2 DPI 感知，这里的坐标都是物理像素
+        HMONITOR monitor = MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO info = {};
+        info.cbSize = sizeof(MONITORINFO);
+        if (!GetMonitorInfoW(monitor, &info)) {
+            LOG_WARN("Window", "Failed to query monitor info.");
+            return;
+        }
+
+        RECT rect = {};
+        GetWindowRect(hwnd_, &rect);
+        const int width = rect.right - rect.left;
+        const int height = rect.bottom - rect.top;
+
+        // 贴住工作区右上角
+        int x = info.rcWork.right - width;
+        if (x < info.rcWork.left) x = info.rcWork.left;
+        const int y = info.rcWork.top;
+
+        SetWindowPos(hwnd_, nullptr, x, y, width, height, SWP_NOZORDER | SWP_NOACTIVATE);
+
+        // 同步逻辑坐标，供 GetPosition/SaveState 使用
+        posX_ = static_cast<int>(x / dpiScale_);
+        posY_ = static_cast<int>(y / dpiScale_);
+
+        LOG_INFO("Window", "Snapped to top-right corner (" + std::to_string(x) + ", " + std::to_string(y) + ")");
     }
 
     // 静态窗口过程
@@ -492,18 +540,18 @@ namespace UnnamedBot {
         }
 
         case WM_PAINT: {
+            // 窗口内容完全由 DirectComposition 呈现（WS_EX_NOREDIRECTIONBITMAP），
+            // 这里绝不能自己画任何东西：此前在此处铺黑刷，正是“桌面上只有一个
+            // 黑方块”的来源。BeginPaint/EndPaint 成对调用只是确认重绘区域。
             PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-            // 使用透明背景
-            // 实际渲染由DX11完成，这里留空
+            BeginPaint(hwnd, &ps);
             EndPaint(hwnd, &ps);
             return 0;
         }
 
-        case WM_ERASEBKGND: {
-            // 返回1防止擦除背景（透明窗口）
+        case WM_ERASEBKGND:
+            // 同理不擦背景，返回 1 表示已处理（否则系统会再刷一次底色）。
             return 1;
-        }
 
         default:
             return DefWindowProc(hwnd, msg, wParam, lParam);

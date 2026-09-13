@@ -10,8 +10,11 @@
 namespace UnnamedBot {
 
     Logger& Logger::Instance() {
-        static Logger instance;
-        return instance;
+        // 故意不随静态存储期销毁：日志在静态析构阶段仍会被调用
+        // （例如 AppCore 析构触发 Renderer::Shutdown 时写日志），
+        // 若此时 Logger 已销毁，就是向已释放的流写入而崩溃。
+        static Logger* instance = new Logger();
+        return *instance;
     }
 
     Logger::~Logger() {

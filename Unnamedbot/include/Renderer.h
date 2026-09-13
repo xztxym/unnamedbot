@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include <d3d11.h>
 #include <dxgi.h>
+#include <dxgi1_2.h>
+#include <dcomp.h>
 #include <DirectXMath.h>
 #include <wrl/client.h>
 #include <string>
@@ -11,6 +13,10 @@
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
+// 桌宠窗口需要逐像素透明：交换链经 DirectComposition 呈现，纹理用 WIC 解码。
+#pragma comment(lib, "dcomp.lib")
+#pragma comment(lib, "windowscodecs.lib")
+#pragma comment(lib, "ole32.lib")
 
 using Microsoft::WRL::ComPtr;
 
@@ -73,6 +79,11 @@ namespace UnnamedBot {
         void SetTargetFPS(int fps);
         int GetTargetFPS() const { return targetFPS_; }
 
+        // 设置窗口整体不透明度（0.0 ~ 1.0）。
+        // 窗口使用 DirectComposition 呈现，分层窗口的 LWA_ALPHA 不再适用，
+        // 透明度改由合成视觉（visual）实现，因此该值作用于整帧而非单个像素。
+        void SetWindowOpacity(float opacity);
+
         // 获取当前FPS
         float GetCurrentFPS() const { return currentFPS_; }
 
@@ -82,6 +93,9 @@ namespace UnnamedBot {
         // 创建纹理（从文件或内存）
         ComPtr<ID3D11ShaderResourceView> CreateTextureFromFile(const std::wstring& filePath);
         ComPtr<ID3D11ShaderResourceView> CreateTextureFromMemory(const void* data, size_t size);
+
+        // 从文件创建纹理视图（不依赖 Renderer 实例，供 Model 绑定 Live2D 贴图使用）
+        static ComPtr<ID3D11ShaderResourceView> CreateTexture(ID3D11Device* device, const std::wstring& filePath);
 
         // 创建动态顶点/索引缓冲区
         ComPtr<ID3D11Buffer> CreateVertexBuffer(const void* data, size_t size, bool dynamic = true);
@@ -126,6 +140,14 @@ namespace UnnamedBot {
         ComPtr<ID3D11Device> device_;
         ComPtr<ID3D11DeviceContext> context_;
         ComPtr<IDXGISwapChain> swapChain_;
+
+        // DirectComposition 对象：合成目标、视觉、不透明度效果与设备。
+        // 不透明度用 IDCompositionEffectGroup 施加：Win8 起即存在，
+        // 而 CreateVisual 在部分系统上不返回 IDCompositionVisual3。
+        ComPtr<IDCompositionDevice> dcompDevice_;
+        ComPtr<IDCompositionTarget> dcompTarget_;
+        ComPtr<IDCompositionVisual> dcompVisual_;
+        ComPtr<IDCompositionEffectGroup> dcompEffectGroup_;
         ComPtr<ID3D11RenderTargetView> renderTargetView_;
         ComPtr<ID3D11DepthStencilView> depthStencilView_;
         ComPtr<ID3D11Texture2D> depthStencilBuffer_;

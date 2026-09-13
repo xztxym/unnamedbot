@@ -10,8 +10,11 @@
 namespace UnnamedBot {
 
     TrayIcon& TrayIcon::Instance() {
-        static TrayIcon instance;
-        return instance;
+        // 不随静态存储期销毁：窗口/渲染器在进程退出阶段仍会调用托盘（例如
+        // 窗口析构触发 onClose 回调），此时静态对象早已被销毁。
+        // 托盘图标由 Shutdown() 显式移除。
+        static TrayIcon* instance = new TrayIcon();
+        return *instance;
     }
 
     bool TrayIcon::Initialize(HWND hwnd, UINT callbackMessage, HICON icon) {
@@ -114,7 +117,9 @@ namespace UnnamedBot {
             return;
         }
 
-        wcscpy_s(nid_.szTip, tooltip.c_str());
+        // szTip 只有 128 个宽字符：动态文本超出时必须截断，
+        // wcscpy_s 在目标过小时会走无效参数处理并直接终止进程。
+        wcsncpy_s(nid_.szTip, tooltip.c_str(), _TRUNCATE);
         nid_.uFlags = NIF_TIP;
         Shell_NotifyIconW(NIM_MODIFY, &nid_);
     }
@@ -150,8 +155,11 @@ namespace UnnamedBot {
         nid.dwInfoFlags = infoFlags;
         nid.uTimeout = timeout;
 
-        wcscpy_s(nid.szInfoTitle, title.c_str());
-        wcscpy_s(nid.szInfo, message.c_str());
+        // szInfoTitle/szInfo 分别只有 64/256 个宽字符。这里的内容是动态的
+        // （例如消息正文可能上千字），必须截断：wcscpy_s 在目标过小时会触发
+        // 无效参数处理，默认处理器直接 __fastfail 结束进程（0xC0000409）。
+        wcsncpy_s(nid.szInfoTitle, title.c_str(), _TRUNCATE);
+        wcsncpy_s(nid.szInfo, message.c_str(), _TRUNCATE);
 
         // 添加GUID以支持Windows 10通知
         // 简单起见，使用当前时间作为唯一ID

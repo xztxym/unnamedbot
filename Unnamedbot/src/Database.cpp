@@ -9,8 +9,10 @@
 namespace UnnamedBot {
 
     Database& Database::Instance() {
-        static Database instance;
-        return instance;
+        // 不随静态存储期销毁：进程退出阶段仍可能被调用（见 AppCore::Instance）。
+        // 注意：析构里的 Close() 不会再执行，关闭由显式的 Close() 调用完成。
+        static Database* instance = new Database();
+        return *instance;
     }
 
     Database::~Database() {

@@ -12,8 +12,9 @@
 namespace UnnamedBot {
 
     MessageHandler& MessageHandler::Instance() {
-        static MessageHandler instance;
-        return instance;
+        // 不随静态存储期销毁：进程退出阶段仍可能被调用（见 AppCore::Instance）。
+        static MessageHandler* instance = new MessageHandler();
+        return *instance;
     }
 
     void MessageHandler::Initialize() {

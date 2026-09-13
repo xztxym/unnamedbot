@@ -3,6 +3,7 @@
 #include "../include/ConfigManager.h"
 #include "../include/Database.h"
 #include "../include/Window.h"
+#include "../include/ControlTerminalWindow.h"
 #include "../include/Renderer.h"
 #include "../include/Live2DManager.h"
 #include "../include/AIClient.h"
@@ -31,8 +32,11 @@ namespace UnnamedBot {
     const wchar_t* AppCore::WINDOW_CLASS_NAME = L"UnnamedBotAppClass";
 
     AppCore& AppCore::Instance() {
-        static AppCore instance;
-        return instance;
+        // 不随静态存储期销毁：AppCore 析构发生在进程退出阶段，
+        // 而窗口/渲染器的析构会回调托盘等单例，那些单例构造晚于 AppCore，
+        // 静态析构时早已被销毁。资源释放由 Shutdown() 显式完成。
+        static AppCore* instance = new AppCore();
+        return *instance;
     }
 
     bool AppCore::Initialize(HINSTANCE hInstance, int nCmdShow) {
@@ -54,6 +58,16 @@ namespace UnnamedBot {
         Logger::Instance().SetMinLevel(LogLevel::Debug);
         Logger::Instance().SetConsoleOutput(true);
         LOG_INFO("AppCore", "Logger initialized.");
+
+        // 贴图解码依赖 WIC（COM 组件），因此必须先初始化 COM。
+        // 只有主线程会加载纹理，按单线程套间初始化即可。
+        const HRESULT comResult = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+        if (SUCCEEDED(comResult)) {
+            comInitialized_ = true;
+        }
+        else if (comResult != RPC_E_CHANGED_MODE) {
+            LOG_WARN("AppCore", "COM initialization failed. Error: " + std::to_string(comResult));
+        }
 
         // 初始化数据库
         if (!Database::Instance().Initialize(L"./data/app.db")) {
@@ -119,6 +133,12 @@ namespace UnnamedBot {
         UpdateManager::Instance().Initialize();
         LOG_INFO("AppCore", "Update manager initialized.");
 
+        // 初始化控制终端（配置 GUI）
+        if (!ControlTerminalWindow::Instance().Initialize(hInstance)) {
+            LOG_WARN("AppCore", "Failed to initialize control terminal.");
+        }
+        ControlTerminalWindow::Instance().OnSaved([this]() { ReloadConfig(); });
+
         // 初始化系统托盘
         if (!InitializeTrayIcon()) {
             LOG_WARN("AppCore", "Failed to initialize tray icon.");
@@ -137,8 +157,14 @@ namespace UnnamedBot {
         updateThreadRunning_ = true;
         updateThread_ = std::thread(&AppCore::UpdateLoop, this);
 
-        // 启动主窗口
-        mainWindow_->Show(true);
+        // 启动流程：先打开配置界面，由用户决定何时显示桌宠。
+        // 桌宠窗口在 Window::Create 中保持隐藏，可从托盘菜单「显示桌宠」唤起。
+        renderer_.SetWindowOpacity(
+            static_cast<float>(ConfigManager::Instance().GetDouble("window.opacity", 1.0)));
+        ControlTerminalWindow::Instance().Show(true);
+
+        // 同步托盘状态：此时桌宠尚未显示，菜单项应呈现为「显示桌宠」
+        TrayIcon::Instance().ShowPet(false);
 
         LOG_INFO("AppCore", "Application initialized successfully.");
         return true;
@@ -152,13 +178,7 @@ namespace UnnamedBot {
 
         LOG_INFO("AppCore", "Application running.");
 
-        // 显示启动通知
-        TrayIcon::Instance().ShowNotification(
-            L"UnnamedBot",
-            L"Hello! I'm your desktop pet. Click me to chat!",
-            NIIF_INFO,
-            5000
-        );
+        // 启动时不弹出任何提示：屏幕上只保留主窗口本身
 
         // 进入主消息循环
         MainLoop();
@@ -193,10 +213,17 @@ namespace UnnamedBot {
         TaskScheduler::Instance().Shutdown();
         UpdateManager::Instance().Shutdown();
         AttachmentManager::Instance().Shutdown();
+        ControlTerminalWindow::Instance().Shutdown();
         Live2DManager::Instance().Shutdown();
         renderer_.Shutdown();
         TrayIcon::Instance().Shutdown();
         Database::Instance().Close();
+
+        // 与 Initialize 中的 CoInitializeEx 配对（套间模式冲突时未曾初始化，不能反初始化）
+        if (comInitialized_) {
+            CoUninitialize();
+            comInitialized_ = false;
+        }
 
         isRunning_ = false;
         LOG_INFO("AppCore", "Application shut down.");
@@ -222,6 +249,10 @@ namespace UnnamedBot {
         mainWindow_->SetAlwaysOnTop(topmost);
         bool clickThrough = ConfigManager::Instance().GetBool(ConfigManager::KEY_FEATURE_CLICK_THROUGH, true);
         mainWindow_->SetClickThrough(clickThrough);
+
+        // 窗口透明度改由合成视觉施加（见 Renderer::SetWindowOpacity）
+        renderer_.SetWindowOpacity(
+            static_cast<float>(ConfigManager::Instance().GetDouble("window.opacity", 1.0)));
 
         // 更新AI配置
         InitializeAIClient();
@@ -282,6 +313,8 @@ namespace UnnamedBot {
             LOG_ERROR("AppCore", "Failed to create main window.");
             return false;
         }
+
+        // 不再强制吸附到右上角：窗口位置应按配置（window.position_x/y）还原
 
         // 设置窗口回调
         mainWindow_->OnMouseClick([this](int x, int y, bool isLeftDown) {
@@ -350,7 +383,7 @@ namespace UnnamedBot {
             });
 
         TrayIcon::Instance().OnOpenConfig([this]() {
-            // TODO: 显示配置窗口
+            ControlTerminalWindow::Instance().Toggle();
             LOG_DEBUG("AppCore", "Open config from tray.");
             });
 
@@ -585,10 +618,12 @@ namespace UnnamedBot {
                 lastTriggerCheck = now;
             }
 
-            // 渲染
-            renderer_.BeginFrame();
-            Live2DManager::Instance().Render(&renderer_);
-            renderer_.EndFrame();
+            // 渲染（桌宠隐藏时不必绘制，避免无谓占用 GPU）
+            if (mainWindow_ && mainWindow_->IsVisible()) {
+                renderer_.BeginFrame();
+                Live2DManager::Instance().Render(&renderer_);
+                renderer_.EndFrame();
+            }
 
             // 帧率控制
             std::this_thread::sleep_for(std::chrono::milliseconds(UPDATE_INTERVAL_MS));
