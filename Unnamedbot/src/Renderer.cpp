@@ -26,6 +26,16 @@ namespace UnnamedBot {
             return false;
         }
 
+        // 合成交换链（CreateSwapChainForComposition）必须显式给出合法尺寸：
+        // 0、负数或超大值都会让它返回 DXGI_ERROR_INVALID_CALL，导致渲染器
+        // 初始化失败、进程在显示窗口前就退出。
+        if (width < 1 || width > 16384 || height < 1 || height > 16384) {
+            LOG_WARN("Renderer", "Invalid render size " + std::to_string(width) + "x" +
+                std::to_string(height) + ", falling back to 400x400.");
+            width = 400;
+            height = 400;
+        }
+
         hwnd_ = hwnd;
         width_ = width;
         height_ = height;

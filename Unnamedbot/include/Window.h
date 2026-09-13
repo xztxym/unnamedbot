@@ -129,6 +129,11 @@ namespace UnnamedBot {
         // 窗口类名
         static const wchar_t* WINDOW_CLASS_NAME;
 
+        // 逻辑尺寸的合法范围：配置里的 window.width/height 可能被写成 0、负数
+        // 或溢出值，而合成交换链要求尺寸必须为正，故统一在此收敛。
+        static constexpr int MIN_WINDOW_SIZE = 64;
+        static constexpr int MAX_WINDOW_SIZE = 4096;
+
         // 窗口属性
         std::wstring title_;
         int width_ = 400;

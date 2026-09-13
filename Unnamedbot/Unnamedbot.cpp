@@ -17,6 +17,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     auto& app = AppCore::Instance();
     if (!app.Initialize(hInstance, nCmdShow)) {
         LOG_ERROR("Main", "Failed to initialize application.");
+        // 初始化失败时窗口尚未显示，静默退出只会让用户看到「闪退」，
+        // 因此这里给出可见提示并指向日志。
+        MessageBoxW(nullptr,
+            L"UnnamedBot 初始化失败，程序即将退出。\n请查看 logs 目录下最新日志以获取详细信息。",
+            L"UnnamedBot", MB_OK | MB_ICONERROR);
         return 1;
     }
 

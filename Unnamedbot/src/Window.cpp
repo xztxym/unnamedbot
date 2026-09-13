@@ -4,6 +4,7 @@
 #include <dwmapi.h>
 #include <shellapi.h>
 #include <windowsx.h>
+#include <algorithm>
 #include <vector>
 #include <string>
 
@@ -62,14 +63,15 @@ namespace UnnamedBot {
         }
 
         title_ = title;
-        width_ = width;
-        height_ = height;
+        // 配置里的尺寸不可信（历史版本可能写入过垃圾值），先收敛到合法范围。
+        width_ = std::clamp(width, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
+        height_ = std::clamp(height, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
         posX_ = x;
         posY_ = y;
 
         // 获取DPI缩放后的实际大小
-        int scaledWidth = static_cast<int>(width * dpiScale_);
-        int scaledHeight = static_cast<int>(height * dpiScale_);
+        int scaledWidth = static_cast<int>(width_ * dpiScale_);
+        int scaledHeight = static_cast<int>(height_ * dpiScale_);
         int scaledX = static_cast<int>(x * dpiScale_);
         int scaledY = static_cast<int>(y * dpiScale_);
 
@@ -149,36 +151,50 @@ namespace UnnamedBot {
     }
 
     void Window::GetPosition(int& x, int& y) const {
-        if (!hwnd_) {
+        if (!hwnd_ || dpiScale_ <= 0.0f) {
             x = posX_;
             y = posY_;
             return;
         }
-        RECT rect;
-        GetWindowRect(hwnd_, &rect);
+        RECT rect = {};
+        if (!GetWindowRect(hwnd_, &rect)) {
+            // 取不到窗口矩形时退回缓存的逻辑坐标，不要把未初始化的值当成坐标。
+            x = posX_;
+            y = posY_;
+            return;
+        }
         x = static_cast<int>(rect.left / dpiScale_);
         y = static_cast<int>(rect.top / dpiScale_);
     }
 
     void Window::SetSize(int width, int height) {
         if (!hwnd_) return;
-        width_ = width;
-        height_ = height;
-        int scaledWidth = static_cast<int>(width * dpiScale_);
-        int scaledHeight = static_cast<int>(height * dpiScale_);
+        width_ = std::clamp(width, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
+        height_ = std::clamp(height, MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
+        int scaledWidth = static_cast<int>(width_ * dpiScale_);
+        int scaledHeight = static_cast<int>(height_ * dpiScale_);
         SetWindowPos(hwnd_, nullptr, 0, 0, scaledWidth, scaledHeight, SWP_NOMOVE | SWP_NOZORDER);
     }
 
     void Window::GetSize(int& width, int& height) const {
-        if (!hwnd_) {
+        if (!hwnd_ || dpiScale_ <= 0.0f) {
             width = width_;
             height = height_;
             return;
         }
-        RECT rect;
-        GetWindowRect(hwnd_, &rect);
-        width = static_cast<int>((rect.right - rect.left) / dpiScale_);
-        height = static_cast<int>((rect.bottom - rect.top) / dpiScale_);
+        // RECT 必须先初始化：GetWindowRect 失败（例如窗口已销毁）时它不会被写入，
+        // 曾因此把未初始化的窗口矩形存进配置，使 window.width/height 变成垃圾值，
+        // 最终导致合成交换链以非法尺寸创建、程序在显示窗口前就退出。
+        RECT rect = {};
+        if (!GetWindowRect(hwnd_, &rect)) {
+            width = width_;
+            height = height_;
+            return;
+        }
+        width = std::clamp(static_cast<int>((rect.right - rect.left) / dpiScale_),
+            MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
+        height = std::clamp(static_cast<int>((rect.bottom - rect.top) / dpiScale_),
+            MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
     }
 
     void Window::SetOpacity(float opacity) {
@@ -338,8 +354,11 @@ namespace UnnamedBot {
         // 从配置恢复窗口状态
         int x = ConfigManager::Instance().GetInt("window.position_x", 100);
         int y = ConfigManager::Instance().GetInt("window.position_y", 100);
-        int width = ConfigManager::Instance().GetInt("window.width", 400);
-        int height = ConfigManager::Instance().GetInt("window.height", 400);
+        // 配置里的尺寸不可信（历史版本可能写入过垃圾值），应用前先收敛。
+        int width = std::clamp(ConfigManager::Instance().GetInt("window.width", 400),
+            MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
+        int height = std::clamp(ConfigManager::Instance().GetInt("window.height", 400),
+            MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
         bool topmost = ConfigManager::Instance().GetBool("window.always_on_top", true);
         float opacity = static_cast<float>(ConfigManager::Instance().GetDouble("window.opacity", 1.0));
 
