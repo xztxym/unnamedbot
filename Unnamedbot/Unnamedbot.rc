@@ -1,0 +1,10 @@
+// Application icon resource.
+// The tray icon, the taskbar button and the config window all load IDI_APPICON
+// from the executable. Without this resource LoadIcon(hInstance, IDI_APPLICATION)
+// fails and returns NULL, so the tray/taskbar entry had no picture at all.
+// Keep this file ASCII-only: rc.exe does not honour the /utf-8 switch.
+
+#include "include/ResourceIds.h"
+#include <windows.h>
+
+IDI_APPICON ICON "res/unnamedbot.ico"

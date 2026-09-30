@@ -1,15 +1,30 @@
 #pragma once
 
 #include <Windows.h>
+
+#include <wrl/client.h>
+#include <WebView2.h>
+
+#include <nlohmann/json.hpp>
+
+#include <functional>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
-#include <functional>
 
 namespace UnnamedBot {
 
+    // ComPtr 模板名提到命名空间作用域（与 Renderer.h 一致）；
+    // 类内的 using 声明不能引入外部命名空间的类模板。
+    using Microsoft::WRL::ComPtr;
+
     // 控制终端：编辑 ./data/app.db 中配置项的 GUI 窗口。
-    // 视觉规范取自 prototype (4).html —— 深蓝黑底、冷冰蓝描边、等宽字体与切角按钮。
+    //
+    // 前端是自实现的 HTML/CSS/JS（见 ConfigWebUi.cpp），由 WebView2 承载在本窗口内，
+    // 不再使用 GDI 自绘。职责划分刻意保持不变：
+    //   * C++ 持有字段表、校验规则与写库逻辑，是配置的唯一事实来源；
+    //   * 页面只负责把宿主下发的字段表渲染成控件，并把输入回传。
+    // 因此配置项、取值约束与保存行为与原实现一致，换掉的只是呈现层。
     class ControlTerminalWindow {
     public:
         static ControlTerminalWindow& Instance();
@@ -28,8 +43,8 @@ namespace UnnamedBot {
 
         // ---------- 配置项描述（终端展示的全部字段） ----------
 
-        // 字段类型决定控件形态：文本框 / 整数 / 浮点 / 开关 / 单选项
-        enum class FieldKind { Text, Int, Double, Bool, Enum };
+        // 字段类型决定控件形态：文本框 / 整数 / 浮点 / 开关 / 单选项 / 预设网格 / 多选清单
+        enum class FieldKind { Text, Int, Double, Bool, Enum, Preset, Multi };
 
         struct FieldDef {
             const char* key;            // ConfigManager 键名
@@ -38,7 +53,7 @@ namespace UnnamedBot {
             const wchar_t* note;        // 行尾右对齐说明
             FieldKind kind;
             const wchar_t* dflt;        // 键缺失时的默认值
-            const wchar_t* options;     // Enum 专用，形如 L"none|http|socks5"
+            const wchar_t* options;     // Enum 用 L"none|http"；Preset 用 L"显示名=值|..."
             bool secret;                // 是否以密码方式显示（密钥类字段）
             int controlWidth;           // 输入类控件的逻辑宽度
         };
@@ -58,123 +73,68 @@ namespace UnnamedBot {
         ControlTerminalWindow(const ControlTerminalWindow&) = delete;
         ControlTerminalWindow& operator=(const ControlTerminalWindow&) = delete;
 
-        // 一行的绘制/命中几何，随滚动偏移重新计算
-        struct RowLayout {
-            const FieldDef* def = nullptr;
-            RECT label{};
-            RECT control{};
-            RECT note{};
-            RECT segments[4]{};
-            int segmentCount = 0;
-            HWND edit = nullptr;
-        };
-
-        struct CardLayout {
-            const SectionDef* sec = nullptr;
-            RECT rc{};
-            RECT title{};
-            RECT sub{};
-            int rowCount = 0;
-        };
-
-        struct ButtonLayout {
-            int id = 0;
-            RECT rc{};
-            const wchar_t* text = nullptr;
-            bool primary = false;
-        };
-
-        struct FontSet {
-            HFONT title = nullptr;
-            HFONT heading = nullptr;
-            HFONT label = nullptr;
-            HFONT labelEn = nullptr;
-            HFONT body = nullptr;
-            HFONT mono = nullptr;
-            HFONT monoSm = nullptr;
-            HFONT monoXs = nullptr;
-            HFONT button = nullptr;
-        };
-
         static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
         LRESULT HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
         bool RegisterWindowClass(HINSTANCE hInstance);
         bool CreateTerminalWindow(HINSTANCE hInstance);
 
-        void CreateFonts();
-        void DestroyFonts();
-
         // 逻辑像素（96 DPI）转物理像素
         int Scale(int value) const;
-        int ClientWidth() const;
-        int ClientHeight() const;
-        int ViewportTop() const;
-        int ViewportHeight() const;
 
-        void RebuildLayout();
-        void CreateFieldControls();
-        void DestroyFieldControls();
-        void SyncEditVisibility();
+        // ---- WebView2 宿主 ----
+        void CreateWebView();
+        void ConfigureWebViewSettings();
+        void ResizeWebView();
+        void DestroyWebView();
+        void NavigateToUi();
 
-        void EnsureBackdrop();
-        void ReleaseBackdrop();
-
-        void Paint(HDC hdc);
-        void PaintHeader(HDC hdc);
-        void PaintCards(HDC hdc);
-        void PaintFooter(HDC hdc);
-
+        // ---- 配置读写（与原实现一致） ----
         void LoadFromConfig();
-        void RecalcDirty();
-        std::wstring CurrentValue(const FieldDef& def) const;
+        std::wstring CurrentValueText(const char* key) const;
         bool ValidateValue(const FieldDef& def, const std::wstring& value, std::wstring& error) const;
         void Save();
         void Reload();
         void RestoreDefaults();
         void SetStatus(const std::wstring& text, int kind);
-        void ScrollBy(int pixels);
         std::wstring NowString() const;
-        bool IsInvalid(const FieldDef& def) const;
 
-        int ButtonIndexAt(POINT pt) const;
-        int BoolRowAt(POINT pt) const;
-        int EnumRowAt(POINT pt, int& optionIndex) const;
-        bool IsHeaderDragArea(POINT pt) const;
+        // ---- 与页面之间的契约 ----
+        std::string BuildSchemaJson() const;
+        std::string BuildValuesJson() const;
+        std::string BuildPresetsJson() const;
+        std::string PresetOptionsJson(const std::string& key, const std::wstring& baseUrl,
+                                      const std::wstring& currentValue) const;
+        std::string BuildStateJson(bool resetScroll) const;
+        std::string BuildErrorsJson() const;
+        bool SendToPage(const std::string& json);
+        void SendState(bool resetScroll);
+        void SendStatusOnly();
+        void HandleWebMessage(const std::string& json);
+        void ApplyPostedValues(const nlohmann::json& message);
 
         // 窗口句柄
         HWND hwnd_ = nullptr;
         HINSTANCE instance_ = nullptr;
         bool visible_ = false;
 
-        // DPI 与字体
+        // DPI
         int dpi_ = 96;
-        FontSet fonts_;
-        HBRUSH inputBrush_ = nullptr;
 
-        // 背景缓存（渐变 + 辉光 + 网格只生成一次）
-        HDC backdropDc_ = nullptr;
-        HBITMAP backdropBitmap_ = nullptr;
-        HBITMAP backdropOld_ = nullptr;
-        int backdropW_ = 0;
-        int backdropH_ = 0;
-
-        // 布局结果
-        std::vector<RowLayout> rows_;
-        std::vector<CardLayout> cards_;
-        std::vector<ButtonLayout> buttons_;
-        std::map<std::string, HWND> edits_;
-        RECT closeButton_{};
-
-        // 滚动与内容尺寸
-        int scrollY_ = 0;
-        int contentHeight_ = 0;
+        // WebView2 对象
+        ComPtr<ICoreWebView2Environment> environment_;
+        ComPtr<ICoreWebView2Controller> controller_;
+        ComPtr<ICoreWebView2> webview_;
+        EventRegistrationToken messageToken_{};
+        EventRegistrationToken navigationToken_{};
+        bool webviewReady_ = false;   // 页面已导航完成，可以接收状态
+        bool statePending_ = false;   // 页面就绪前先攒着，就绪后补发
 
         // 配置草稿
         std::map<std::string, std::string> draft_;
         std::map<std::string, std::string> loaded_;
         std::vector<std::string> invalidKeys_;
-        bool dirty_ = false;
+        std::map<std::string, std::string> invalidErrors_;   // key -> 失败原因（UTF-8）
 
         // 状态行：0=普通 1=成功 2=失败
         std::wstring statusText_;
@@ -183,21 +143,9 @@ namespace UnnamedBot {
         // 「恢复默认」二次确认的时间戳
         ULONGLONG restoreArmedAt_ = 0;
 
-        // 鼠标悬停
-        int hoveredButton_ = -1;
-
         std::function<void()> onSaved_;
 
         static const wchar_t* WINDOW_CLASS_NAME;
-
-        // 按钮 ID
-        static const int ID_BTN_SAVE = 1;
-        static const int ID_BTN_RELOAD = 2;
-        static const int ID_BTN_RESTORE = 3;
-        static const int ID_BTN_CLOSE = 4;
-
-        // 输入框控件 ID 起始值
-        static const int ID_FIRST_EDIT = 2000;
     };
 
 } // namespace UnnamedBot

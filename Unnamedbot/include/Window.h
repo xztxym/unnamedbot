@@ -12,6 +12,10 @@ namespace UnnamedBot {
     using WindowEventCallback = std::function<void()>;
     using MouseEventCallback = std::function<void(int x, int y, bool isLeftDown)>;
     using DragEventCallback = std::function<void(int x, int y)>;
+    // 命中判定：入参为客户端坐标（物理像素），返回 true 表示该点为不透明内容。
+    // 实现放在 AppCore：桌宠的命中源是渲染器读回的 alpha 掩码，
+    // 快速模式下则是圆点的几何范围。
+    using HitTestCallback = std::function<bool(int x, int y)>;
 
     // 窗口管理类
     class Window {
@@ -53,6 +57,9 @@ namespace UnnamedBot {
 
         // 设置点击穿透
         void SetClickThrough(bool enabled);
+
+        // 设置逐像素命中判定源（为空时退回「整窗穿透」的旧行为）
+        void SetHitTestProvider(HitTestCallback provider);
 
         // 设置鼠标悬停光标
         void SetHoverCursor(bool isHand);
@@ -159,6 +166,10 @@ namespace UnnamedBot {
         // 鼠标按下时间（毫秒）
         DWORD mouseDownTime_ = 0;
         bool isLeftDown_ = false;
+
+        // 逐像素命中判定源：WM_NCHITTEST 每次都问它一次。
+        // 它必须在 UI 线程上可重入且足够快（命中掩码查找是 O(1)）。
+        HitTestCallback hitTestProvider_;
 
         // 回调函数
         WindowEventCallback onClose_;

@@ -37,6 +37,11 @@ namespace UnnamedBot {
     const std::string ConfigManager::KEY_FEATURE_DRAG_ENABLED = "feature.drag_enabled";
     const std::string ConfigManager::KEY_FEATURE_CLICK_THROUGH = "feature.click_through";
 
+    const std::string ConfigManager::KEY_QUICK_ENABLED = "quick.enabled";
+    const std::string ConfigManager::KEY_QUICK_MODE = "quick.mode";
+
+    const std::string ConfigManager::KEY_PROMPT_ENABLED = "prompt.enabled";
+
     const std::string ConfigManager::KEY_MODEL_DEFAULT_ID = "model.default_id";
     const std::string ConfigManager::KEY_MODEL_DEFAULT_SCALE = "model.default_scale";
     const std::string ConfigManager::KEY_MODEL_DEFAULT_OPACITY = "model.default_opacity";
@@ -294,6 +299,9 @@ namespace UnnamedBot {
             {KEY_FEATURE_AUTO_HIDE_FULLSCREEN, "true"},
             {KEY_FEATURE_DRAG_ENABLED, "true"},
             {KEY_FEATURE_CLICK_THROUGH, "true"},
+            {KEY_QUICK_ENABLED, "false"},
+            {KEY_QUICK_MODE, "关闭"},
+            {KEY_PROMPT_ENABLED, ""},
             {KEY_MODEL_DEFAULT_ID, "Haru"},
             {KEY_MODEL_DEFAULT_SCALE, "1.0"},
             {KEY_MODEL_DEFAULT_OPACITY, "1.0"},

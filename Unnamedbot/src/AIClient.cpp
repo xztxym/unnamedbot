@@ -8,6 +8,33 @@
 
 namespace UnnamedBot {
 
+    namespace {
+        // libcurl 要求在任何 easy 句柄之前完成一次全局初始化。此前整个程序从未
+        // 调用过它：单独从工作线程发起流式请求时，名字解析/SSL/定时器所依赖的
+        // 全局状态并不存在，libcurl 内部会抛出 0xC0000008（无效句柄）异常。
+        void EnsureCurlGlobalInit() {
+            static std::once_flag once;
+            std::call_once(once, []() {
+                const CURLcode result = curl_global_init(CURL_GLOBAL_DEFAULT);
+                if (result != CURLE_OK) {
+                    LOG_ERROR("AIClient", "curl_global_init failed: " + std::to_string(result));
+                }
+                });
+        }
+
+        // 写入回调由 libcurl 以 C 约定调用，因此用普通函数而不是 lambda：
+        // 目标缓冲区通过 CURLOPT_WRITEDATA 传入，回调本身不持有任何状态。
+        size_t WriteToString(char* ptr, size_t size, size_t nmemb, void* userdata) {
+            std::string* buffer = static_cast<std::string*>(userdata);
+            if (buffer == nullptr) {
+                return 0;
+            }
+            const size_t total = size * nmemb;
+            buffer->append(ptr, total);
+            return total;
+        }
+    }
+
     AIClient::AIClient() {
         // 生成会话ID
         auto now = std::chrono::system_clock::now();
@@ -498,6 +525,7 @@ namespace UnnamedBot {
             // 使用cpr的流式处理
             // 由于cpr不直接支持流式响应，我们使用自定义处理
             // 这里使用libcurl的流式处理方式
+            EnsureCurlGlobalInit();
             CURL* curl = curl_easy_init();
             if (!curl) {
                 LOG_ERROR("AIClient", "Failed to initialize CURL.");
@@ -535,15 +563,11 @@ namespace UnnamedBot {
             }
 
             // 设置流式回调
-            std::string accumulatedData;
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, [](char* ptr, size_t size, size_t nmemb, void* userdata) -> size_t {
-                size_t totalSize = size * nmemb;
-                std::string* data = static_cast<std::string*>(userdata);
-                data->append(ptr, totalSize);
-                return totalSize;
-                });
             std::string responseData;
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteToString);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseData);
+            // 多线程环境下 libcurl 要求显式关闭信号处理，否则超时依赖 alarm。
+            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
 
             // 执行请求
             CURLcode res = curl_easy_perform(curl);

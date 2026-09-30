@@ -76,6 +76,26 @@ namespace UnnamedBot {
         // 主循环（Windows消息循环）
         void MainLoop();
 
+        // 快速模式：「关闭 Live2D，只在屏幕上留一个圆点」
+        bool IsQuickModeActive() const;
+
+        // 「？？？」人格（快速模式 + 哨兵文件存在时用户选了它）
+        bool IsYandereMode() const;
+
+        // 命中判定（客户端物理像素）。由窗口的 WM_NCHITTEST 逐次调用：
+        // 普通模式查渲染器读回的 alpha 掩码，快速模式算到圆心的距离。
+        bool HitTestClient(int x, int y) const;
+
+        // 快速模式下圆点的半径（物理像素）。绘制与命中判定共用同一算式，
+        // 否则「看到的圆」与「能点的区域」会不一致。
+        float QuickDotRadius() const;
+
+        // 桌宠右键菜单（配置终端 / 显示·隐藏 / 置顶 / 退出）
+        void ShowContextMenu();
+
+        // 组装系统提示：会话提示 + 启用的提示词文件 +（？？？时）硬编码人格
+        std::string ComposeSystemPrompt() const;
+
         // 更新循环（定时器驱动）
         void UpdateLoop();
 
@@ -163,6 +183,12 @@ namespace UnnamedBot {
         static const int HOTKEY_TOGGLE_MESSAGEBOX = 1;
         static const int HOTKEY_TOGGLE_TOPMOST = 2;
         static const int HOTKEY_DEBUG = 3;
+
+        // 右键菜单命令ID（自定义范围，避开系统与托盘已用的值）
+        static constexpr UINT IDM_OPEN_CONFIG = 40001;
+        static constexpr UINT IDM_TOGGLE_PET = 40002;
+        static constexpr UINT IDM_TOGGLE_TOPMOST = 40003;
+        static constexpr UINT IDM_EXIT = 40004;
 
         // 冷却控制
         std::atomic<bool> triggerCooling_ = false;

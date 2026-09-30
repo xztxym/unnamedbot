@@ -4,11 +4,17 @@
 #include "../include/Database.h"
 #include "../include/Window.h"
 #include "../include/ControlTerminalWindow.h"
+#include "../include/SplashScreen.h"
 #include "../include/Renderer.h"
 #include "../include/Live2DManager.h"
+#include "../include/ResourceIds.h"
 #include "../include/AIClient.h"
 #include "../include/MCPTool.h"
 #include "../include/MessageHandler.h"
+#include "../include/PromptLibrary.h"
+#include "../include/Utils.h"
+#include "../include/QuickInputBar.h"
+#include "../include/SpeechBubble.h"
 #include "../include/TrayIcon.h"
 #include "../include/HotkeyManager.h"
 #include "../include/SecurityUtils.h"
@@ -88,6 +94,13 @@ namespace UnnamedBot {
         AttachmentManager::Instance().Initialize();
         LOG_INFO("AppCore", "Attachment manager initialized.");
 
+        // 提示词目录：与 logs/data/models 同级。先建出来，用户才知道该把
+        // .md/.txt 放哪里（「启用提示词」多选行读的就是这个目录）。
+        PromptLibrary::Instance().EnsureFolder();
+        // 快速模式的迷你输入条与屏幕气泡：都是按需弹的小窗口，这里只建类与句柄
+        QuickInputBar::Instance().Initialize(hInstance);
+        SpeechBubble::Instance().Initialize(hInstance);
+
         // 创建主窗口
         if (!CreateMainWindow(hInstance)) {
             LOG_ERROR("AppCore", "Failed to create main window.");
@@ -95,22 +108,33 @@ namespace UnnamedBot {
         }
         LOG_INFO("AppCore", "Main window created.");
 
+        // 从这里开始到配置界面出现之前都是同步初始化；最慢的一步（Live2D 模型
+        // 加载需要编译约 500 个着色器程序）可达数十秒。先挂出加载界面，让等待可见。
+        if (!SplashScreen::Instance().Create(hInstance)) {
+            LOG_WARN("AppCore", "Failed to create splash screen; continuing without it.");
+        }
+        SplashScreen::Instance().SetStatus(L"正在初始化图形设备…", 0.10f);
+
         // 初始化渲染器
         int width, height;
         mainWindow_->GetSize(width, height);
         bool vsync = ConfigManager::Instance().GetBool("renderer.vsync", false);
         if (!renderer_.Initialize(mainWindow_->GetHandle(), width, height, vsync)) {
             LOG_ERROR("AppCore", "Failed to initialize renderer.");
+            SplashScreen::Instance().Shutdown();
             return false;
         }
         LOG_INFO("AppCore", "Renderer initialized.");
+        SplashScreen::Instance().SetStatus(L"正在初始化 Live2D 框架…", 0.22f);
 
         // 初始化Live2D框架；D3D11 渲染器需要在加载模型前拿到设备
         if (!Live2DManager::Instance().Initialize(&renderer_)) {
             LOG_ERROR("AppCore", "Failed to initialize Live2D.");
+            SplashScreen::Instance().Shutdown();
             return false;
         }
         LOG_INFO("AppCore", "Live2D initialized.");
+        SplashScreen::Instance().SetStatus(L"正在注册工具与 AI 服务…", 0.32f);
 
         // 初始化MCP工具
         MCPToolManager::Instance().RegisterDefaultTools();
@@ -132,12 +156,23 @@ namespace UnnamedBot {
         // 初始化更新管理器
         UpdateManager::Instance().Initialize();
         LOG_INFO("AppCore", "Update manager initialized.");
+        SplashScreen::Instance().SetStatus(L"正在准备配置终端…", 0.45f);
 
         // 初始化控制终端（配置 GUI）
         if (!ControlTerminalWindow::Instance().Initialize(hInstance)) {
             LOG_WARN("AppCore", "Failed to initialize control terminal.");
         }
-        ControlTerminalWindow::Instance().OnSaved([this]() { ReloadConfig(); });
+        // 保存即确认：启动流程故意先不显示桌宠，等用户在配置界面按下「保存」
+        // 才把模型放到桌面上，否则未配置好的模型会直接跑起来。
+        ControlTerminalWindow::Instance().OnSaved([this]() {
+            ReloadConfig();
+            if (mainWindow_ && !mainWindow_->IsVisible()) {
+                mainWindow_->Show(true);
+                mainWindow_->RestoreState();
+                TrayIcon::Instance().ShowPet(true);
+                LOG_INFO("AppCore", "Configuration saved; pet window shown.");
+            }
+        });
 
         // 初始化系统托盘
         if (!InitializeTrayIcon()) {
@@ -147,8 +182,10 @@ namespace UnnamedBot {
         // 注册全局热键
         RegisterHotkeys();
 
-        // 加载默认模型
+        // 加载默认模型：着色器编译全部集中在这一步，是整个启动中最耗时的阶段。
+        SplashScreen::Instance().SetStatus(L"正在加载 Live2D 模型（编译着色器，可能耗时数十秒）…", 0.55f);
         LoadDefaultModel();
+        SplashScreen::Instance().SetStatus(L"正在启动配置终端…", 0.92f);
 
         // 设置消息处理器回调
         SetupCallbacks();
@@ -161,6 +198,9 @@ namespace UnnamedBot {
         // 桌宠窗口在 Window::Create 中保持隐藏，可从托盘菜单「显示桌宠」唤起。
         renderer_.SetWindowOpacity(
             static_cast<float>(ConfigManager::Instance().GetDouble("window.opacity", 1.0)));
+
+        // 配置界面即将出现，撤下加载界面（避免两个窗口重叠一瞬）
+        SplashScreen::Instance().Shutdown();
         ControlTerminalWindow::Instance().Show(true);
 
         // 同步托盘状态：此时桌宠尚未显示，菜单项应呈现为「显示桌宠」
@@ -193,6 +233,9 @@ namespace UnnamedBot {
         }
 
         isShuttingDown_ = true;
+
+        // 正常路径下配置界面出现时加载界面已撤销；这里兜底处理（例如初始化中途失败）。
+        SplashScreen::Instance().Shutdown();
         LOG_INFO("AppCore", "Shutting down application...");
 
         // 停止更新线程
@@ -213,6 +256,8 @@ namespace UnnamedBot {
         TaskScheduler::Instance().Shutdown();
         UpdateManager::Instance().Shutdown();
         AttachmentManager::Instance().Shutdown();
+        SpeechBubble::Instance().Shutdown();
+        QuickInputBar::Instance().Shutdown();
         ControlTerminalWindow::Instance().Shutdown();
         Live2DManager::Instance().Shutdown();
         renderer_.Shutdown();
@@ -249,6 +294,10 @@ namespace UnnamedBot {
         mainWindow_->SetAlwaysOnTop(topmost);
         bool clickThrough = ConfigManager::Instance().GetBool(ConfigManager::KEY_FEATURE_CLICK_THROUGH, true);
         mainWindow_->SetClickThrough(clickThrough);
+
+        // 快速模式开关可能刚被改过：上一帧的命中掩码已经不代表现在的画面，
+        // 丢掉它，免得刚切换的那几帧还是按模型轮廓判定点击。
+        renderer_.InvalidateHitMask();
 
         // 窗口透明度改由合成视觉施加（见 Renderer::SetWindowOpacity）
         renderer_.SetWindowOpacity(
@@ -316,21 +365,31 @@ namespace UnnamedBot {
 
         // 不再强制吸附到右上角：窗口位置应按配置（window.position_x/y）还原
 
+        // 命中判定源：窗口的 WM_NCHITTEST 每次都会问这里。
+        // 普通模式用渲染器读回的 alpha 掩码（与看到的像素完全一致）；
+        // 快速模式用圆点的几何范围（此时画面上只有一个圆点）。
+        mainWindow_->SetHitTestProvider([this](int x, int y) { return HitTestClient(x, y); });
+
         // 设置窗口回调
         mainWindow_->OnMouseClick([this](int x, int y, bool isLeftDown) {
             if (isLeftDown) {
-                // 左键单击：切换消息框
                 LOG_DEBUG("AppCore", "Left click at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
-                // 检查是否点击在模型区域
-                if (Live2DManager::Instance().HitTest(x, y)) {
+                if (IsQuickModeActive()) {
+                    // 快速模式：左键点击圆点/人物 → 贴着窗口弹出迷你输入条
+                    QuickInputBar::Instance().Popup(GetMainWindow(), [this](const std::string& text) {
+                        // 发起网络请求前先脱离 UI 线程：否则请求期间窗口会卡住，
+                        // 输入条也会弹不回来
+                        std::thread([this, text]() { ProcessAIMessage(text); }).detach();
+                        });
+                }
+                else if (Live2DManager::Instance().HitTest(x, y)) {
                     // 切换消息框
                     // TODO: 显示/隐藏消息框
                 }
             }
             else {
-                // 右键单击：显示上下文菜单
                 LOG_DEBUG("AppCore", "Right click at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
-                // TODO: 显示右键菜单（快速操作）
+                ShowContextMenu();
             }
             });
 
@@ -360,7 +419,14 @@ namespace UnnamedBot {
     }
 
     bool AppCore::InitializeTrayIcon() {
-        HICON icon = LoadIcon(instance_, IDI_APPLICATION);
+        // 托盘图标取自 exe 自身的 IDI_APPICON 资源（见 Unnamedbot.rc）。
+        // 这里不退回 IDI_APPLICATION：本工程没有定义 UNICODE，该宏会展开成
+        // MAKEINTRESOURCEA（LPSTR），与本行显式调用的 ...W 接口类型不匹配。
+        // 资源缺失时把空句柄交给 TrayIcon::Initialize，由它自己兜底。
+        HICON icon = LoadIconW(instance_, MAKEINTRESOURCEW(IDI_APPICON));
+        if (!icon) {
+            LOG_WARN("AppCore", "Application icon resource missing; tray falls back to the system icon.");
+        }
         if (!TrayIcon::Instance().Initialize(mainWindow_->GetHandle(), WM_TRAYICON, icon)) {
             return false;
         }
@@ -475,9 +541,10 @@ namespace UnnamedBot {
             ) -> std::string {
                 // 构建AI消息
                 auto session = MessageHandler::Instance().GetCurrentSession();
+                // 系统提示由 AppCore 组装：会话提示 + 启用的提示词文件 +（？？？时）人格
                 auto aiMsgList = MessageHandler::Instance().BuildAIMessages(
                     history,
-                    session->systemPrompt,
+                    ComposeSystemPrompt(),
                     session->prePrompt,
                     session->postPrompt
                 );
@@ -572,6 +639,172 @@ namespace UnnamedBot {
             });
     }
 
+    // ============ 快速模式 / 「？？？」 ============
+
+    bool AppCore::IsQuickModeActive() const {
+        return ConfigManager::Instance().GetBool(ConfigManager::KEY_QUICK_ENABLED, false);
+    }
+
+    bool AppCore::IsYandereMode() const {
+        if (!IsQuickModeActive()) {
+            return false;
+        }
+        // 以 UTF-8 比较：配置里存的就是这个字符串（见 ControlTerminalWindow）
+        return ConfigManager::Instance().GetString(ConfigManager::KEY_QUICK_MODE, "关闭") == Utils::WideToUtf8(L"？？？");
+    }
+
+    float AppCore::QuickDotRadius() const {
+        int width = 0;
+        int height = 0;
+        renderer_.GetSize(width, height);
+        // 与窗口尺寸挂钩：窗口小的时候圆点也不至于缩成一个像素。
+        // 绘制与命中判定都走这里，保证「看到的圆」恰好就是「能点的区域」。
+        const float reference = static_cast<float>(width < height ? width : height);
+        const float radius = reference * 0.12f;
+        return radius > 8.0f ? radius : 8.0f;
+    }
+
+    bool AppCore::HitTestClient(int x, int y) const {
+        if (IsQuickModeActive()) {
+            int width = 0;
+            int height = 0;
+            renderer_.GetSize(width, height);
+            // 容差 4px：圆点很小，严格按半径判定会变得很难点中
+            const float radius = QuickDotRadius() + 4.0f;
+            const float dx = static_cast<float>(x) - static_cast<float>(width) * 0.5f;
+            const float dy = static_cast<float>(y) - static_cast<float>(height) * 0.5f;
+            return dx * dx + dy * dy <= radius * radius;
+        }
+        // 普通模式：渲染器在 Present 前读回的 alpha 掩码，就是画面上不透明的像素
+        return renderer_.HitTestOpaque(x, y);
+    }
+
+    void AppCore::ShowContextMenu() {
+        const HWND hwnd = GetMainWindow();
+        if (!hwnd) {
+            return;
+        }
+
+        HMENU menu = CreatePopupMenu();
+        if (!menu) {
+            return;
+        }
+
+        const bool petVisible = mainWindow_ && mainWindow_->IsVisible();
+        AppendMenuW(menu, MF_STRING, IDM_OPEN_CONFIG, L"配置终端(&C)");
+        AppendMenuW(menu, MF_STRING, IDM_TOGGLE_PET, petVisible ? L"隐藏桌宠(&H)" : L"显示桌宠(&S)");
+        AppendMenuW(menu, MF_STRING | (mainWindow_ && mainWindow_->IsAlwaysOnTop() ? MF_CHECKED : 0),
+            IDM_TOGGLE_TOPMOST, L"总在最前(&T)");
+        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+        AppendMenuW(menu, MF_STRING, IDM_EXIT, L"退出(&X)");
+
+        POINT cursor = {};
+        GetCursorPos(&cursor);
+
+        // 弹出菜单前必须先把窗口提到前台并 PostMessage(WM_NULL)：
+        // 否则菜单不会在点击别处时消失（Windows 的经典要求）。
+        SetForegroundWindow(hwnd);
+        const UINT command = TrackPopupMenu(menu, TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY,
+            cursor.x, cursor.y, 0, hwnd, nullptr);
+        PostMessage(hwnd, WM_NULL, 0, 0);
+        DestroyMenu(menu);
+
+        switch (command) {
+        case IDM_OPEN_CONFIG:
+            ControlTerminalWindow::Instance().Show(true);
+            break;
+
+        case IDM_TOGGLE_PET: {
+            const bool show = !petVisible;
+            if (mainWindow_) {
+                mainWindow_->Show(show);
+                if (show) {
+                    mainWindow_->RestoreState();
+                }
+            }
+            TrayIcon::Instance().ShowPet(show);
+            break;
+        }
+
+        case IDM_TOGGLE_TOPMOST: {
+            if (mainWindow_) {
+                const bool next = !mainWindow_->IsAlwaysOnTop();
+                mainWindow_->SetAlwaysOnTop(next);
+                // 与热键行为一致：写回配置，重启后仍是同一个层级
+                ConfigManager::Instance().SetBool(ConfigManager::KEY_FEATURE_ALWAYS_ON_TOP, next);
+            }
+            break;
+        }
+
+        case IDM_EXIT:
+            SafeShutdown();
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    std::string AppCore::ComposeSystemPrompt() const {
+        std::string prompt;
+        const auto session = MessageHandler::Instance().GetCurrentSession();
+        if (session) {
+            prompt = session->systemPrompt;
+        }
+
+        // 用户启用的提示词文件（prompts 目录，可多选）
+        prompt += PromptLibrary::Instance().BuildSystemPromptAppend(
+            ConfigManager::Instance().GetString(ConfigManager::KEY_PROMPT_ENABLED, ""));
+
+        // 「？？？」：硬编码人格放在最后——越靠后越贴近当前指令，
+        // 才能压住用户自己写的长篇提示词
+        if (IsYandereMode()) {
+            prompt += "\n\n" + PromptLibrary::YanderePersona();
+        }
+        return prompt;
+    }
+
+    void AppCore::ProcessAIMessage(const std::string& userInput) {
+        // 可能由 QuickInputBar 的回调在工作线程上调用，这里不碰 UI 对象
+        if (userInput.empty() || isShuttingDown_) {
+            return;
+        }
+
+        // 会话是消息落库与历史拼接的前提：数据库里一个会话都没有时先建一个
+        if (!MessageHandler::Instance().GetCurrentSession()) {
+            const int64_t sessionId = MessageHandler::Instance().CreateSession("Default Session");
+            if (sessionId > 0) {
+                MessageHandler::Instance().SwitchSession(sessionId);
+            }
+        }
+
+        MessageHandler::Instance().AddMessage(MessageRole::User, userInput);
+
+        const auto history = MessageHandler::Instance().GetCurrentMessages();
+        const std::vector<Message> payload =
+            MessageHandler::Instance().BuildAIMessages(history, ComposeSystemPrompt(), "", "");
+
+        std::string reply;
+        aiClient_.SendChatMessageStream(payload, [&reply](const std::string& chunk, bool /*complete*/) {
+            if (!chunk.empty()) {
+                reply += chunk;
+            }
+            });
+
+        reply = Utils::Trim(reply);
+        if (reply.empty()) {
+            LOG_WARN("AppCore", "AI reply is empty.");
+            return;
+        }
+
+        MessageHandler::Instance().AddAIResponse(reply);
+
+        // 快速模式：回复直接贴到屏幕上（没有 Live2D 可看，托盘气泡太容易错过）
+        if (IsQuickModeActive() && !isShuttingDown_) {
+            SpeechBubble::Instance().Show(GetMainWindow(), Utils::Utf8ToWide(reply));
+        }
+    }
+
     void AppCore::MainLoop() {
         MSG msg = {};
         while (isRunning_ && GetMessage(&msg, nullptr, 0, 0)) {
@@ -621,7 +854,23 @@ namespace UnnamedBot {
             // 渲染（桌宠隐藏时不必绘制，避免无谓占用 GPU）
             if (mainWindow_ && mainWindow_->IsVisible()) {
                 renderer_.BeginFrame();
-                Live2DManager::Instance().Render(&renderer_);
+                if (IsQuickModeActive()) {
+                    // 快速模式：完全不进 Live2D，只在窗口中心画一个圆点。
+                    // 窗口尺寸不改：不透明区域靠命中判定控制，改尺寸反而会
+                    // 把 window.width/height 写进配置（SaveState 会存当前尺寸）。
+                    int width = 0;
+                    int height = 0;
+                    renderer_.GetSize(width, height);
+                    const float radius = QuickDotRadius();
+                    const DirectX::XMFLOAT4 color(0.66f, 0.81f, 1.0f, 1.0f);
+                    renderer_.DrawDot(width * 0.5f, height * 0.5f, radius, color);
+                }
+                else {
+                    Live2DManager::Instance().Render(&renderer_);
+                }
+                // 命中掩码必须在画完、Present 之前读回：
+                // 它直接决定了下一轮 WM_NCHITTEST 的「人物哪里能点」。
+                renderer_.CaptureHitMask();
                 renderer_.EndFrame();
             }
 

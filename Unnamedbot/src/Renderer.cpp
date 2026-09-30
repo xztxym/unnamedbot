@@ -4,12 +4,30 @@
 #include <wincodec.h>
 #include <algorithm>
 #include <chrono>
+#include <cstring>
 #include <fstream>
 #include <vector>
 
 #pragma comment(lib, "d3dcompiler.lib")
 
 namespace UnnamedBot {
+
+    namespace {
+
+        // 圆点绘制的常量缓冲，字段顺序与 HLSL 的 cbuffer DotConstants 逐项对应。
+        // 显式排出 4 个 float 一组：HLSL 的常量缓冲按 16 字节打包，
+        // 写错顺序不会编译报错，只会画出错误的图形。
+        struct DotConstants {
+            float center[2];
+            float radius;
+            float pad0;
+            float size[2];
+            float pad1;
+            float pad2;
+            DirectX::XMFLOAT4 color;
+        };
+
+    } // namespace
 
     Renderer::Renderer() {
         QueryPerformanceFrequency(&perfFrequency_);
@@ -102,6 +120,11 @@ namespace UnnamedBot {
         renderTargetView_.Reset();
         depthStencilView_.Reset();
         depthStencilBuffer_.Reset();
+        // 命中掩码持有的后台缓冲引用必须先放开：
+        // DXGI 要求在 ResizeBuffers 之前释放所有对交换链缓冲的引用，
+        // 否则这里会返回 DXGI_ERROR_INVALID_CALL，窗口一改变大小就再也不出画面。
+        backBuffer_.Reset();
+        InvalidateHitMask();
 
         if (swapChain_) {
             // 调整交换链缓冲区大小
@@ -623,6 +646,9 @@ namespace UnnamedBot {
             return false;
         }
 
+        // 顺手留住后台缓冲：命中掩码每帧都要从它拷贝，不必反复 GetBuffer。
+        // 注意 Resize 里必须在 ResizeBuffers 之前释放，否则交换链无法重建缓冲。
+        backBuffer_ = backBuffer;
         return true;
     }
 
@@ -718,6 +744,229 @@ namespace UnnamedBot {
         if (FAILED(hr)) {
             LOG_ERROR("Renderer", "Failed to create sampler state. Error: " + std::to_string(hr));
         }
+    }
+
+    bool Renderer::CaptureHitMask() {
+        if (!swapChain_ || !context_ || !device_) {
+            return false;
+        }
+
+        // Resize 之后 backBuffer_ 会被释放，这里补一次。
+        if (!backBuffer_) {
+            HRESULT hr = swapChain_->GetBuffer(0, IID_PPV_ARGS(&backBuffer_));
+            if (FAILED(hr)) {
+                return false;
+            }
+        }
+
+        D3D11_TEXTURE2D_DESC desc = {};
+        backBuffer_->GetDesc(&desc);
+
+        // 暂存纹理按尺寸缓存：窗口尺寸变了才重建。
+        if (!hitMaskStaging_ || stagingWidth_ != static_cast<int>(desc.Width)
+            || stagingHeight_ != static_cast<int>(desc.Height)) {
+            hitMaskStaging_.Reset();
+            D3D11_TEXTURE2D_DESC stagingDesc = desc;
+            stagingDesc.Usage = D3D11_USAGE_STAGING;
+            stagingDesc.BindFlags = 0;
+            stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+            stagingDesc.MiscFlags = 0;
+            stagingDesc.MipLevels = 1;
+            stagingDesc.ArraySize = 1;
+            HRESULT hr = device_->CreateTexture2D(&stagingDesc, nullptr, &hitMaskStaging_);
+            if (FAILED(hr)) {
+                LOG_WARN("Renderer", "Failed to create hit mask staging texture. Error: " + std::to_string(hr));
+                return false;
+            }
+            stagingWidth_ = static_cast<int>(desc.Width);
+            stagingHeight_ = static_cast<int>(desc.Height);
+        }
+
+        // 作为渲染目标绑定时 CopyResource 会失败，先解绑。
+        ID3D11RenderTargetView* noTargets[1] = { nullptr };
+        context_->OMSetRenderTargets(1, noTargets, nullptr);
+        context_->CopyResource(hitMaskStaging_.Get(), backBuffer_.Get());
+
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        HRESULT hr = context_->Map(hitMaskStaging_.Get(), 0, D3D11_MAP_READ, 0, &mapped);
+        if (FAILED(hr)) {
+            LOG_WARN("Renderer", "Failed to map hit mask staging texture. Error: " + std::to_string(hr));
+            return false;
+        }
+
+        const int width = static_cast<int>(desc.Width);
+        const int height = static_cast<int>(desc.Height);
+        // BGRA/RGBA 每像素 4 字节，alpha 在第 4 个字节；X8 格式没有 alpha，
+        // 视为整块不透明（此时碰撞框等于窗口矩形，退回老行为）。
+        const bool hasAlpha = desc.Format != DXGI_FORMAT_B8G8R8X8_UNORM
+            && desc.Format != DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+
+        {
+            std::lock_guard<std::mutex> lock(hitMaskMutex_);
+            hitMask_.resize(static_cast<size_t>(width) * static_cast<size_t>(height));
+            const unsigned char* base = static_cast<const unsigned char*>(mapped.pData);
+            for (int y = 0; y < height; ++y) {
+                const unsigned char* row = base + static_cast<size_t>(y) * mapped.RowPitch;
+                unsigned char* destination = hitMask_.data() + static_cast<size_t>(y) * width;
+                if (!hasAlpha) {
+                    memset(destination, 0xFF, static_cast<size_t>(width));
+                    continue;
+                }
+                for (int x = 0; x < width; ++x) {
+                    destination[x] = row[static_cast<size_t>(x) * 4 + 3];
+                }
+            }
+            hitMaskWidth_ = width;
+            hitMaskHeight_ = height;
+            hitMaskValid_ = true;
+        }
+
+        context_->Unmap(hitMaskStaging_.Get(), 0);
+        return true;
+    }
+
+    bool Renderer::HitTestOpaque(int x, int y) const {
+        std::lock_guard<std::mutex> lock(hitMaskMutex_);
+        if (!hitMaskValid_ || x < 0 || y < 0 || x >= hitMaskWidth_ || y >= hitMaskHeight_) {
+            return false;
+        }
+        // 阈值取 8 而不是 0：模型边缘的抗锯齿像素 alpha 很低，肉眼已经算「模型外面」，
+        // 用 0 会让碰撞区域比看到的轮廓大出一圈。
+        return hitMask_[static_cast<size_t>(y) * hitMaskWidth_ + x] > 8;
+    }
+
+    void Renderer::InvalidateHitMask() {
+        std::lock_guard<std::mutex> lock(hitMaskMutex_);
+        hitMaskValid_ = false;
+    }
+
+    bool Renderer::EnsureDotResources() {
+        if (dotReady_) {
+            return true;
+        }
+        if (!device_) {
+            return false;
+        }
+
+        // 一个顶点着色器 + 一个像素着色器搞定圆形：顶点着色器用 SV_VertexID 直接生成
+        // 覆盖全屏的大三角形，像素着色器按到圆心的距离算覆盖率。
+        // 不用顶点缓冲、不用几何体，圆点就永远不需要额外的资源管理。
+        static const char* kDotShaderSource = R"(
+cbuffer DotConstants : register(b0)
+{
+    float2 center;
+    float  radius;
+    float  pad0;
+    float2 size;
+    float  pad1;
+    float  pad2;
+    float4 color;
+};
+
+struct VSOutput
+{
+    float4 position : SV_Position;
+};
+
+VSOutput VSMain(uint vertexId : SV_VertexID)
+{
+    // 全屏三角形：uv 取 (0,0)(2,0)(0,2)，映射后覆盖整个裁剪空间
+    float2 uv = float2((vertexId << 1) & 2, vertexId & 2);
+    VSOutput output;
+    output.position = float4(uv.x * 2.0f - 1.0f, 1.0f - uv.y * 2.0f, 0.0f, 1.0f);
+    return output;
+}
+
+float4 PSMain(VSOutput input) : SV_Target
+{
+    float distanceToCenter = distance(input.position.xy, center);
+    // 1 像素的软化边缘：圆点在 100% 缩放下也不会看到阶梯
+    float coverage = saturate(radius - distanceToCenter + 0.5f);
+    if (coverage <= 0.0f) {
+        discard;
+    }
+    float alpha = color.a * coverage;
+    // 交换链是 PREMULTIPLIED，输出必须预乘
+    return float4(color.rgb * alpha, alpha);
+}
+)";
+
+        dotVertexShader_ = CreateVertexShader(kDotShaderSource, "VSMain");
+        dotPixelShader_ = CreatePixelShader(kDotShaderSource, "PSMain");
+        if (!dotVertexShader_ || !dotPixelShader_) {
+            LOG_ERROR("Renderer", "Failed to create dot shaders.");
+            dotVertexShader_.Reset();
+            dotPixelShader_.Reset();
+            return false;
+        }
+
+        dotConstantBuffer_ = CreateConstantBuffer(sizeof(DotConstants));
+        if (!dotConstantBuffer_) {
+            LOG_ERROR("Renderer", "Failed to create dot constant buffer.");
+            return false;
+        }
+
+        // 圆点是画到「已经清成透明」的后台缓冲上，所以用预乘混合：
+        // 目标是被覆盖的像素，而不是做透明混合的半透明层。
+        D3D11_BLEND_DESC blendDesc = {};
+        blendDesc.AlphaToCoverageEnable = FALSE;
+        blendDesc.IndependentBlendEnable = FALSE;
+        blendDesc.RenderTarget[0].BlendEnable = TRUE;
+        blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+        blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+        blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+        blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+        blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+        blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+        blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+        const HRESULT hr = device_->CreateBlendState(&blendDesc, &dotBlendState_);
+        if (FAILED(hr)) {
+            LOG_ERROR("Renderer", "Failed to create dot blend state. Error: " + std::to_string(hr));
+            return false;
+        }
+
+        dotReady_ = true;
+        return true;
+    }
+
+    bool Renderer::DrawDot(float centerX, float centerY, float radius, const DirectX::XMFLOAT4& color) {
+        if (!context_ || radius <= 0.0f) {
+            return false;
+        }
+        if (!EnsureDotResources()) {
+            return false;
+        }
+
+        DotConstants constants = {};
+        constants.center[0] = centerX;
+        constants.center[1] = centerY;
+        constants.radius = radius;
+        constants.size[0] = static_cast<float>(width_);
+        constants.size[1] = static_cast<float>(height_);
+        constants.color = color;
+
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        if (FAILED(context_->Map(dotConstantBuffer_.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped))) {
+            return false;
+        }
+        memcpy(mapped.pData, &constants, sizeof(constants));
+        context_->Unmap(dotConstantBuffer_.Get(), 0);
+
+        // 圆点可以在任意窗口尺寸下绘制（快速模式下窗口仍然保持配置尺寸），
+        // 因此每次绘制都把视口设回整窗，避免沿用上一次的残留状态。
+        SetViewport(0, 0, width_, height_);
+        context_->IASetInputLayout(nullptr);
+        context_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        context_->VSSetShader(dotVertexShader_.Get(), nullptr, 0);
+        context_->PSSetShader(dotPixelShader_.Get(), nullptr, 0);
+        context_->PSSetConstantBuffers(0, 1, dotConstantBuffer_.GetAddressOf());
+        context_->OMSetBlendState(dotBlendState_.Get(), nullptr, 0xFFFFFFFF);
+        context_->Draw(3, 0);
+
+        // 还原为 Live2D 使用的混合状态：同一帧里两者可能先后绘制
+        context_->OMSetBlendState(blendState_.Get(), nullptr, 0xFFFFFFFF);
+        return true;
     }
 
     void Renderer::UpdateFPS() {

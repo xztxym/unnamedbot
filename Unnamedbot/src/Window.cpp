@@ -79,8 +79,13 @@ namespace UnnamedBot {
         // 使用 WS_EX_NOREDIRECTIONBITMAP 而非 WS_EX_LAYERED：窗口内容完全由
         // DirectComposition 呈现，这样 backbuffer 的 alpha 才能实现逐像素透明，
         // 而不是整窗铺一层黑底（WS_EX_LAYERED 只能做整体 alpha）。
+        //
+        // 刻意不带 WS_EX_TRANSPARENT：那个样式会让系统在命中测试阶段就跳过本窗口，
+        // WM_NCHITTEST 根本不会送到这里，鼠标一律落到下层窗口。
+        // 穿透改由 WM_NCHITTEST 按需返回 HTTRANSPARENT 实现（见 HandleMessage），
+        // 这样模型/圆点才点得到。
         hwnd_ = CreateWindowExW(
-            WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+            WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
             WINDOW_CLASS_NAME,
             title_.c_str(),
             WS_POPUP,
@@ -214,18 +219,23 @@ namespace UnnamedBot {
     void Window::SetClickThrough(bool enabled) {
         if (!hwnd_) return;
         clickThrough_ = enabled;
-        // 修改窗口样式
-        LONG exStyle = GetWindowLong(hwnd_, GWL_EXSTYLE);
-        if (enabled) {
-            exStyle |= WS_EX_TRANSPARENT;
-        }
-        else {
-            exStyle &= ~WS_EX_TRANSPARENT;
-        }
-        SetWindowLong(hwnd_, GWL_EXSTYLE, exStyle);
-        // 刷新窗口
-        SetWindowPos(hwnd_, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+        // 不再用 WS_EX_TRANSPARENT 实现穿透：该样式会让系统跳过本窗口的命中测试，
+        // 连 WM_NCHITTEST 都不会送到这里，像素级判定就无从谈起（也正是
+        // 「左键无法拖动、右键没反应」的根因）。现在的做法是始终接收命中测试，
+        // 由 WM_NCHITTEST 决定穿透还是不穿透。
         LOG_DEBUG("Window", "Click through: " + std::string(enabled ? "enabled" : "disabled"));
+    }
+
+    void Window::SetHitTestProvider(HitTestCallback provider) {
+        hitTestProvider_ = std::move(provider);
+    }
+
+    bool Window::IsPixelTransparent(int x, int y) {
+        // 没有判定源时视为整窗透明：维持「不做像素检测就全穿透」的旧语义。
+        if (!hitTestProvider_) {
+            return true;
+        }
+        return !hitTestProvider_(x, y);
     }
 
     void Window::SetHoverCursor(bool isHand) {
@@ -423,25 +433,18 @@ namespace UnnamedBot {
     LRESULT Window::HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         switch (msg) {
         case WM_NCHITTEST: {
-            // 点击穿透：返回HTTRANSPARENT让鼠标穿透
-            if (clickThrough_) {
-                // 如果需要像素级检测，这里应该获取鼠标位置，查询Live2D是否命中
-                // 如果命中，返回HTCLIENT，否则返回HTTRANSPARENT
-                // 但此处简化：直接返回HTTRANSPARENT，由外部通过IsHit检测
-                // 若启用像素检测，则在这里调用外部接口
-                if (usePixelHitTest_) {
-                    // 获取鼠标位置
-                    POINT pt;
-                    pt.x = GET_X_LPARAM(lParam);
-                    pt.y = GET_Y_LPARAM(lParam);
-                    ScreenToClient(hwnd, &pt);
-                    // 这里应该调用Live2D的IsHit检测
-                    // 暂时返回HTTRANSPARENT允许穿透
-                    return HTTRANSPARENT;
-                }
-                return HTTRANSPARENT;
+            // 关闭穿透：整窗接收鼠标（“抓住窗口任何位置”的旧行为）
+            if (!clickThrough_) {
+                return HTCLIENT;
             }
-            return HTCLIENT;
+            // 命中判定：只有不透明内容（模型 / 圆点）参与点击，其余地方把鼠标让给下层窗口。
+            // 这是「碰撞框只覆盖人物」的唯一实现点；像素掩码由渲染线程每帧读回。
+            if (usePixelHitTest_ && hitTestProvider_) {
+                POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                ScreenToClient(hwnd, &pt);
+                return IsPixelTransparent(pt.x, pt.y) ? HTTRANSPARENT : HTCLIENT;
+            }
+            return HTTRANSPARENT;
         }
 
         case WM_MOUSEMOVE: {
@@ -451,22 +454,27 @@ namespace UnnamedBot {
             if (onMouseHover_) {
                 onMouseHover_(pt.x, pt.y);
             }
-            // 更新光标（如果需要）
-            if (clickThrough_) {
-                // 检测是否在模型区域，若是则显示手型光标
-                // 简化：显示默认箭头
-                SetCursor(LoadCursor(nullptr, IDC_ARROW));
+            // 悬停在可点区域上时给个手型：否则一个透明的窗口「这里能点吗」全靠试
+            if (usePixelHitTest_ && hitTestProvider_) {
+                SetCursor(LoadCursor(nullptr, IsPixelTransparent(pt.x, pt.y) ? IDC_ARROW : IDC_HAND));
             }
-            // 长按拖拽
-            if (isLeftDown_ && GetCapture() == hwnd) {
-                DWORD holdTime = GetTickCount64() - mouseDownTime_;
-                if (holdTime >= 200) {
+
+            // 长按拖拽：按住超过阈值才算拖动，否则松开时是「单击」
+            if (isLeftDown_ && GetCapture() == hwnd && !isDragging_) {
+                constexpr DWORD kDragHoldMilliseconds = 200;
+                if (GetTickCount64() - mouseDownTime_ >= kDragHoldMilliseconds) {
                     isDragging_ = true;
-                    // 计算新位置
-                    int deltaX = pt.x - dragStartX_;
-                    int deltaY = pt.y - dragStartY_;
-                    int newX = dragWinX_ + deltaX;
-                    int newY = dragWinY_ + deltaY;
+                }
+            }
+            if (isDragging_) {
+                // 拖动是行为开关，不是状态：配置里关掉时立即生效，
+                // 不需要重启程序（配置页保存后会重载）
+                if (!ConfigManager::Instance().GetBool(ConfigManager::KEY_FEATURE_DRAG_ENABLED, true)) {
+                    isDragging_ = false;
+                }
+                else {
+                    const int newX = dragWinX_ + (pt.x - dragStartX_);
+                    const int newY = dragWinY_ + (pt.y - dragStartY_);
                     SetPosition(newX, newY);
                     if (onMouseDrag_) {
                         onMouseDrag_(newX, newY);
@@ -482,46 +490,46 @@ namespace UnnamedBot {
             pt.y = GET_Y_LPARAM(lParam);
             mouseDownTime_ = GetTickCount64();
             isLeftDown_ = true;
+            isDragging_ = false;
             // 记录拖拽起始位置
             dragStartX_ = pt.x;
             dragStartY_ = pt.y;
             GetPosition(dragWinX_, dragWinY_);
-            // 如果是点击非穿透区域，可以在这里处理
-            if (!clickThrough_) {
-                SetCapture(hwnd);
-            }
+            // 无条件捕获鼠标：拖动过程中光标会离开窗口（甚至跑到其他窗口上方），
+            // 不捕获就只能收到窗口内的移动，拖到一半就断。
+            // （旧实现只在「关闭穿透」时捕获，而默认穿透，因此永远拖不动。）
+            SetCapture(hwnd);
             return 0;
         }
 
         case WM_LBUTTONUP: {
             isLeftDown_ = false;
-            DWORD holdTime = GetTickCount64() - mouseDownTime_;
             POINT pt;
             pt.x = GET_X_LPARAM(lParam);
             pt.y = GET_Y_LPARAM(lParam);
-            // 判断是单击还是长按拖拽
-            if (holdTime < 200) {
-                // 单击
-                if (onMouseClick_) {
-                    onMouseClick_(pt.x, pt.y, true);
-                }
-            }
-            else {
-                // 长按拖拽结束
-                if (isDragging_) {
-                    isDragging_ = false;
-                    // 保存位置
-                    SaveState();
-                }
-            }
-            if (!clickThrough_) {
+            const bool dragged = isDragging_;
+            isDragging_ = false;
+            if (GetCapture() == hwnd) {
                 ReleaseCapture();
+            }
+            if (dragged) {
+                // 拖动结束：把新位置写回配置，下次启动还在同一处
+                SaveState();
+            }
+            else if (onMouseClick_) {
+                // 未拖动 → 单击（是否会真的触发由接收方按命中判定决定）
+                onMouseClick_(pt.x, pt.y, true);
             }
             return 0;
         }
 
+        // 右键菜单在「拾起」时弹出：菜单跟着鼠标弹起会把自己的点击吃掉，
+        // 而 Windows 的惯例也是右键抬起时出菜单。
         case WM_RBUTTONDOWN: {
-            // 右键点击
+            return 0;
+        }
+
+        case WM_RBUTTONUP: {
             POINT pt;
             pt.x = GET_X_LPARAM(lParam);
             pt.y = GET_Y_LPARAM(lParam);

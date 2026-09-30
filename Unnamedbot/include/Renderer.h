@@ -10,6 +10,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <mutex>
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -108,6 +109,22 @@ namespace UnnamedBot {
         ComPtr<ID3D11VertexShader> CreateVertexShader(const std::string& shaderSource, const std::string& entryPoint = "main");
         ComPtr<ID3D11PixelShader> CreatePixelShader(const std::string& shaderSource, const std::string& entryPoint = "main");
 
+        // ---- 命中掩码 ----
+        // 桌宠窗口要求「碰撞框只覆盖模型的非透明部分」。与其在 CPU 侧重现
+        // Live2D 的顶点变换，不如直接把后台缓冲的 alpha 读回来：结果与画面上
+        // 看到的像素完全一致，且与投影矩阵、模型缩放无关。
+        //
+        // CaptureHitMask 必须在渲染完一帧、Present 之前、在渲染线程上调用；
+        // HitTestOpaque 可在任意线程调用（内部加锁读快照）。
+        bool CaptureHitMask();
+        bool HitTestOpaque(int x, int y) const;
+        void InvalidateHitMask();
+
+        // ---- 快速模式圆点 ----
+        // 直接绘制到当前后台缓冲（调用前应先 BeginFrame）。坐标为像素，
+        // 原点在左上角；输出预乘 alpha，与 Live2D 的输出保持一致。
+        bool DrawDot(float centerX, float centerY, float radius, const DirectX::XMFLOAT4& color);
+
     private:
         // 初始化设备
         bool CreateDevice(HWND hwnd);
@@ -129,6 +146,9 @@ namespace UnnamedBot {
 
         // 创建采样状态
         void CreateSamplerState();
+
+        // 创建圆点绘制所需的着色器与混合状态（首次绘制时惰性创建）
+        bool EnsureDotResources();
 
         // 计算FPS
         void UpdateFPS();
@@ -154,6 +174,28 @@ namespace UnnamedBot {
         ComPtr<ID3D11RasterizerState> rasterizerState_;
         ComPtr<ID3D11BlendState> blendState_;
         ComPtr<ID3D11SamplerState> samplerState_;
+
+        // 后台缓冲纹理：命中掩码直接从它拷贝，避免每帧重新 GetBuffer
+        ComPtr<ID3D11Texture2D> backBuffer_;
+
+        // 命中掩码：每像素 1 字节 alpha
+        ComPtr<ID3D11Texture2D> hitMaskStaging_;
+        std::vector<unsigned char> hitMask_;
+        int hitMaskWidth_ = 0;
+        int hitMaskHeight_ = 0;
+        bool hitMaskValid_ = false;
+        mutable std::mutex hitMaskMutex_;
+
+        // 暂存纹理尺寸（只在渲染线程上访问）
+        int stagingWidth_ = 0;
+        int stagingHeight_ = 0;
+
+        // 圆点绘制资源
+        ComPtr<ID3D11VertexShader> dotVertexShader_;
+        ComPtr<ID3D11PixelShader> dotPixelShader_;
+        ComPtr<ID3D11Buffer> dotConstantBuffer_;
+        ComPtr<ID3D11BlendState> dotBlendState_;
+        bool dotReady_ = false;
 
         // 窗口和渲染尺寸
         HWND hwnd_ = nullptr;

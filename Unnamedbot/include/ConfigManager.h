@@ -106,6 +106,13 @@ namespace UnnamedBot {
         static const std::string KEY_FEATURE_DRAG_ENABLED;
         static const std::string KEY_FEATURE_CLICK_THROUGH;
 
+        // 快速模式：关闭 Live2D 渲染，只保留一个可交互的圆点
+        static const std::string KEY_QUICK_ENABLED;
+        static const std::string KEY_QUICK_MODE;
+
+        // 启用的提示词文件清单（位于 ./prompts，逗号分隔的文件名）
+        static const std::string KEY_PROMPT_ENABLED;
+
         // 模型状态默认值
         static const std::string KEY_MODEL_DEFAULT_ID;
         static const std::string KEY_MODEL_DEFAULT_SCALE;

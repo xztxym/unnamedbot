@@ -160,11 +160,32 @@
       <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
+  <!-- WebView2：自实现 HTML 前端的宿主。用静态加载器，无需额外部署 DLL；
+       静态加载器要求显式链接版本/路径相关库。x64 与 Win32 各取对应的库目录。 -->
+  <ItemDefinitionGroup Condition="'$(Platform)'=='x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\webview2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>WebView2LoaderStatic.lib;Version.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)ThirdParty\webview2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Platform)'=='Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\webview2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>WebView2LoaderStatic.lib;Version.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)ThirdParty\webview2\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\AIClient.cpp" />
     <ClCompile Include="src\AppCore.cpp" />
     <ClCompile Include="src\AttachmentManager.cpp" />
     <ClCompile Include="src\ConfigManager.cpp" />
+    <ClCompile Include="src\ConfigWebUi.cpp" />
     <ClCompile Include="src\ControlTerminalWindow.cpp" />
     <ClCompile Include="src\Database.cpp" />
     <ClCompile Include="src\HotkeyManager.cpp" />
@@ -172,10 +193,14 @@
     <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\MCPTool.cpp" />
     <ClCompile Include="src\MessageBoxWindow.cpp" />
+    <ClCompile Include="src\PromptLibrary.cpp" />
+    <ClCompile Include="src\QuickInputBar.cpp" />
+    <ClCompile Include="src\SpeechBubble.cpp" />
     <ClCompile Include="src\MessageHandler.cpp" />
     <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
     <ClCompile Include="src\SecurityUtils.cpp" />
+    <ClCompile Include="src\SplashScreen.cpp" />
     <ClCompile Include="src\TaskScheduler.cpp" />
     <ClCompile Include="src\TrayIcon.cpp" />
     <ClCompile Include="src\UpdateManager.cpp" />
@@ -245,22 +270,34 @@
     <ClInclude Include="include\AppCore.h" />
     <ClInclude Include="include\AttachmentManager.h" />
     <ClInclude Include="include\ConfigManager.h" />
+    <ClInclude Include="include\ConfigWebUi.h" />
     <ClInclude Include="include\ControlTerminalWindow.h" />
     <ClInclude Include="include\Database.h" />
     <ClInclude Include="include\HotkeyManager.h" />
     <ClInclude Include="include\Live2DManager.h" />
     <ClInclude Include="include\Logger.h" />
     <ClInclude Include="include\MCPTool.h" />
+    <ClInclude Include="include\PromptLibrary.h" />
+    <ClInclude Include="include\QuickInputBar.h" />
+    <ClInclude Include="include\SpeechBubble.h" />
     <ClInclude Include="include\MessageBoxWindow.h" />
     <ClInclude Include="include\MessageHandler.h" />
     <ClInclude Include="include\Model.h" />
     <ClInclude Include="include\Renderer.h" />
+    <ClInclude Include="include\ResourceIds.h" />
     <ClInclude Include="include\SecurityUtils.h" />
+    <ClInclude Include="include\SplashScreen.h" />
     <ClInclude Include="include\TaskScheduler.h" />
     <ClInclude Include="include\TrayIcon.h" />
     <ClInclude Include="include\UpdateManager.h" />
     <ClInclude Include="include\Utils.h" />
     <ClInclude Include="include\Window.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Unnamedbot.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\unnamedbot.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
