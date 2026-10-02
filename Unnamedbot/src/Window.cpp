@@ -5,6 +5,7 @@
 #include <shellapi.h>
 #include <windowsx.h>
 #include <algorithm>
+#include <cmath>
 #include <vector>
 #include <string>
 
@@ -148,11 +149,81 @@ namespace UnnamedBot {
 
     void Window::SetPosition(int x, int y) {
         if (!hwnd_) return;
-        posX_ = x;
-        posY_ = y;
-        int scaledX = static_cast<int>(x * dpiScale_);
-        int scaledY = static_cast<int>(y * dpiScale_);
-        SetWindowPos(hwnd_, nullptr, scaledX, scaledY, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+        // 配置里的位置历史上可能被写成天文数字，先收进一个远大于任何多屏桌面的
+        // 范围再做 dpi 乘法：否则 x * dpiScale 会在转成 int 前溢出。
+        constexpr int kSaneLimit = 1000000;
+        x = std::clamp(x, -kSaneLimit, kSaneLimit);
+        y = std::clamp(y, -kSaneLimit, kSaneLimit);
+        // 入参是逻辑坐标（与 GetPosition/SaveState 同一坐标系）。
+        const float scale = (dpiScale_ > 0.0f) ? dpiScale_ : 1.0f;
+        SetPositionPhysical(static_cast<int>(std::lround(x * scale)),
+            static_cast<int>(std::lround(y * scale)));
+    }
+
+    void Window::SetPositionPhysical(int x, int y) {
+        if (!hwnd_) return;
+
+        // 先量窗口的物理尺寸：夹取需要它，且必须在移动之前取到（移动不改尺寸）。
+        RECT rect = {};
+        int width = 0;
+        int height = 0;
+        if (GetWindowRect(hwnd_, &rect)) {
+            width = static_cast<int>(rect.right - rect.left);
+            height = static_cast<int>(rect.bottom - rect.top);
+        }
+
+        // 夹取：越界的位置（拖出屏幕、配置里的历史垃圾值）一律拉回工作区。
+        // 这是「圆点还能找回来」的兜底——只靠拖拽算对还不够，任何写入路径
+        // （配置恢复、托盘菜单）都可能送进来一个屏幕外的坐标。
+        ClampToWorkArea(x, y, width, height);
+
+        if (!SetWindowPos(hwnd_, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER)) {
+            LOG_WARN("Window", "SetWindowPos failed. Error: " + std::to_string(GetLastError()));
+        }
+
+        // 同步逻辑坐标缓存，供 GetPosition 在取不到窗口矩形时兜底。
+        const float scale = (dpiScale_ > 0.0f) ? dpiScale_ : 1.0f;
+        posX_ = static_cast<int>(std::lround(x / scale));
+        posY_ = static_cast<int>(std::lround(y / scale));
+    }
+
+    void Window::ClampToWorkArea(int& x, int& y, int width, int height) const {
+        // 夹取的对象是「窗口中心」，不是整个窗口矩形。
+        // 桌宠窗口绝大部分是透明的：看得见、点得到的内容（快速模式的圆点、
+        // 普通模式的人物）都落在中心附近。若要求整窗可见，可见内容就永远
+        // 离屏幕边缘差半个窗口（400 逻辑窗口在 125% 下是 250 物理像素），
+        // 「把桌宠拖到屏幕边角」这种最平常的用法会直接失效。
+        // 保证中心在工作区内 = 保证看得见的东西一定还在屏幕里，
+        // 无论从哪条路径写进来的坐标都不会让桌宠「失踪」。
+        RECT probe = { x, y, x + width, y + height };
+        MONITORINFO info = {};
+        info.cbSize = sizeof(MONITORINFO);
+        if (!GetMonitorInfoW(MonitorFromRect(&probe, MONITOR_DEFAULTTONEAREST), &info)) {
+            LOG_WARN("Window", "Failed to query monitor work area; position left unclamped.");
+            return;
+        }
+
+        // RECT 成员是 LONG，与 int 不同型，std::clamp 要求三者同型，先取成 int。
+        const int workLeft = static_cast<int>(info.rcWork.left);
+        const int workTop = static_cast<int>(info.rcWork.top);
+        const int workRight = static_cast<int>(info.rcWork.right);
+        const int workBottom = static_cast<int>(info.rcWork.bottom);
+
+        // 留一点边距：圆点在 125% 缩放下半径约 15 物理像素，
+        // 不留边距时把中心拖到工作区角上会把圆点切掉大半。
+        constexpr int kContentEdgeMargin = 24;
+        const int minCenterX = workLeft + kContentEdgeMargin;
+        const int maxCenterX = (workRight - kContentEdgeMargin > minCenterX)
+            ? workRight - kContentEdgeMargin : minCenterX;
+        const int minCenterY = workTop + kContentEdgeMargin;
+        const int maxCenterY = (workBottom - kContentEdgeMargin > minCenterY)
+            ? workBottom - kContentEdgeMargin : minCenterY;
+
+        // width/height 为 0（取不到窗口矩形）时退化为夹取左上角，同样安全。
+        const int centerX = x + width / 2;
+        const int centerY = y + height / 2;
+        x += std::clamp(centerX, minCenterX, maxCenterX) - centerX;
+        y += std::clamp(centerY, minCenterY, maxCenterY) - centerY;
     }
 
     void Window::GetPosition(int& x, int& y) const {
@@ -473,11 +544,20 @@ namespace UnnamedBot {
                     isDragging_ = false;
                 }
                 else {
-                    const int newX = dragWinX_ + (pt.x - dragStartX_);
-                    const int newY = dragWinY_ + (pt.y - dragStartY_);
-                    SetPosition(newX, newY);
-                    if (onMouseDrag_) {
-                        onMouseDrag_(newX, newY);
+                    // 用光标的屏幕坐标（物理像素）反推窗口左上角：
+                    // 位置只由光标与固定的抓手偏移决定，不依赖窗口当前在哪，
+                    // 因此窗口被移动后不会反过来改变下一次的计算结果
+                    // （旧写法用客户端坐标累加位移，窗口一移动客户端坐标就变，
+                    // 形成正反馈把窗口甩出屏幕）。
+                    POINT cursor = {};
+                    if (GetCursorPos(&cursor)) {
+                        const int newX = static_cast<int>(cursor.x) - dragGrabOffsetX_;
+                        const int newY = static_cast<int>(cursor.y) - dragGrabOffsetY_;
+                        SetPositionPhysical(newX, newY);
+                        if (onMouseDrag_) {
+                            // 回调沿用逻辑坐标（与 GetPosition 一致）
+                            onMouseDrag_(posX_, posY_);
+                        }
                     }
                 }
             }
@@ -491,10 +571,19 @@ namespace UnnamedBot {
             mouseDownTime_ = GetTickCount64();
             isLeftDown_ = true;
             isDragging_ = false;
-            // 记录拖拽起始位置
-            dragStartX_ = pt.x;
-            dragStartY_ = pt.y;
-            GetPosition(dragWinX_, dragWinY_);
+            // 记录「抓手」在窗口内的偏移（物理像素）：光标屏幕坐标 - 窗口左上角。
+            // 拖拽期间它是常量，窗口位置 = 光标位置 - 偏移。
+            dragGrabOffsetX_ = pt.x;
+            dragGrabOffsetY_ = pt.y;
+            {
+                POINT cursor = {};
+                RECT windowRect = {};
+                if (GetCursorPos(&cursor) && GetWindowRect(hwnd, &windowRect)) {
+                    dragGrabOffsetX_ = static_cast<int>(cursor.x - windowRect.left);
+                    dragGrabOffsetY_ = static_cast<int>(cursor.y - windowRect.top);
+                }
+                // 取不到时退回客户端坐标：此时窗口未被移动过，两者等价。
+            }
             // 无条件捕获鼠标：拖动过程中光标会离开窗口（甚至跑到其他窗口上方），
             // 不捕获就只能收到窗口内的移动，拖到一半就断。
             // （旧实现只在「关闭穿透」时捕获，而默认穿透，因此永远拖不动。）
@@ -541,8 +630,12 @@ namespace UnnamedBot {
 
         case WM_SIZE: {
             if (onResize_) {
-                int newWidth = LOWORD(lParam);
-                int newHeight = HIWORD(lParam);
+                // WM_SIZE 给的是物理像素，而渲染缓冲、命中掩码与 Window::GetSize
+                // 全部按逻辑像素维护；这里不换算的话，一旦真的发生尺寸变化，
+                // 缓冲尺寸会和客户端鼠标坐标差一个 dpi 因子，命中判定整体偏移。
+                const float scale = (dpiScale_ > 0.0f) ? dpiScale_ : 1.0f;
+                const int newWidth = static_cast<int>(LOWORD(lParam) / scale);
+                const int newHeight = static_cast<int>(HIWORD(lParam) / scale);
                 onResize_(newWidth, newHeight);
             }
             return 0;

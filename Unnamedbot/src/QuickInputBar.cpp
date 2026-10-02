@@ -218,6 +218,12 @@ namespace UnnamedBot {
             info.rcWork = RECT{ 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
         }
         const RECT work = info.rcWork;
+        // RECT 的成员是 LONG，与 int 是不同的类型；std::clamp 要求三个实参同类型，
+        // 直接传 work.left 这类表达式会让模板推导失败（C2672），因此先取成 int 边界。
+        const int workLeft = static_cast<int>(work.left);
+        const int workTop = static_cast<int>(work.top);
+        const int workRight = static_cast<int>(work.right);
+        const int workBottom = static_cast<int>(work.bottom);
 
         if (!anchor || !IsWindow(anchor)) {
             x = work.left + ((work.right - work.left) - width) / 2;
@@ -234,7 +240,8 @@ namespace UnnamedBot {
 
         // 水平方向与锚点居中对齐，并夹在工作区内
         x = anchorRect.left + ((anchorRect.right - anchorRect.left) - width) / 2;
-        x = std::clamp(x, work.left + edge, std::max(work.left + edge, work.right - width - edge));
+        // 加括号调用 (std::max)：Windows.h 的 max 宏会破坏 std::max（本项目未定义 NOMINMAX）。
+        x = std::clamp(x, workLeft + edge, (std::max)(workLeft + edge, workRight - width - edge));
 
         // 优先贴在锚点下方；下方放不下再翻到上方；都放不下就贴向空间较大的一侧。
         const int below = anchorRect.bottom + gap;
@@ -250,7 +257,7 @@ namespace UnnamedBot {
             const int spaceAbove = anchorRect.top - work.top;
             y = (spaceBelow >= spaceAbove) ? (work.bottom - height - edge) : (work.top + edge);
         }
-        y = std::clamp(y, work.top + edge, std::max(work.top + edge, work.bottom - height - edge));
+        y = std::clamp(y, workTop + edge, (std::max)(workTop + edge, workBottom - height - edge));
     }
 
     void QuickInputBar::Submit() {

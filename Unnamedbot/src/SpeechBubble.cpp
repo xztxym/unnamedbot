@@ -145,8 +145,9 @@ namespace UnnamedBot {
         width = (rc.right - rc.left) + pad * 2;
         height = (rc.bottom - rc.top) + pad * 2;
         // 空文本或纯空白不应产出零尺寸窗口
-        width = std::max(width, pad * 2 + 24 * dpi_ / 96);
-        height = std::max(height, pad * 2 + 20 * dpi_ / 96);
+        // 加括号调用 (std::max)：Windows.h 的 max 宏会破坏 std::max（本项目未定义 NOMINMAX）。
+        width = (std::max)(width, pad * 2 + 24 * dpi_ / 96);
+        height = (std::max)(height, pad * 2 + 20 * dpi_ / 96);
     }
 
     void SpeechBubble::ComputePosition(HWND anchor, int width, int height, int& x, int& y) const {
@@ -161,6 +162,12 @@ namespace UnnamedBot {
             info.rcWork = RECT{ 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
         }
         const RECT work = info.rcWork;
+        // RECT 的成员是 LONG，与 int 是不同的类型；std::clamp 要求三个实参同类型，
+        // 直接传 work.left 这类表达式会让模板推导失败（C2672），因此先取成 int 边界。
+        const int workLeft = static_cast<int>(work.left);
+        const int workTop = static_cast<int>(work.top);
+        const int workRight = static_cast<int>(work.right);
+        const int workBottom = static_cast<int>(work.bottom);
 
         // 参照物取锚点窗口的中心，而不是窗口矩形：桌宠窗口大部分是透明的，
         // 可见内容（模型 / 圆点）就在中心，贴边算出来的距离会远得莫名其妙。
@@ -209,8 +216,8 @@ namespace UnnamedBot {
         x += static_cast<int>(hash % static_cast<unsigned>(jitter * 2 + 1)) - jitter;
         y += static_cast<int>((hash >> 8) % static_cast<unsigned>(jitter * 2 + 1)) - jitter;
 
-        x = std::clamp(x, work.left + edge, std::max(work.left + edge, work.right - width - edge));
-        y = std::clamp(y, work.top + edge, std::max(work.top + edge, work.bottom - height - edge));
+        x = std::clamp(x, workLeft + edge, (std::max)(workLeft + edge, workRight - width - edge));
+        y = std::clamp(y, workTop + edge, (std::max)(workTop + edge, workBottom - height - edge));
     }
 
     void SpeechBubble::Show(HWND anchor, const std::wstring& text) {

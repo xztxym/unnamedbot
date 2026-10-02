@@ -130,6 +130,16 @@ namespace UnnamedBot {
         // 获取系统DPI缩放
         float GetSystemDPIScale();
 
+        // 以物理像素设置窗口位置，并夹取到工作区内。
+        // 所有移动最终都收敛到这里：SetPosition（逻辑坐标）与拖拽（物理坐标）
+        // 都走同一条路径，避免任何一条绕过夹取、把窗口留在屏幕外。
+        void SetPositionPhysical(int x, int y);
+
+        // 把物理像素坐标的窗口夹取到其所在显示器的工作区内。
+        // 夹取的是窗口中心（可见内容的所在），因此桌宠可以贴到屏幕边角，
+        // 但中心一定留在工作区内——「拖出屏幕后再也找不回来」不会发生。
+        void ClampToWorkArea(int& x, int& y, int width, int height) const;
+
         // 窗口句柄
         HWND hwnd_ = nullptr;
 
@@ -157,14 +167,18 @@ namespace UnnamedBot {
         // DPI缩放
         float dpiScale_ = 1.0f;
 
-        // 拖拽相关
-        int dragStartX_ = 0;
-        int dragStartY_ = 0;
-        int dragWinX_ = 0;
-        int dragWinY_ = 0;
+        // 拖拽相关：按下时「抓手」在窗口内的偏移（物理像素），拖拽期间保持不变。
+        // 窗口位置由「光标屏幕坐标 - 偏移」直接得出，绝不累加鼠标位移：
+        // 旧实现用 dragWinX_（逻辑坐标）+ (pt.x - dragStartX_)（物理像素）再交给
+        // SetPosition（又乘一次 dpiScale），等价于每帧做 w -> C - dpiScale*w 的迭代，
+        // 增益为 -dpiScale，|增益| > 1 时是正反馈，窗口会在几十次鼠标事件内
+        // 指数级飞离屏幕（日志实录：2801 -> 2241 -> ... 每次乘 1/1.25）。
+        int dragGrabOffsetX_ = 0;
+        int dragGrabOffsetY_ = 0;
 
-        // 鼠标按下时间（毫秒）
-        DWORD mouseDownTime_ = 0;
+        // 鼠标按下时间（毫秒）。用 ULONGLONG 与 GetTickCount64 同型：
+        // 存进 DWORD 会在系统开机 49.7 天后回绕，拖拽阈值算错。
+        ULONGLONG mouseDownTime_ = 0;
         bool isLeftDown_ = false;
 
         // 逐像素命中判定源：WM_NCHITTEST 每次都问它一次。

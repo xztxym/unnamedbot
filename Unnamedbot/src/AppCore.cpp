@@ -654,29 +654,40 @@ namespace UnnamedBot {
     }
 
     float AppCore::QuickDotRadius() const {
-        int width = 0;
-        int height = 0;
-        renderer_.GetSize(width, height);
-        // 与窗口尺寸挂钩：窗口小的时候圆点也不至于缩成一个像素。
-        // 绘制与命中判定都走这里，保证「看到的圆」恰好就是「能点的区域」。
-        const float reference = static_cast<float>(width < height ? width : height);
-        const float radius = reference * 0.12f;
-        return radius > 8.0f ? radius : 8.0f;
+        // 目标直径 24 逻辑像素（半径 12，单位与渲染缓冲一致）。
+        // 定这个数的依据：托盘/任务栏用的是 ico 的 32px 档，「半个图标」约 16px
+        // 直径对鼠标偏小；24px 在桌面上仍然是个小圆点，又刚好达到常用的
+        // 最小舒适点击目标尺寸。旧值取窗口短边的 12%（400 窗口 -> 半径 48、
+        // 直径 96 缓冲像素，125% 缩放下约 120 物理像素）明显过大。
+        constexpr float kQuickDotDiameterLogical = 24.0f;
+        return kQuickDotDiameterLogical * 0.5f;
     }
 
     bool AppCore::HitTestClient(int x, int y) const {
+        int width = 0;
+        int height = 0;
+        renderer_.GetSize(width, height);
+
+        // 入参是客户端物理像素（见 Window.h 里 HitTestCallback 的约定），
+        // 而渲染缓冲——命中掩码和圆点半径所在的空间——是逻辑像素。
+        // 不换算的话，125% 缩放下整个判定区会偏移 (dpi-1)/2 个窗口宽：
+        // 400 逻辑宽的窗口，圆心画在物理 (250,250)、判定却按 (200,200) 算，
+        // 结果就是「看得见圆点/人物，却点不中」。
+        const float dpiScale = (mainWindow_ && mainWindow_->GetDPIScale() > 0.0f)
+            ? mainWindow_->GetDPIScale()
+            : 1.0f;
+        const float logicalX = static_cast<float>(x) / dpiScale;
+        const float logicalY = static_cast<float>(y) / dpiScale;
+
         if (IsQuickModeActive()) {
-            int width = 0;
-            int height = 0;
-            renderer_.GetSize(width, height);
             // 容差 4px：圆点很小，严格按半径判定会变得很难点中
             const float radius = QuickDotRadius() + 4.0f;
-            const float dx = static_cast<float>(x) - static_cast<float>(width) * 0.5f;
-            const float dy = static_cast<float>(y) - static_cast<float>(height) * 0.5f;
+            const float dx = logicalX - static_cast<float>(width) * 0.5f;
+            const float dy = logicalY - static_cast<float>(height) * 0.5f;
             return dx * dx + dy * dy <= radius * radius;
         }
         // 普通模式：渲染器在 Present 前读回的 alpha 掩码，就是画面上不透明的像素
-        return renderer_.HitTestOpaque(x, y);
+        return renderer_.HitTestOpaque(static_cast<int>(logicalX), static_cast<int>(logicalY));
     }
 
     void AppCore::ShowContextMenu() {
