@@ -393,21 +393,17 @@ namespace UnnamedBot {
             }
             });
 
-        mainWindow_->OnMouseDrag([this](int x, int y) {
-            // 更新模型位置
-            Live2DManager::Instance().SetModelPosition(static_cast<float>(x), static_cast<float>(y));
-            });
+        // 拖拽与移动窗口都不设置「模型位置」：模型就画在窗口里，窗口动模型自然跟着动。
+        // 而 Live2DManager::SetModelPosition 的入参是 CubismModelMatrix 的画布坐标
+        // （SetCenterPosition 的偏移，单位是画布像素），把窗口的屏幕坐标喂进去
+        // 既是错的量纲，还会在拖动时每帧写一次配置库。
+        // 需要模型在窗口内微调时，应当用画布坐标调用它（0,0 = 居中）。
 
         mainWindow_->OnWindowClose([this]() {
             // 窗口关闭时，隐藏窗口而不是退出
             mainWindow_->Hide();
             TrayIcon::Instance().ShowPet(false);
             LOG_DEBUG("AppCore", "Window closed.");
-            });
-
-        mainWindow_->OnWindowMove([this](int x, int y) {
-            // 窗口移动时更新模型位置
-            Live2DManager::Instance().SetModelPosition(static_cast<float>(x), static_cast<float>(y));
             });
 
         mainWindow_->OnWindowResize([this](int width, int height) {

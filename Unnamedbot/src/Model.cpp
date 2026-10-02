@@ -171,12 +171,17 @@ namespace {
 
         // 更新模型矩阵：每帧都必须从 SDK 基准归一化重新推导，
         // 否则绝对赋值式的 Scale 会把“画布高度 -> 2 个单位”的归一化覆盖掉，模型将不可见。
+        //
+        // 位置交给 SetCenterPosition（= 画布中心落在哪个画布坐标上，单位是画布像素）。
+        // 不能写成 SetPosition(...) + SetCenterPosition(0,0)：CubismMatrix44::Translate
+        // 是**赋值**不是累加，后一句会把前一句整个覆盖，positionX_/positionY_ 等于白设
+        // （顺带把窗口屏幕坐标这种错量纲的值也一起吃掉，问题被掩盖）。传进
+        // SetCenterPosition 后偏移才真正生效，而 (0,0) 与原来的居中效果完全一致。
         CubismModelMatrix* const modelMatrix = GetModelMatrix();
         if (modelMatrix) {
             modelMatrix->SetHeight(2.0f);
             modelMatrix->ScaleRelative(scale_, scale_);
-            modelMatrix->SetPosition(positionX_, positionY_);
-            modelMatrix->SetCenterPosition(0.0f, 0.0f);
+            modelMatrix->SetCenterPosition(positionX_, positionY_);
         }
 
         // 将本帧参数应用到模型
@@ -383,7 +388,9 @@ namespace {
         positionY_ = y;
         CubismModelMatrix* const modelMatrix = GetModelMatrix();
         if (modelMatrix) {
-            modelMatrix->SetPosition(x, y);
+            // 与 Update 用同一种写法：SetCenterPosition 才是「画布中心的位置」，
+            // 用 SetPosition 会被下一帧的 SetCenterPosition 覆盖（Translate 是赋值）。
+            modelMatrix->SetCenterPosition(x, y);
         }
     }
 
@@ -401,8 +408,7 @@ namespace {
             // 从 SDK 基准归一化重新推导，避免反复调用时累积；与加载路径保持一致
             modelMatrix->SetHeight(2.0f);
             modelMatrix->ScaleRelative(scale_, scale_);
-            modelMatrix->SetPosition(positionX_, positionY_);
-            modelMatrix->SetCenterPosition(0.0f, 0.0f);
+            modelMatrix->SetCenterPosition(positionX_, positionY_);
         }
     }
 
@@ -621,8 +627,7 @@ namespace {
         if (modelMatrix) {
             modelMatrix->SetHeight(2.0f);
             modelMatrix->ScaleRelative(scale_, scale_);
-            modelMatrix->SetPosition(positionX_, positionY_);
-            modelMatrix->SetCenterPosition(0.0f, 0.0f);
+            modelMatrix->SetCenterPosition(positionX_, positionY_);
         }
 
         // 创建物理（如果存在）
