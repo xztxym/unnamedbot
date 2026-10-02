@@ -99,11 +99,13 @@ namespace UnnamedBot {
     ) {
         std::lock_guard<std::mutex> lock(mutex_);
 
+        // 每次请求都先清掉上一次的失败状态：调用方据此判断这一轮到底成没成。
+        lastRequestFailed_ = false;
+        lastRequestError_.clear();
+
         if (config_.apiKey.empty()) {
             LOG_ERROR("AIClient", "API Key is empty.");
-            if (onChunk) {
-                onChunk("Error: API Key not configured.", true);
-            }
+            SetRequestFailure("API Key not configured.");
             return;
         }
 
@@ -368,6 +370,11 @@ namespace UnnamedBot {
         std::string line;
         std::string accumulatedContent;
 
+        // complete 必须只报一次：调用方把它当成「这一轮回复到此为止，可以落库了」，
+        // 而 finish_reason 与 [DONE] 会前后各出现一次，报两次就会把同一条回复
+        // 重复写进会话历史（日志里表现为同一条「Added message」刷三遍）。
+        bool completionReported = false;
+
         while (std::getline(stream, line)) {
             // 去除\r
             if (!line.empty() && line.back() == '\r') {
@@ -380,7 +387,8 @@ namespace UnnamedBot {
                 std::string data = line.substr(6);
                 if (data == "[DONE]") {
                     // 流结束
-                    if (onChunk) {
+                    if (onChunk && !completionReported) {
+                        completionReported = true;
                         onChunk("", true);
                     }
                     break;
@@ -424,7 +432,8 @@ namespace UnnamedBot {
 
                         // 检查finish_reason
                         if (choice.contains("finish_reason") && !choice["finish_reason"].is_null()) {
-                            if (onChunk) {
+                            if (onChunk && !completionReported) {
+                                completionReported = true;
                                 onChunk("", true);
                             }
                         }
@@ -529,9 +538,7 @@ namespace UnnamedBot {
             CURL* curl = curl_easy_init();
             if (!curl) {
                 LOG_ERROR("AIClient", "Failed to initialize CURL.");
-                if (onChunk) {
-                    onChunk("Error: Failed to initialize CURL.", true);
-                }
+                SetRequestFailure("Failed to initialize CURL.");
                 return;
             }
 
@@ -579,18 +586,16 @@ namespace UnnamedBot {
 
             if (res != CURLE_OK) {
                 LOG_ERROR("AIClient", "CURL error: " + std::string(curl_easy_strerror(res)));
-                if (onChunk) {
-                    onChunk("Error: " + std::string(curl_easy_strerror(res)), true);
-                }
+                SetRequestFailure(curl_easy_strerror(res));
                 return;
             }
 
             if (httpCode != 200) {
                 LOG_ERROR("AIClient", "Stream request failed with status " + std::to_string(httpCode) +
                     ": " + responseData);
-                if (onChunk) {
-                    onChunk("Error: HTTP " + std::to_string(httpCode), true);
-                }
+                // 把服务端的原话带上（例如「模型名不被支持」），用户才看得出该改什么
+                SetRequestFailure("HTTP " + std::to_string(httpCode) +
+                    (responseData.empty() ? std::string() : ": " + responseData));
                 return;
             }
 
@@ -600,10 +605,25 @@ namespace UnnamedBot {
         }
         catch (const std::exception& e) {
             LOG_ERROR("AIClient", "Stream request exception: " + std::string(e.what()));
-            if (onChunk) {
-                onChunk("Error: " + std::string(e.what()), true);
-            }
+            SetRequestFailure(e.what());
         }
+    }
+
+    // 调用方（SendChatMessageStream）在流式请求全程持有 mutex_，因此这里不再加锁；
+    // 两个读取接口才加锁。
+    void AIClient::SetRequestFailure(const std::string& detail) {
+        lastRequestFailed_ = true;
+        lastRequestError_ = detail;
+    }
+
+    bool AIClient::LastRequestFailed() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return lastRequestFailed_;
+    }
+
+    std::string AIClient::LastRequestError() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return lastRequestError_;
     }
 
     nlohmann::json AIClient::MessageToOpenAI(const Message& msg) {

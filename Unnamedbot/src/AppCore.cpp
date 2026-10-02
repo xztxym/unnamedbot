@@ -578,6 +578,15 @@ namespace UnnamedBot {
                     tools
                 );
 
+                // 传输/服务端失败：错误原因不再混在内容里，这里必须显式判断并放弃本轮，
+                // 否则失败文本会被当成 AI 回复落库，之后每轮请求又把它发给模型，
+                // 界面上就是同一个错误反复出现。
+                if (aiClient_.LastRequestFailed()) {
+                    LOG_WARN("AppCore", "AI request failed; nothing written to the conversation: " +
+                        aiClient_.LastRequestError());
+                    return std::string();
+                }
+
                 // 处理工具调用
                 if (!pendingToolCalls.empty()) {
                     // 执行工具并收集结果
@@ -654,13 +663,14 @@ namespace UnnamedBot {
     }
 
     float AppCore::QuickDotRadius() const {
-        // 目标直径 24 逻辑像素（半径 12，单位与渲染缓冲一致）。
+        // 目标直径 24 像素（半径 12，单位是渲染缓冲像素）。
         // 定这个数的依据：托盘/任务栏用的是 ico 的 32px 档，「半个图标」约 16px
         // 直径对鼠标偏小；24px 在桌面上仍然是个小圆点，又刚好达到常用的
-        // 最小舒适点击目标尺寸。旧值取窗口短边的 12%（400 窗口 -> 半径 48、
-        // 直径 96 缓冲像素，125% 缩放下约 120 物理像素）明显过大。
-        constexpr float kQuickDotDiameterLogical = 24.0f;
-        return kQuickDotDiameterLogical * 0.5f;
+        // 最小舒适点击目标尺寸。
+        // 旧值取窗口短边的 12%：400 的缓冲宽 -> 半径 48、直径 96 像素，
+        // 实测（1920x1080 @125%）屏幕上就是 96 物理像素，明显过大。
+        constexpr float kQuickDotDiameterPixels = 24.0f;
+        return kQuickDotDiameterPixels * 0.5f;
     }
 
     bool AppCore::HitTestClient(int x, int y) const {
@@ -668,26 +678,22 @@ namespace UnnamedBot {
         int height = 0;
         renderer_.GetSize(width, height);
 
-        // 入参是客户端物理像素（见 Window.h 里 HitTestCallback 的约定），
-        // 而渲染缓冲——命中掩码和圆点半径所在的空间——是逻辑像素。
-        // 不换算的话，125% 缩放下整个判定区会偏移 (dpi-1)/2 个窗口宽：
-        // 400 逻辑宽的窗口，圆心画在物理 (250,250)、判定却按 (200,200) 算，
-        // 结果就是「看得见圆点/人物，却点不中」。
-        const float dpiScale = (mainWindow_ && mainWindow_->GetDPIScale() > 0.0f)
-            ? mainWindow_->GetDPIScale()
-            : 1.0f;
-        const float logicalX = static_cast<float>(x) / dpiScale;
-        const float logicalY = static_cast<float>(y) / dpiScale;
-
+        // 坐标系：入参是客户端物理像素（见 Window.h 里 HitTestCallback 的约定），
+        // 渲染缓冲（命中掩码、圆点半径）同样落在物理像素上——不要在这里乘除
+        // dpiScale_。DirectComposition 是把交换链按 1:1 物理像素贴在窗口左上角，
+        // 而不是按 DIP 缩放铺满窗口。实测（1920x1080 @125%，窗口 500x500 物理，
+        // 缓冲 400x400）：画在缓冲中心 (200,200) 的圆点出现在客户端 (200,200)，
+        // 直径正好 24 物理像素。若按 DPI 换算成 (250,250)，命中区会偏移 50px，
+        // 变成「看得见圆点却点不中」。
         if (IsQuickModeActive()) {
             // 容差 4px：圆点很小，严格按半径判定会变得很难点中
             const float radius = QuickDotRadius() + 4.0f;
-            const float dx = logicalX - static_cast<float>(width) * 0.5f;
-            const float dy = logicalY - static_cast<float>(height) * 0.5f;
+            const float dx = static_cast<float>(x) - static_cast<float>(width) * 0.5f;
+            const float dy = static_cast<float>(y) - static_cast<float>(height) * 0.5f;
             return dx * dx + dy * dy <= radius * radius;
         }
         // 普通模式：渲染器在 Present 前读回的 alpha 掩码，就是画面上不透明的像素
-        return renderer_.HitTestOpaque(static_cast<int>(logicalX), static_cast<int>(logicalY));
+        return renderer_.HitTestOpaque(x, y);
     }
 
     void AppCore::ShowContextMenu() {
@@ -801,6 +807,19 @@ namespace UnnamedBot {
                 reply += chunk;
             }
             });
+
+        // 用户主动发起的对话：失败要看得见，但绝不能落库成「AI 回复」——
+        // 那会把 "Error: HTTP 400" 变成会话历史的一部分并被反复重发。
+        if (aiClient_.LastRequestFailed()) {
+            const std::string error = aiClient_.LastRequestError();
+            LOG_WARN("AppCore", "AI request failed (not stored as a reply): " + error);
+            const std::wstring text = L"请求失败：" + Utils::Utf8ToWide(error);
+            TrayIcon::Instance().ShowNotification(L"AI 请求失败", text, NIIF_WARNING, 5000);
+            if (IsQuickModeActive() && !isShuttingDown_) {
+                SpeechBubble::Instance().Show(GetMainWindow(), text);
+            }
+            return;
+        }
 
         reply = Utils::Trim(reply);
         if (reply.empty()) {

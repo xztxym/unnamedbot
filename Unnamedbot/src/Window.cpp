@@ -71,10 +71,17 @@ namespace UnnamedBot {
         posY_ = y;
 
         // 获取DPI缩放后的实际大小
-        int scaledWidth = static_cast<int>(width_ * dpiScale_);
-        int scaledHeight = static_cast<int>(height_ * dpiScale_);
-        int scaledX = static_cast<int>(x * dpiScale_);
-        int scaledY = static_cast<int>(y * dpiScale_);
+        int scaledWidth = static_cast<int>(std::lround(width_ * dpiScale_));
+        int scaledHeight = static_cast<int>(std::lround(height_ * dpiScale_));
+        int scaledX = static_cast<int>(std::lround(x * dpiScale_));
+        int scaledY = static_cast<int>(std::lround(y * dpiScale_));
+
+        // 先夹进工作区再创建：配置里可能存着历史遗留的屏幕外坐标
+        // （例如拖拽 bug 写进去的 2240/3232）。窗口一旦这样被创建出来，
+        // 显示后就是看不见也点不到的「幽灵桌宠」，只能靠改配置救回来。
+        ClampToWorkArea(scaledX, scaledY);
+        posX_ = static_cast<int>(std::lround(scaledX / dpiScale_));
+        posY_ = static_cast<int>(std::lround(scaledY / dpiScale_));
 
         // 创建窗口：无边框、无标题栏、工具窗口。
         // 使用 WS_EX_NOREDIRECTIONBITMAP 而非 WS_EX_LAYERED：窗口内容完全由
@@ -163,19 +170,10 @@ namespace UnnamedBot {
     void Window::SetPositionPhysical(int x, int y) {
         if (!hwnd_) return;
 
-        // 先量窗口的物理尺寸：夹取需要它，且必须在移动之前取到（移动不改尺寸）。
-        RECT rect = {};
-        int width = 0;
-        int height = 0;
-        if (GetWindowRect(hwnd_, &rect)) {
-            width = static_cast<int>(rect.right - rect.left);
-            height = static_cast<int>(rect.bottom - rect.top);
-        }
-
-        // 夹取：越界的位置（拖出屏幕、配置里的历史垃圾值）一律拉回工作区。
+        // 夹取：越界的位置（拖出屏幕、配置里的历史垃圾值）一律拉回来。
         // 这是「圆点还能找回来」的兜底——只靠拖拽算对还不够，任何写入路径
         // （配置恢复、托盘菜单）都可能送进来一个屏幕外的坐标。
-        ClampToWorkArea(x, y, width, height);
+        ClampToWorkArea(x, y);
 
         if (!SetWindowPos(hwnd_, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER)) {
             LOG_WARN("Window", "SetWindowPos failed. Error: " + std::to_string(GetLastError()));
@@ -187,15 +185,20 @@ namespace UnnamedBot {
         posY_ = static_cast<int>(std::lround(y / scale));
     }
 
-    void Window::ClampToWorkArea(int& x, int& y, int width, int height) const {
-        // 夹取的对象是「窗口中心」，不是整个窗口矩形。
-        // 桌宠窗口绝大部分是透明的：看得见、点得到的内容（快速模式的圆点、
-        // 普通模式的人物）都落在中心附近。若要求整窗可见，可见内容就永远
-        // 离屏幕边缘差半个窗口（400 逻辑窗口在 125% 下是 250 物理像素），
-        // 「把桌宠拖到屏幕边角」这种最平常的用法会直接失效。
-        // 保证中心在工作区内 = 保证看得见的东西一定还在屏幕里，
-        // 无论从哪条路径写进来的坐标都不会让桌宠「失踪」。
-        RECT probe = { x, y, x + width, y + height };
+    void Window::ClampToWorkArea(int& x, int& y) const {
+        // 夹取的对象是「可见内容的中心」，不是窗口中心，也不是整个窗口矩形。
+        //
+        // - 桌宠窗口绝大部分是透明的，看得见、点得到的内容（快速模式的圆点、
+        //   普通模式的人物）都在内容区的中心，而不是窗口矩形的中心：
+        //   在高 DPI 下窗口的物理尺寸比内容区大（见 WM_SIZE 处关于
+        //   DirectComposition 不按 DIP 缩放的说明），两者相差半个差值。
+        // - 反过来，要求「整窗可见」也不行：400 逻辑宽的窗口在 125% 下是 500
+        //   物理像素，那样可见内容就永远离屏幕边缘差 250px，
+        //   「把桌宠拖到屏幕边角」这种最平常的用法会直接失效。
+        //
+        // 内容区是从客户区左上角起、尺寸等于逻辑尺寸的那一块
+        // （当前呈现方式下就是 width_ x height_），所以内容中心 = 左上角 + 半个逻辑尺寸。
+        RECT probe = { x, y, x + width_, y + height_ };
         MONITORINFO info = {};
         info.cbSize = sizeof(MONITORINFO);
         if (!GetMonitorInfoW(MonitorFromRect(&probe, MONITOR_DEFAULTTONEAREST), &info)) {
@@ -209,8 +212,8 @@ namespace UnnamedBot {
         const int workRight = static_cast<int>(info.rcWork.right);
         const int workBottom = static_cast<int>(info.rcWork.bottom);
 
-        // 留一点边距：圆点在 125% 缩放下半径约 15 物理像素，
-        // 不留边距时把中心拖到工作区角上会把圆点切掉大半。
+        // 留一点边距：圆点半径按 24 逻辑像素算，留 24px 就保证它整个留在屏幕内，
+        // 不会在贴边时被切掉一半而变得不好点。
         constexpr int kContentEdgeMargin = 24;
         const int minCenterX = workLeft + kContentEdgeMargin;
         const int maxCenterX = (workRight - kContentEdgeMargin > minCenterX)
@@ -219,9 +222,8 @@ namespace UnnamedBot {
         const int maxCenterY = (workBottom - kContentEdgeMargin > minCenterY)
             ? workBottom - kContentEdgeMargin : minCenterY;
 
-        // width/height 为 0（取不到窗口矩形）时退化为夹取左上角，同样安全。
-        const int centerX = x + width / 2;
-        const int centerY = y + height / 2;
+        const int centerX = x + width_ / 2;
+        const int centerY = y + height_ / 2;
         x += std::clamp(centerX, minCenterX, maxCenterX) - centerX;
         y += std::clamp(centerY, minCenterY, maxCenterY) - centerY;
     }
@@ -630,9 +632,14 @@ namespace UnnamedBot {
 
         case WM_SIZE: {
             if (onResize_) {
-                // WM_SIZE 给的是物理像素，而渲染缓冲、命中掩码与 Window::GetSize
-                // 全部按逻辑像素维护；这里不换算的话，一旦真的发生尺寸变化，
-                // 缓冲尺寸会和客户端鼠标坐标差一个 dpi 因子，命中判定整体偏移。
+                // WM_SIZE 给的是物理像素，但渲染缓冲必须与启动时保持同一尺度：
+                // AppCore 初始化渲染器时用的是 Window::GetSize 的逻辑尺寸，
+                // 这里不换算的话，一次真实的尺寸变化就会把缓冲换成物理尺寸，
+                // 圆点与命中掩码随之整体偏移，和启动后的状态前后矛盾。
+                //
+                // 注意（既有问题，本次未改）：DirectComposition 是把交换链按
+                // 1:1 物理像素贴在窗口左上角，不按 DIP 缩放，所以 125% 下
+                // 400x400 的缓冲只铺满 500x500 客户区的左上角，桌宠比预期小 20%。
                 const float scale = (dpiScale_ > 0.0f) ? dpiScale_ : 1.0f;
                 const int newWidth = static_cast<int>(LOWORD(lParam) / scale);
                 const int newHeight = static_cast<int>(HIWORD(lParam) / scale);

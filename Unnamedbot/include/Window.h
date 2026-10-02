@@ -136,9 +136,10 @@ namespace UnnamedBot {
         void SetPositionPhysical(int x, int y);
 
         // 把物理像素坐标的窗口夹取到其所在显示器的工作区内。
-        // 夹取的是窗口中心（可见内容的所在），因此桌宠可以贴到屏幕边角，
-        // 但中心一定留在工作区内——「拖出屏幕后再也找不回来」不会发生。
-        void ClampToWorkArea(int& x, int& y, int width, int height) const;
+        // 夹取的是「可见内容的中心」（内容区 = 从客户区左上角起、尺寸等于逻辑
+        // 尺寸的那一块），因此桌宠可以贴到屏幕边角，但圆点/人物一定留在屏幕内，
+        // 「拖出屏幕后再也找不回来」不会发生。
+        void ClampToWorkArea(int& x, int& y) const;
 
         // 窗口句柄
         HWND hwnd_ = nullptr;

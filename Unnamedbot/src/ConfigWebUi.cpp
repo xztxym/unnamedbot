@@ -650,6 +650,10 @@ body.standalone .standalone{display:block}
         break;
       case "presetOptions":
         presets[msg.key] = msg.options || [];
+        // 宿主可能顺手纠正过别的字段（例如换服务商后把「默认模型」收敛到该
+        // 服务商的模型）：带上 values 时先同步，否则这一行会按旧值渲染，
+        // 保存时提交的还是旧值，纠正等于没做。
+        if (msg.values) { values = msg.values; updateHeader(); }
         // 只重画受影响的行，避免整页重排打断滚动
         var sel = '.pset-grid [data-key="' + CSS.escape(msg.key) + '"]';
         var host = document.querySelector(sel);

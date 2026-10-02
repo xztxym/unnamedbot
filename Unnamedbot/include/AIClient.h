@@ -121,6 +121,16 @@ namespace UnnamedBot {
             const std::string& toolChoice = "auto"
         );
 
+        // 最近一次流式请求是否以「传输/服务端错误」结束（HTTP 非 200、CURL 失败、
+        // 未配置 API Key、解析异常），以及给用户看的失败原因。
+        //
+        // 失败时错误文本不再通过 onChunk 送出：它不是模型回复。调用方必须用这两个
+        // 接口判断成败，绝不能把失败原因当成 AI 回复写进会话历史——否则历史里会
+        // 堆满 "Error: HTTP 400" 这类字符串，每轮请求又把它们原样发给模型，
+        // 每次启动/重载还会重新载入并重新弹一遍通知，看起来就是「同一个错误在反复发生」。
+        bool LastRequestFailed() const;
+        std::string LastRequestError() const;
+
         // 提交工具调用结果（用于多轮对话）
         AIResponse SubmitToolResults(
             const std::vector<Message>& messages,
@@ -171,6 +181,10 @@ namespace UnnamedBot {
             ToolCallCallback onToolCall
         );
 
+        // 记录一次请求失败。必须在 SendChatMessageStream 已经持有 mutex_ 的前提下调用
+        // （流式请求全程在锁内），所以这里自己不加锁。
+        void SetRequestFailure(const std::string& detail);
+
         // 消息转换为OpenAI格式
         nlohmann::json MessageToOpenAI(const Message& msg);
 
@@ -188,6 +202,10 @@ namespace UnnamedBot {
 
         // 请求计数器
         int requestCounter_ = 0;
+
+        // 最近一次流式请求的失败状态（在持锁期间读写）
+        bool lastRequestFailed_ = false;
+        std::string lastRequestError_;
 
         // 互斥锁
         mutable std::mutex mutex_;

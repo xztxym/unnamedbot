@@ -59,7 +59,18 @@ namespace UnnamedBot {
             def.type = "function";
             def.function.name = tool->GetName();
             def.function.description = tool->GetDescription();
-            def.function.parameters = tool->GetParametersSchema();
+
+            // GetParametersSchema() 给的是「属性表」（参数名 -> 参数描述），
+            // 而 ToolDefinition::function.parameters 按约定要的是完整 JSON Schema。
+            // 少了这层包裹，参数为空的工具会送出 "parameters": {}，服务端一律拒成
+            // HTTP 400：Invalid schema for function 'get_current_time':
+            // schema must be a JSON Schema of 'type: "object"', got 'type: null'。
+            // 结果是「只要请求带上工具就必然失败」——AI 一直不回话的元凶之一。
+            const nlohmann::json properties = tool->GetParametersSchema();
+            def.function.parameters = {
+                { "type", "object" },
+                { "properties", properties.is_object() ? properties : nlohmann::json::object() },
+            };
             definitions.push_back(def);
         }
 

@@ -40,6 +40,8 @@ namespace UnnamedBot {
 
         // 服务商预设：常用 OpenAI 兼容接口的 Base URL，以及该服务商可用的模型。
         // 模型名各家会随时调整，这里给的是常见值；用户仍可在「默认模型」里直接手填。
+        // 写进来的名字必须是该服务端真实接受的：名字不对时服务端对每一次请求
+        // 都回 HTTP 400，症状是「AI 永远不回话」，而不是一条能看懂的报错。
         struct ProviderPreset {
             const wchar_t* label;
             const wchar_t* baseUrl;
@@ -49,7 +51,7 @@ namespace UnnamedBot {
         const ProviderPreset kProviders[] = {
             { L"OpenAI",     L"https://api.openai.com/v1",                                 L"gpt-4o|gpt-4o-mini|gpt-4.1|gpt-4.1-mini|o3|o4-mini" },
             { L"Azure",      L"https://YOUR-RESOURCE.openai.azure.com/openai/v1/",         L"gpt-4o|gpt-4o-mini|gpt-4.1" },
-            { L"DeepSeek",   L"https://api.deepseek.com/v1",                               L"deepseek-chat|deepseek-reasoner" },
+            { L"DeepSeek",   L"https://api.deepseek.com/v1",                               L"deepseek-flash|deepseek-v4-pro" },
             { L"智谱 GLM",   L"https://open.bigmodel.cn/api/paas/v4",                      L"glm-4-plus|glm-4-air|glm-4-flash|glm-4.5" },
             { L"Kimi",       L"https://api.moonshot.cn/v1",                                L"moonshot-v1-8k|moonshot-v1-32k|moonshot-v1-128k|kimi-k2-0711-preview" },
             { L"阿里百炼",   L"https://dashscope.aliyuncs.com/compatible-mode/v1",         L"qwen-plus|qwen-max|qwen-turbo|qwen3-235b-a22b" },
@@ -857,15 +859,24 @@ namespace UnnamedBot {
 
         if (type == "presetsChanged") {
             ApplyPostedValues(message);
+
+            // 用户刚动过服务商或模型：顺手把这一对收敛一次（详见 SnapModelToProvider）。
+            const bool snapped = SnapModelToProvider();
+
             // 服务地址变了，「可用模型」整行要重新算；两行都回，保证选中态一致。
+            // 纠正过模型时必须把新的 values 一并回推：页面保存时提交的是它自己那份
+            // values，不回推的话纠正只停在宿主这边，一按保存又被覆盖回去。
             for (const char* key : { kProviderPresetKey, kModelPresetKey }) {
-                const nlohmann::json reply = {
+                nlohmann::json reply = {
                     { "type", "presetOptions" },
                     { "key", key },
                     { "options", nlohmann::json::parse(PresetOptionsJson(key,
                         CurrentValueText(ConfigManager::KEY_API_BASE_URL.c_str()),
                         CurrentValueText(ConfigManager::KEY_API_MODEL_DEFAULT.c_str()))) },
                 };
+                if (snapped) {
+                    reply["values"] = nlohmann::json::parse(BuildValuesJson());
+                }
                 SendToPage(reply.dump());
             }
             return;
@@ -921,6 +932,38 @@ namespace UnnamedBot {
         const auto it = draft_.find(key);
         if (it != draft_.end()) return Utils::Utf8ToWide(it->second);
         return std::wstring();
+    }
+
+    // 服务商与模型必须成套。页面切服务商时只写 api.base_url，api.model_default
+    // 会留在上一个服务商的模型名上（出厂默认就是 OpenAI 的 gpt-4o），于是请求被
+    // 服务端一律拒成 HTTP 400——「模型名不被支持」，而界面上完全看不出这一对不匹配。
+    // 这里在服务地址能反查到内置服务商、且当前模型不在该服务商模型列表里时，
+    // 收敛到该服务商的第一个模型。返回是否真的改过。
+    bool ControlTerminalWindow::SnapModelToProvider() {
+        const ProviderPreset* provider =
+            FindProviderByUrl(CurrentValueText(ConfigManager::KEY_API_BASE_URL.c_str()));
+        if (provider == nullptr) {
+            // 自定义网关：模型名我们无从判断，绝不代改。
+            return false;
+        }
+
+        const std::vector<std::wstring> models = SplitOptions(provider->models);
+        if (models.empty()) {
+            return false;
+        }
+
+        const std::wstring current = CurrentValueText(ConfigManager::KEY_API_MODEL_DEFAULT.c_str());
+        for (const std::wstring& model : models) {
+            if (model == current) {
+                return false;   // 本来就是一套的
+            }
+        }
+
+        const std::wstring replacement = models.front();
+        draft_[ConfigManager::KEY_API_MODEL_DEFAULT] = Utils::WideToUtf8(replacement);
+        LOG_DEBUG("ControlTerminal", "Model '" + Utils::WideToUtf8(current) +
+            "' is not offered by this provider; switched to '" + Utils::WideToUtf8(replacement) + "'");
+        return true;
     }
 
     bool ControlTerminalWindow::ValidateValue(const FieldDef& def, const std::wstring& value, std::wstring& error) const {
@@ -1004,6 +1047,11 @@ namespace UnnamedBot {
     void ControlTerminalWindow::Save() {
         invalidKeys_.clear();
         invalidErrors_.clear();
+
+        // 写库前先把「服务商 + 模型」收敛成一套：否则换过服务商就会一直 HTTP 400。
+        // 与下面 quick.mode 同理——草稿先归一，界面保存后 SendState 会把纠正后的
+        // 模型显示出来，用户看得见这次改动。
+        SnapModelToProvider();
 
         // 父开关关闭时 quick.mode 整行在页面上不可见（见 BuildSchemaJson 的 requires）。
         // 这里把草稿强制回写成「关闭」：draft_ 让界面立刻反映，loaded_ 一起同步，

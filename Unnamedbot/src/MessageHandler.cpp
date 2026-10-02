@@ -916,7 +916,16 @@ namespace UnnamedBot {
         std::string aiResponse = aiRequestCallback_(history, aiMessages);
 
         // 添加AI回复
-        if (!aiResponse.empty()) {
+        // 回调已经把最终回复作为助手消息放进 aiMessages 了，返回值只是同一段文本：
+        // 两边都存就会把一条回复在历史里写两遍（之后每轮又重复发给模型）。
+        bool alreadyStored = false;
+        for (const auto& msg : aiMessages) {
+            if (msg.role == MessageRole::Assistant && msg.content == aiResponse) {
+                alreadyStored = true;
+                break;
+            }
+        }
+        if (!aiResponse.empty() && !alreadyStored) {
             AddAIResponse(aiResponse);
         }
 
