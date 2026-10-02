@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -203,6 +203,7 @@
     <ClCompile Include="src\SplashScreen.cpp" />
     <ClCompile Include="src\TaskScheduler.cpp" />
     <ClCompile Include="src\TrayIcon.cpp" />
+    <ClCompile Include="src\UiTheme.cpp" />
     <ClCompile Include="src\UpdateManager.cpp" />
     <ClCompile Include="src\Utils.cpp" />
     <ClCompile Include="src\Window.cpp" />
@@ -289,6 +290,7 @@
     <ClInclude Include="include\SplashScreen.h" />
     <ClInclude Include="include\TaskScheduler.h" />
     <ClInclude Include="include\TrayIcon.h" />
+    <ClInclude Include="include\UiTheme.h" />
     <ClInclude Include="include\UpdateManager.h" />
     <ClInclude Include="include\Utils.h" />
     <ClInclude Include="include\Window.h" />

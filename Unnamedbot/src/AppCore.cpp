@@ -16,6 +16,7 @@
 #include "../include/QuickInputBar.h"
 #include "../include/SpeechBubble.h"
 #include "../include/TrayIcon.h"
+#include "../include/UiTheme.h"
 #include "../include/HotkeyManager.h"
 #include "../include/SecurityUtils.h"
 #include "../include/AttachmentManager.h"
@@ -389,7 +390,16 @@ namespace UnnamedBot {
             }
             else {
                 LOG_DEBUG("AppCore", "Right click at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
-                ShowContextMenu();
+                // Ctrl+右键 保留原来那套上下文菜单（配置终端 / 隐藏 / 总在最前 / 退出）。
+                // 托盘右键也有同一套，这里留着只是为了不改变老习惯。
+                if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
+                    ShowContextMenu();
+                    return;
+                }
+                // 右键人物 → 极简输入条：整条透明，只剩一条下划线（？？？时是血红）。
+                QuickInputBar::Instance().PopupUnderline(GetMainWindow(), [this](const std::string& text) {
+                    std::thread([this, text]() { ProcessAIMessage(text); }).detach();
+                    });
             }
             });
 
@@ -651,11 +661,9 @@ namespace UnnamedBot {
     }
 
     bool AppCore::IsYandereMode() const {
-        if (!IsQuickModeActive()) {
-            return false;
-        }
-        // 以 UTF-8 比较：配置里存的就是这个字符串（见 ControlTerminalWindow）
-        return ConfigManager::Instance().GetString(ConfigManager::KEY_QUICK_MODE, "关闭") == Utils::WideToUtf8(L"？？？");
+        // 判据抽到了 UiTheme（各 UI 组件也要用它决定配色/字体），这里只做转发，
+        // 避免「人格判定」在两处各写一份、改一处漏一处。
+        return IsYandereModeActive();
     }
 
     float AppCore::QuickDotRadius() const {

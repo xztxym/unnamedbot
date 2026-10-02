@@ -136,6 +136,13 @@ input,textarea{-webkit-user-select:text; user-select:text}
 }
 .card-sub{margin-top:var(--s2); font-size:var(--f-sm); color:var(--tx3); line-height:1.6}
 
+/* 「？？？」主题：能用变量的地方已经换过色，这里只补三处不好用变量的：
+   卡片内嵌的一圈红光、标题前的红点、以及正文的轻微倾斜（楷体本身就带手写感）。*/
+body.yandere .card{box-shadow:inset 0 0 0 1px rgba(255,43,78,.10), inset 0 0 28px rgba(255,43,78,.05)}
+body.yandere .card-title::after{content:" ◆"; color:var(--acc); font-size:.8em}
+body.yandere .hdr-title::after{content:" ❤"; color:var(--acc)}
+body.yandere .card-no{color:var(--acc)}
+
 .rows{margin-top:var(--s5); border-top:1px solid var(--hair)}
 .row{
   display:grid;
@@ -511,6 +518,53 @@ body.standalone .standalone{display:block}
     document.getElementById("stateText").textContent = dirty ? "未保存的修改" : "已同步 · app.db";
   }
 
+  // 主题：宿主只在「？？？」人格下发配色/字体，这里落成 CSS 变量。
+  // 整页样式本来就全靠 :root 上的变量，所以一次赋值即可整体换肤。
+  // 默认值在第一次调用时从样式表快照下来：关掉「？？？」时原样还原，
+  // 保证普通主题下的外观与以前逐像素一致。
+  var themeVars = null;
+  var themeVarNames = ["--acc","--ice","--ice-hi","--ice-mid","--edge","--edge2","--hair",
+                       "--txt","--tx2","--head","--bg0","--bg1","--card0","--card1",
+                       "--inbg","--seg","--ghost","--primary","--sans","--mono"];
+  function snapshotThemeVars() {
+    var cs = getComputedStyle(document.documentElement);
+    themeVars = {};
+    for (var i = 0; i < themeVarNames.length; i++) {
+      themeVars[themeVarNames[i]] = cs.getPropertyValue(themeVarNames[i]).trim();
+    }
+  }
+  function applyTheme(t) {
+    if (!themeVars) snapshotThemeVars();
+    var root = document.documentElement.style;
+    for (var n in themeVars) { if (themeVars[n]) root.setProperty(n, themeVars[n]); }
+    document.body.classList.toggle("yandere", !!(t && t.yandere));
+    if (!t || !t.yandere) return;
+
+    function v(name, value) { if (value) root.setProperty(name, value); }
+    v("--acc", t.accent);
+    v("--ice", t.accentSoft);
+    v("--ice-hi", t.accentHi);
+    v("--ice-mid", t.accentMid);
+    v("--edge", t.edge);
+    v("--edge2", t.accent);
+    v("--hair", t.edgeSoft);
+    v("--txt", t.text);
+    v("--tx2", t.textDim);
+    v("--head", t.accentHi);
+    v("--bg0", t.surfaceDeep);
+    v("--bg1", t.surface);
+    v("--card0", t.surfaceDeep);
+    v("--card1", t.surface);
+    v("--inbg", t.surfaceDeep);
+    v("--seg", t.edgeSoft);
+    v("--ghost", t.edgeSoft);
+    v("--primary", t.edge);
+    // 楷体这类字族没有等宽感，英文标签也跟着换：宁可牺牲一点对齐感，
+    // 也要让整页看起来是「同一个人的界面」。
+    if (t.fontSans) root.setProperty("--sans", "'" + t.fontSans + "','Microsoft YaHei UI',serif");
+    if (t.fontMono) root.setProperty("--mono", "'" + t.fontMono + "',Consolas,monospace");
+  }
+
   function setStatus(st) {
     if (!st) return;
     var el = document.getElementById("status");
@@ -634,6 +688,7 @@ body.standalone .standalone{display:block}
     if (msg.baseline) baseline = msg.baseline;
     if (msg.presets) presets = msg.presets;
     errors = msg.errors || {};
+    applyTheme(msg.theme);
     setStatus(msg.status);
     render();
     // 宿主在「首次进入」和「重新唤起窗口」时会要求回到顶部；

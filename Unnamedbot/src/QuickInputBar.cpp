@@ -1,11 +1,15 @@
 #include "../include/QuickInputBar.h"
 
 #include "../include/Logger.h"
+#include "../include/UiTheme.h"
 #include "../include/Utils.h"
 
 #include <CommCtrl.h>   // EM_SETCUEBANNER / EM_SETMARGINS
+#include <Imm.h>        // 组字串（GCS_COMPSTR）
 
 #include <algorithm>
+
+#pragma comment(lib, "imm32.lib")
 
 namespace UnnamedBot {
 
@@ -21,10 +25,14 @@ namespace UnnamedBot {
         constexpr int kGapLogical = 12;      // 与锚点窗口的间距
         constexpr int kEdgePadLogical = 8;   // 与工作区边缘的最小距离
 
-        // 与配置终端同一套深色配色，避免弹出的小条看起来像另一个程序。
-        const COLORREF kBackgroundColor = RGB(7, 13, 30);    // #070d1e
-        const COLORREF kBorderColor = RGB(94, 124, 160);     // #5e7ca0
-        const COLORREF kTextColor = RGB(232, 241, 255);      // #e8f1ff
+        // 下划线式：整体更矮，下沿一条线就是全部装饰
+        constexpr int kUnderlineHeightLogical = 34;
+        constexpr int kUnderlineThicknessLogical = 2;
+        constexpr int kUnderlineInsetLogical = 2;
+
+        // 色键：整窗铺这个颜色，系统把该颜色的像素全部抠成透明。
+        // 可见内容（正文色、主题色）都不是纯黑，所以不会误抠到字和线。
+        const COLORREF kTransparentKey = RGB(0, 0, 0);
 
         // 当前显示器 DPI：优先用 GetDpiForWindow（Win10 1607+），取不到再退回系统 DPI。
         int DpiForWindow(HWND hwnd) {
@@ -62,6 +70,12 @@ namespace UnnamedBot {
         if (backgroundBrush_) {
             DeleteObject(backgroundBrush_);
             backgroundBrush_ = nullptr;
+            backgroundBrushColor_ = CLR_INVALID;
+        }
+        if (keyBrush_) {
+            DeleteObject(keyBrush_);
+            keyBrush_ = nullptr;
+            keyBrushColor_ = CLR_INVALID;
         }
         if (hwnd_) {
             DestroyWindow(hwnd_);
@@ -145,9 +159,204 @@ namespace UnnamedBot {
     }
 
     void QuickInputBar::Popup(HWND anchor, std::function<void(const std::string&)> onSubmit) {
+        Show(anchor, std::move(onSubmit), Style::Panel);
+    }
+
+    void QuickInputBar::PopupUnderline(HWND anchor, std::function<void(const std::string&)> onSubmit) {
+        Show(anchor, std::move(onSubmit), Style::Underline);
+    }
+
+    HBRUSH QuickInputBar::EnsureBrush(HBRUSH& brush, COLORREF& cached, COLORREF color) {
+        if (!brush || cached != color) {
+            if (brush) {
+                DeleteObject(brush);
+            }
+            brush = CreateSolidBrush(color);
+            cached = color;
+        }
+        return brush;
+    }
+
+    namespace {
+
+        // 取 EDIT 当前文本
+        std::wstring ReadWindowText(HWND hwnd) {
+            const int length = GetWindowTextLengthW(hwnd);
+            if (length <= 0) {
+                return std::wstring();
+            }
+            std::wstring text(static_cast<size_t>(length) + 1, L'\0');
+            const int copied = GetWindowTextW(hwnd, text.data(), length + 1);
+            text.resize(copied > 0 ? static_cast<size_t>(copied) : 0);
+            return text;
+        }
+
+        // 取输入法正在组字、但还没上屏的内容（没有则返回空）。
+        // 组字期间 EDIT 不会发 EN_CHANGE，所以这段文字只能主动去问输入法。
+        std::wstring ReadComposition(HWND edit) {
+            std::wstring result;
+            HIMC context = ImmGetContext(edit);
+            if (!context) {
+                return result;
+            }
+            const LONG bytes = ImmGetCompositionStringW(context, GCS_COMPSTR, nullptr, 0);
+            if (bytes > 0) {
+                std::wstring buffer(static_cast<size_t>(bytes) / sizeof(wchar_t) + 1, L'\0');
+                const LONG copied = ImmGetCompositionStringW(context, GCS_COMPSTR, buffer.data(), bytes);
+                if (copied > 0) {
+                    result.assign(buffer.data(), static_cast<size_t>(copied) / sizeof(wchar_t));
+                }
+            }
+            ImmReleaseContext(edit, context);
+            return result;
+        }
+
+    } // namespace
+
+    // 下划线式专用：把 EDIT 的文本（含未上屏的组字串）画到父窗口的 DC 上。
+    // 输入、输入法、选区仍由原生 EDIT 负责；这里只负责显示，所以光标也自己画。
+    void QuickInputBar::DrawEditContent(HDC dc, const UiTheme& theme) {
+        if (!edit_) {
+            return;
+        }
+
+        // 文字区固定取「下划线上方那一块」：EDIT 已经被挪去做纯输入接收器，
+        // 不能再拿它的位置当排版依据（否则文字会被画到窗口外的 1x1 区域里）。
+        RECT rc = {};
+        GetClientRect(hwnd_, &rc);
+        const int pad = kEditPadLogical * dpi_ / 96;
+        const int lineZone = (kUnderlineThicknessLogical + kUnderlineInsetLogical) * dpi_ / 96;
+        RECT textRect = { rc.left + pad, rc.top, rc.right - pad, rc.bottom - lineZone };
+
+        const std::wstring text = ReadWindowText(edit_);
+        const std::wstring composing = ReadComposition(edit_);
+        HFONT font = EnsureFont(theme);
+
+        if (text.empty() && composing.empty()) {
+            // 提示文字由我们自己画：EDIT 的 cue banner 在分层窗口里同样显示不出来。
+            // 先画光标（贴在最左边），提示文字让开它，省得叠在一起。
+            DrawCaret(dc, theme, textRect, 0);
+
+            HGDIOBJ placeholderFont = font ? SelectObject(dc, font) : nullptr;
+            const int placeholderMode = SetBkMode(dc, TRANSPARENT);
+            const COLORREF placeholderColor = SetTextColor(dc, theme.textDim);
+            const int caretWidth = (std::max)(1, kUnderlineThicknessLogical * dpi_ / 96 / 2);
+            RECT placeholderRect = textRect;
+            placeholderRect.left += caretWidth + 3 * dpi_ / 96;
+            DrawTextW(dc, L"说点什么…", -1, &placeholderRect,
+                DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
+            SetTextColor(dc, placeholderColor);
+            SetBkMode(dc, placeholderMode);
+            if (placeholderFont) {
+                SelectObject(dc, placeholderFont);
+            }
+            return;
+        }
+
+        HGDIOBJ oldFont = font ? SelectObject(dc, font) : nullptr;
+        const int oldMode = SetBkMode(dc, TRANSPARENT);
+        const COLORREF oldColor = SetTextColor(dc, theme.text);
+
+        const UINT flags = DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS;
+        if (!text.empty()) {
+            DrawTextW(dc, text.c_str(), -1, &textRect, flags);
+        }
+
+        SIZE head = {};
+        GetTextExtentPoint32W(dc, text.c_str(), static_cast<int>(text.size()), &head);
+
+        if (!composing.empty()) {
+            // 组字串接在已上屏文字后面，单独用亮色 + 一条细线标出「还没确认」
+            RECT composingRect = textRect;
+            composingRect.left += head.cx;
+            SetTextColor(dc, theme.accentHi);
+            DrawTextW(dc, composing.c_str(), -1, &composingRect, flags);
+
+            SIZE composingSize = {};
+            GetTextExtentPoint32W(dc, composing.c_str(), static_cast<int>(composing.size()), &composingSize);
+            const int underlineY = static_cast<int>(textRect.top)
+                + static_cast<int>(textRect.bottom - textRect.top) / 2 + head.cy / 2 + 1;
+            RECT underline = { composingRect.left, underlineY,
+                               composingRect.left + composingSize.cx, underlineY + 1 };
+            HBRUSH brush = CreateSolidBrush(theme.accent);
+            FillRect(dc, &underline, brush);
+            DeleteObject(brush);
+            head.cx += composingSize.cx;
+        }
+
+        SetTextColor(dc, oldColor);
+        SetBkMode(dc, oldMode);
+        if (oldFont) {
+            SelectObject(dc, oldFont);
+        }
+
+        DrawCaret(dc, theme, textRect, head.cx);
+    }
+
+    // 自己画光标：EDIT 被缩到 1x1 之后它的系统光标没有意义了。
+    // 闪烁用时间片算，不额外起定时器（绘制本来就被 150ms 的刷新节拍带着走）。
+    void QuickInputBar::DrawCaret(HDC dc, const UiTheme& theme, const RECT& textRect, int offsetX) {
+        if ((GetTickCount64() / 500) % 2 != 0) {
+            return;
+        }
+        const int width = (std::max)(1, kUnderlineThicknessLogical * dpi_ / 96 / 2);
+        // RECT 成员是 LONG，与 int 不同型，std::max 会推导失败，先取成 int
+        const int boxHeight = static_cast<int>(textRect.bottom - textRect.top);
+        const int height = (std::max)(8, boxHeight * 3 / 4);
+        const int centerY = (static_cast<int>(textRect.top) + static_cast<int>(textRect.bottom)) / 2;
+        RECT caret = { textRect.left + offsetX, centerY - height / 2,
+                       textRect.left + offsetX + width, centerY - height / 2 + height };
+        HBRUSH brush = CreateSolidBrush(theme.text);
+        FillRect(dc, &caret, brush);
+        DeleteObject(brush);
+    }
+
+    HFONT QuickInputBar::EnsureFont(const UiTheme& theme) {
+        // 换主题要换字形（雅黑 <-> 楷体斜体），所以字体跟着主题参数一起判定。
+        if (font_ && fontFamily_ == theme.fontSans && fontItalic_ == theme.italic) {
+            return font_;
+        }
+        if (font_) {
+            DeleteObject(font_);
+            font_ = nullptr;
+        }
+        font_ = CreateFontW(
+            -MulDiv(12, dpi_, 72), 0, 0, 0, FW_NORMAL, theme.italic ? TRUE : FALSE, FALSE, FALSE,
+            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+            CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, theme.fontSans);
+        fontFamily_ = theme.fontSans;
+        fontItalic_ = theme.italic;
+        return font_;
+    }
+
+    void QuickInputBar::ApplyLayeredStyle() {
+        if (!hwnd_) {
+            return;
+        }
+
+        LONG_PTR exStyle = GetWindowLongPtrW(hwnd_, GWL_EXSTYLE);
+        if (style_ == Style::Underline) {
+            // 色键透明：整窗铺键色（纯黑），除了白字与下划线之外全部被系统抠掉，
+            // 于是桌面上只剩「一条线 + 浮在上面的字」。
+            // 用纯黑当键色是安全的：可见内容里只有主题色与正文色，都不是纯黑。
+            SetWindowLongPtrW(hwnd_, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
+            SetLayeredWindowAttributes(hwnd_, kTransparentKey, 0, LWA_COLORKEY);
+        }
+        else {
+            SetWindowLongPtrW(hwnd_, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED);
+        }
+        // 扩展样式改动要过一次 SetWindowPos 才会真正生效
+        SetWindowPos(hwnd_, nullptr, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+
+    void QuickInputBar::Show(HWND anchor, std::function<void(const std::string&)> onSubmit, Style style) {
         if (!EnsureWindow()) {
             return;
         }
+
+        style_ = style;
+        ApplyLayeredStyle();
 
         // 重复调用视为「重新开一次」：清掉上次残留的文本与回调，避免旧回调被再次触发。
         onSubmit_ = std::move(onSubmit);
@@ -156,8 +365,9 @@ namespace UnnamedBot {
         }
 
         dpi_ = DpiForWindow(anchor ? anchor : hwnd_);
+        const UiTheme theme = CurrentUiTheme();
         const int width = kBarWidthLogical * dpi_ / 96;
-        const int height = kBarHeightLogical * dpi_ / 96;
+        const int height = (style_ == Style::Underline ? kUnderlineHeightLogical : kBarHeightLogical) * dpi_ / 96;
 
         int x = 0;
         int y = 0;
@@ -166,16 +376,20 @@ namespace UnnamedBot {
 
         if (edit_) {
             const int pad = kEditPadLogical * dpi_ / 96;
-            SetWindowPos(edit_, nullptr, pad, pad, width - pad * 2, height - pad * 2, SWP_NOZORDER);
-            if (!font_) {
-                // 中文用雅黑、西文回退到 Segoe UI：与配置终端保持一致的字体取向。
-                font_ = CreateFontW(
-                    -MulDiv(12, dpi_, 72), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-                    DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                    CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Microsoft YaHei UI");
+            if (style_ == Style::Underline) {
+                // EDIT 只当「键盘与输入法的接收器」用，不参与显示：
+                // 它的窗口表面会把父窗口画在它下面的文字整块盖掉（分层窗口里子控件
+                // 虽然画不出来，但依然挡光），所以缩成 1x1 塞进下划线那一条里，
+                // 把显示区完全让给父窗口自己画。
+                SetWindowPos(edit_, nullptr, pad, (std::max)(0, height - 2), 1, 1, SWP_NOZORDER);
             }
-            if (font_) {
-                SendMessageW(edit_, WM_SETFONT, reinterpret_cast<WPARAM>(font_), TRUE);
+            else {
+                SetWindowPos(edit_, nullptr, pad, pad, width - pad * 2, height - pad * 2, SWP_NOZORDER);
+            }
+
+            HFONT font = EnsureFont(theme);
+            if (font) {
+                SendMessageW(edit_, WM_SETFONT, reinterpret_cast<WPARAM>(font), TRUE);
             }
             SetFocus(edit_);
             // 光标定位到文本末尾（此时文本为空）
@@ -186,8 +400,17 @@ namespace UnnamedBot {
         // 先提到前台再抢焦点：桌宠窗口是 TOOLWINDOW，不主动激活时输入条会拿不到键盘。
         SetForegroundWindow(hwnd_);
         SetActiveWindow(hwnd_);
+        if (style_ == Style::Underline) {
+            // 父窗口代画 EDIT 的内容，所以需要一个周期刷新来跟上输入法组字。
+            // 只在可见期间跑，150ms 对这个尺寸的窗口可以忽略。
+            SetTimer(hwnd_, IDT_REFRESH, 150, nullptr);
+        }
+        else {
+            KillTimer(hwnd_, IDT_REFRESH);
+        }
         InvalidateRect(hwnd_, nullptr, TRUE);
-        LOG_DEBUG("QuickInputBar", "Popup at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
+        LOG_DEBUG("QuickInputBar", std::string(style_ == Style::Underline ? "Underline" : "Popup") +
+            " at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
     }
 
     void QuickInputBar::Close() {
@@ -197,6 +420,7 @@ namespace UnnamedBot {
             SetWindowTextW(edit_, L"");
         }
         if (hwnd_) {
+            KillTimer(hwnd_, IDT_REFRESH);
             ShowWindow(hwnd_, SW_HIDE);
         }
         visible_ = false;
@@ -328,33 +552,74 @@ namespace UnnamedBot {
             RECT rc = {};
             GetClientRect(hwnd, &rc);
 
-            if (!backgroundBrush_) {
-                backgroundBrush_ = CreateSolidBrush(kBackgroundColor);
-            }
-            FillRect(dc, &rc, backgroundBrush_);
+            const UiTheme theme = CurrentUiTheme();
 
-            // 描边：与配置终端的冷冰蓝细边一致
-            HPEN pen = CreatePen(PS_SOLID, 1, kBorderColor);
-            HGDIOBJ oldPen = SelectObject(dc, pen);
-            HGDIOBJ oldBrush = SelectObject(dc, GetStockObject(NULL_BRUSH));
-            Rectangle(dc, rc.left, rc.top, rc.right, rc.bottom);
-            SelectObject(dc, oldBrush);
-            SelectObject(dc, oldPen);
-            DeleteObject(pen);
+            if (style_ == Style::Underline) {
+                // 整窗先铺键色（= 全透明），只在下沿画一条线。
+                FillRect(dc, &rc, EnsureBrush(keyBrush_, keyBrushColor_, kTransparentKey));
+
+                const int inset = kUnderlineInsetLogical * dpi_ / 96;
+                const int thickness = (std::max)(1, kUnderlineThicknessLogical * dpi_ / 96);
+                RECT line = { rc.left + inset, rc.bottom - inset - thickness, rc.right - inset, rc.bottom - inset };
+                HBRUSH lineBrush = CreateSolidBrush(theme.accent);
+                FillRect(dc, &line, lineBrush);
+                DeleteObject(lineBrush);
+
+                // 文字必须由父窗口自己画：分层窗口只合成「窗口自己画出来的」像素，
+                // 子控件 EDIT 的绘制会被整个丢掉（实测：EDIT 自己的输入法光标在
+                // ——那是系统光标——但字一个都不见）。输入、输入法、选区仍然交给
+                // 原生 EDIT，这里只负责把它的内容按同一套字体/位置贴出来。
+                DrawEditContent(dc, theme);
+            }
+            else {
+                FillRect(dc, &rc, EnsureBrush(backgroundBrush_, backgroundBrushColor_, theme.surfaceDeep));
+
+                // 描边：与配置终端的冷冰蓝细边一致（？？？时换成暗红）
+                HPEN pen = CreatePen(PS_SOLID, 1, theme.edge);
+                HGDIOBJ oldPen = SelectObject(dc, pen);
+                HGDIOBJ oldBrush = SelectObject(dc, GetStockObject(NULL_BRUSH));
+                Rectangle(dc, rc.left, rc.top, rc.right, rc.bottom);
+                SelectObject(dc, oldBrush);
+                SelectObject(dc, oldPen);
+                DeleteObject(pen);
+            }
 
             EndPaint(hwnd, &ps);
             return 0;
         }
 
+        // EDIT 的文字变了：下划线式是父窗口代画的，必须自己重画一次
+        case WM_COMMAND: {
+            if (LOWORD(wParam) == IDC_EDIT && HIWORD(wParam) == EN_CHANGE && style_ == Style::Underline) {
+                InvalidateRect(hwnd_, nullptr, FALSE);
+            }
+            return 0;
+        }
+
+        case WM_TIMER: {
+            // 下划线式的周期重画：输入法组字期间 EDIT 不会发 EN_CHANGE，
+            // 靠这个把组字串刷出来；顺带让光标位置保持最新。
+            if (wParam == IDT_REFRESH && style_ == Style::Underline) {
+                InvalidateRect(hwnd_, nullptr, FALSE);
+                return 0;
+            }
+            break;
+        }
+
         // 输入框的底色与文字色：原生 EDIT 默认是白底黑字，与深色输入条格格不入。
         case WM_CTLCOLOREDIT: {
             HDC dc = reinterpret_cast<HDC>(wParam);
-            SetTextColor(dc, kTextColor);
-            SetBkColor(dc, kBackgroundColor);
-            if (!backgroundBrush_) {
-                backgroundBrush_ = CreateSolidBrush(kBackgroundColor);
+            const UiTheme theme = CurrentUiTheme();
+            SetTextColor(dc, theme.text);
+
+            if (style_ == Style::Underline) {
+                // 底色必须是键色，否则编辑区会留一块不透明的黑底
+                SetBkColor(dc, kTransparentKey);
+                return reinterpret_cast<LRESULT>(EnsureBrush(keyBrush_, keyBrushColor_, kTransparentKey));
             }
-            return reinterpret_cast<LRESULT>(backgroundBrush_);
+
+            SetBkColor(dc, theme.surfaceDeep);
+            return reinterpret_cast<LRESULT>(EnsureBrush(backgroundBrush_, backgroundBrushColor_, theme.surfaceDeep));
         }
 
         // 点了别处就收起：输入条是无边框浮层，必须有「点外部关闭」这个出口。

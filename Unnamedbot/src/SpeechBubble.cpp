@@ -1,6 +1,7 @@
 #include "../include/SpeechBubble.h"
 
 #include "../include/Logger.h"
+#include "../include/UiTheme.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -18,10 +19,7 @@ namespace UnnamedBot {
         constexpr int kMaxWidthLogical = 300;    // 文本换行宽度上限
         constexpr int kRadiusLogical = 8;        // 圆角半径
 
-        // 与配置终端同一套深色配色
-        const COLORREF kBubbleColor = RGB(14, 22, 46);    // #0e162e
-        const COLORREF kBorderColor = RGB(94, 124, 160);  // #5e7ca0
-        const COLORREF kTextColor = RGB(232, 241, 255);   // #e8f1ff
+        // 底色/描边/文字都来自 UiTheme（？？？时整体换血红），这里只留透明度。
         const BYTE kBubbleAlpha = 236;
 
         int DpiForWindow(HWND hwnd) {
@@ -126,13 +124,15 @@ namespace UnnamedBot {
     void SpeechBubble::MeasureText(const std::wstring& text, int& width, int& height) const {
         const int pad = kPadLogical * dpi_ / 96;
         const int maxWidth = kMaxWidthLogical * dpi_ / 96;
+        const UiTheme theme = CurrentUiTheme();
 
         HDC dc = GetDC(nullptr);
         // 度量用的字体句柄是临时的：Render 时才真正建常驻字体。
+        // 这里必须用与 Render 同一套主题字体，否则换行位置与实绘会对不上。
         HFONT font = CreateFontW(
-            -MulDiv(12, dpi_, 72), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+            -MulDiv(12, dpi_, 72), 0, 0, 0, FW_NORMAL, theme.italic ? TRUE : FALSE, FALSE, FALSE,
             DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-            CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Microsoft YaHei UI");
+            CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, theme.fontSans);
         HGDIOBJ oldFont = font ? SelectObject(dc, font) : nullptr;
 
         RECT rc = { 0, 0, maxWidth, 0 };
@@ -344,8 +344,13 @@ namespace UnnamedBot {
         // 3) 按像素判定「属于哪一层」，补 alpha 并预乘。
         memset(bitmapBits_, 0, static_cast<size_t>(width) * static_cast<size_t>(height) * 4);
 
-        HBRUSH fill = CreateSolidBrush(kBubbleColor);
-        HPEN border = CreatePen(PS_SOLID, 1, kBorderColor);
+        const UiTheme theme = CurrentUiTheme();
+        const COLORREF bubbleColor = theme.surface;
+        const COLORREF borderColor = theme.edge;
+        const COLORREF textColor = theme.text;
+
+        HBRUSH fill = CreateSolidBrush(bubbleColor);
+        HPEN border = CreatePen(PS_SOLID, 1, borderColor);
         HGDIOBJ oldBrush = SelectObject(memDc_, fill);
         HGDIOBJ oldPen = SelectObject(memDc_, border);
         RoundRect(memDc_, 0, 0, width, height, radius * 2, radius * 2);
@@ -354,24 +359,30 @@ namespace UnnamedBot {
         DeleteObject(fill);
         DeleteObject(border);
 
-        if (!font_) {
+        if (!font_ || fontFamily_ != theme.fontSans || fontItalic_ != theme.italic) {
+            if (font_) {
+                DeleteObject(font_);
+                font_ = nullptr;
+            }
             font_ = CreateFontW(
-                -MulDiv(12, dpi_, 72), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                -MulDiv(12, dpi_, 72), 0, 0, 0, FW_NORMAL, theme.italic ? TRUE : FALSE, FALSE, FALSE,
                 DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-                CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Microsoft YaHei UI");
+                CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, theme.fontSans);
+            fontFamily_ = theme.fontSans;
+            fontItalic_ = theme.italic;
         }
         HGDIOBJ oldFont = font_ ? SelectObject(memDc_, font_) : nullptr;
         SetBkMode(memDc_, TRANSPARENT);
-        SetTextColor(memDc_, kTextColor);
+        SetTextColor(memDc_, textColor);
         RECT textRect = { pad, pad, width - pad, height - pad };
         DrawTextW(memDc_, text_.c_str(), -1, &textRect, DT_WORDBREAK | DT_NOPREFIX | DT_EDITCONTROL);
         if (oldFont) {
             SelectObject(memDc_, oldFont);
         }
 
-        const unsigned char bgB = GetBValue(kBubbleColor);
-        const unsigned char bgG = GetGValue(kBubbleColor);
-        const unsigned char bgR = GetRValue(kBubbleColor);
+        const unsigned char bgB = GetBValue(bubbleColor);
+        const unsigned char bgG = GetGValue(bubbleColor);
+        const unsigned char bgR = GetRValue(bubbleColor);
 
         unsigned char* pixels = static_cast<unsigned char*>(bitmapBits_);
         const size_t count = static_cast<size_t>(width) * static_cast<size_t>(height);

@@ -69,6 +69,9 @@ namespace UnnamedBot {
 
         // 分层窗口的 GDI 资源
         HFONT font_ = nullptr;
+        // 当前 font_ 对应的主题参数（字体族/斜体），不一致就重建
+        const wchar_t* fontFamily_ = nullptr;
+        bool fontItalic_ = false;
         HDC memDc_ = nullptr;
         HBITMAP bitmap_ = nullptr;
         HBITMAP oldBitmap_ = nullptr;

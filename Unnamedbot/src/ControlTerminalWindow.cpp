@@ -1,5 +1,7 @@
 #include "../include/ControlTerminalWindow.h"
 
+#include "../include/UiTheme.h"
+
 #include "../include/ConfigManager.h"
 #include "../include/ConfigWebUi.h"
 #include "../include/Logger.h"
@@ -769,6 +771,9 @@ namespace UnnamedBot {
     }
 
     std::string ControlTerminalWindow::BuildStateJson(bool resetScroll) const {
+        // 主题随状态一起下发：页面把配色/字体写成 CSS 变量，于是「？？？」启用时
+        // 整个配置界面（含按钮、描边、等宽标签）会跟着换成病娇配色。
+        const UiTheme theme = CurrentUiTheme();
         nlohmann::json message = {
             { "type", "state" },
             { "sections", nlohmann::json::parse(BuildSchemaJson()) },
@@ -782,6 +787,22 @@ namespace UnnamedBot {
             { "errors", nlohmann::json::parse(BuildErrorsJson()) },
             { "status", { { "text", Utils::WideToUtf8(statusText_) }, { "kind", statusKind_ } } },
             { "resetScroll", resetScroll },
+            { "theme", {
+                { "yandere", theme.yandere },
+                { "accent", ToCssColor(theme.accent) },
+                { "accentSoft", ToCssColor(theme.accentSoft) },
+                { "accentHi", ToCssColor(theme.accentHi) },
+                { "accentMid", ToCssColor(theme.accentMid) },
+                { "edge", ToCssColor(theme.edge) },
+                { "edgeSoft", ToCssColor(theme.edgeSoft) },
+                { "surface", ToCssColor(theme.surface) },
+                { "surfaceDeep", ToCssColor(theme.surfaceDeep) },
+                { "text", ToCssColor(theme.text) },
+                { "textDim", ToCssColor(theme.textDim) },
+                { "fontSans", Utils::WideToUtf8(theme.fontSans) },
+                { "fontMono", Utils::WideToUtf8(theme.fontMono) },
+                { "italic", theme.italic },
+            } },
         };
         return message.dump();
     }
