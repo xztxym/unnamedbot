@@ -8,6 +8,7 @@
 #include <Imm.h>        // 组字串（GCS_COMPSTR）
 
 #include <algorithm>
+#include <cmath>
 
 #pragma comment(lib, "imm32.lib")
 
@@ -33,6 +34,24 @@ namespace UnnamedBot {
         // 色键：整窗铺这个颜色，系统把该颜色的像素全部抠成透明。
         // 可见内容（正文色、主题色）都不是纯黑，所以不会误抠到字和线。
         const COLORREF kTransparentKey = RGB(0, 0, 0);
+
+        // ？？？主题的动效参数
+        constexpr ULONGLONG kBloodFadeMs = 460;   // 血色渐显时长
+        constexpr ULONGLONG kShakeMs = 190;       // 打字抖动衰减时长
+        constexpr float kShakeAmpLogical = 3.0f;  // 抖动幅度（逻辑像素）
+        // 渐显的起点颜色：暗到几乎发黑的血色，往主题正文色推
+        const COLORREF kBloodFadeFrom = RGB(0x4A, 0x07, 0x12);
+
+        // 两色之间按 t 插值（t 夹到 0..1）
+        COLORREF LerpColor(COLORREF from, COLORREF to, float t) {
+            const float k = (std::min)(1.0f, (std::max)(0.0f, t));
+            const auto mix = [k](BYTE a, BYTE b) {
+                return static_cast<BYTE>(a + (static_cast<float>(b) - static_cast<float>(a)) * k + 0.5f);
+            };
+            return RGB(mix(GetRValue(from), GetRValue(to)),
+                mix(GetGValue(from), GetGValue(to)),
+                mix(GetBValue(from), GetBValue(to)));
+        }
 
         // 当前显示器 DPI：优先用 GetDpiForWindow（Win10 1607+），取不到再退回系统 DPI。
         int DpiForWindow(HWND hwnd) {
@@ -215,7 +234,7 @@ namespace UnnamedBot {
 
     // 下划线式专用：把 EDIT 的文本（含未上屏的组字串）画到父窗口的 DC 上。
     // 输入、输入法、选区仍由原生 EDIT 负责；这里只负责显示，所以光标也自己画。
-    void QuickInputBar::DrawEditContent(HDC dc, const UiTheme& theme) {
+    void QuickInputBar::DrawEditContent(HDC dc, const UiTheme& theme, float fade, int shakeX, int shakeY) {
         if (!edit_) {
             return;
         }
@@ -228,22 +247,53 @@ namespace UnnamedBot {
         const int lineZone = (kUnderlineThicknessLogical + kUnderlineInsetLogical) * dpi_ / 96;
         RECT textRect = { rc.left + pad, rc.top, rc.right - pad, rc.bottom - lineZone };
 
+        // 打字抖动：整块文字（连同光标）一起偏移，抖完自然归零
+        if (theme.yandere && (shakeX != 0 || shakeY != 0)) {
+            textRect.left += shakeX;
+            textRect.right += shakeX;
+            textRect.top += shakeY;
+            textRect.bottom += shakeY;
+        }
+
+        // 血色渐显：文字颜色从暗红推到主题正文色（fade == 1 时就是正文色本身）
+        const COLORREF bodyColor = theme.yandere ? LerpColor(kBloodFadeFrom, theme.text, fade) : theme.text;
+        const COLORREF dimColor = theme.yandere ? LerpColor(kBloodFadeFrom, theme.textDim, fade) : theme.textDim;
+
         const std::wstring text = ReadWindowText(edit_);
         const std::wstring composing = ReadComposition(edit_);
         HFONT font = EnsureFont(theme);
 
+        // 文字是直接画在桌面上的（窗口靠色键透明），浅色字遇到浅色壁纸会糊成一片。
+        // 所以先描一遍深色偏移影再画正文；注意影子不能用纯黑——纯黑是色键色，
+        // 会被系统一并抠掉，等于没描。
+        const COLORREF shadowColor = theme.yandere ? RGB(0x1A, 0x06, 0x0C) : RGB(0x03, 0x08, 0x1A);
+        auto drawShadowed = [&](const std::wstring& str, RECT box, COLORREF color, UINT flags) {
+            if (str.empty()) {
+                return;
+            }
+            RECT shadowRect = box;
+            shadowRect.left += 1;
+            shadowRect.right += 1;
+            shadowRect.top += 1;
+            shadowRect.bottom += 1;
+            SetTextColor(dc, shadowColor);
+            DrawTextW(dc, str.c_str(), -1, &shadowRect, flags);
+            SetTextColor(dc, color);
+            DrawTextW(dc, str.c_str(), -1, &box, flags);
+        };
+
         if (text.empty() && composing.empty()) {
             // 提示文字由我们自己画：EDIT 的 cue banner 在分层窗口里同样显示不出来。
             // 先画光标（贴在最左边），提示文字让开它，省得叠在一起。
-            DrawCaret(dc, theme, textRect, 0);
+            DrawCaret(dc, theme, textRect, 0, bodyColor);
 
             HGDIOBJ placeholderFont = font ? SelectObject(dc, font) : nullptr;
             const int placeholderMode = SetBkMode(dc, TRANSPARENT);
-            const COLORREF placeholderColor = SetTextColor(dc, theme.textDim);
+            const COLORREF placeholderColor = SetTextColor(dc, dimColor);
             const int caretWidth = (std::max)(1, kUnderlineThicknessLogical * dpi_ / 96 / 2);
             RECT placeholderRect = textRect;
             placeholderRect.left += caretWidth + 3 * dpi_ / 96;
-            DrawTextW(dc, L"说点什么…", -1, &placeholderRect,
+            drawShadowed(L"说点什么…", placeholderRect, dimColor,
                 DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX);
             SetTextColor(dc, placeholderColor);
             SetBkMode(dc, placeholderMode);
@@ -255,11 +305,11 @@ namespace UnnamedBot {
 
         HGDIOBJ oldFont = font ? SelectObject(dc, font) : nullptr;
         const int oldMode = SetBkMode(dc, TRANSPARENT);
-        const COLORREF oldColor = SetTextColor(dc, theme.text);
+        const COLORREF oldColor = SetTextColor(dc, bodyColor);
 
         const UINT flags = DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS;
         if (!text.empty()) {
-            DrawTextW(dc, text.c_str(), -1, &textRect, flags);
+            drawShadowed(text, textRect, bodyColor, flags);
         }
 
         SIZE head = {};
@@ -269,8 +319,7 @@ namespace UnnamedBot {
             // 组字串接在已上屏文字后面，单独用亮色 + 一条细线标出「还没确认」
             RECT composingRect = textRect;
             composingRect.left += head.cx;
-            SetTextColor(dc, theme.accentHi);
-            DrawTextW(dc, composing.c_str(), -1, &composingRect, flags);
+            drawShadowed(composing, composingRect, theme.accentHi, flags);
 
             SIZE composingSize = {};
             GetTextExtentPoint32W(dc, composing.c_str(), static_cast<int>(composing.size()), &composingSize);
@@ -290,12 +339,12 @@ namespace UnnamedBot {
             SelectObject(dc, oldFont);
         }
 
-        DrawCaret(dc, theme, textRect, head.cx);
+        DrawCaret(dc, theme, textRect, head.cx, bodyColor);
     }
 
     // 自己画光标：EDIT 被缩到 1x1 之后它的系统光标没有意义了。
-    // 闪烁用时间片算，不额外起定时器（绘制本来就被 150ms 的刷新节拍带着走）。
-    void QuickInputBar::DrawCaret(HDC dc, const UiTheme& theme, const RECT& textRect, int offsetX) {
+    // 闪烁用时间片算，不额外起定时器（绘制本来就被刷新节拍带着走）。
+    void QuickInputBar::DrawCaret(HDC dc, const UiTheme& theme, const RECT& textRect, int offsetX, COLORREF color) {
         if ((GetTickCount64() / 500) % 2 != 0) {
             return;
         }
@@ -306,7 +355,7 @@ namespace UnnamedBot {
         const int centerY = (static_cast<int>(textRect.top) + static_cast<int>(textRect.bottom)) / 2;
         RECT caret = { textRect.left + offsetX, centerY - height / 2,
                        textRect.left + offsetX + width, centerY - height / 2 + height };
-        HBRUSH brush = CreateSolidBrush(theme.text);
+        HBRUSH brush = CreateSolidBrush(color);
         FillRect(dc, &caret, brush);
         DeleteObject(brush);
     }
@@ -400,10 +449,13 @@ namespace UnnamedBot {
         // 先提到前台再抢焦点：桌宠窗口是 TOOLWINDOW，不主动激活时输入条会拿不到键盘。
         SetForegroundWindow(hwnd_);
         SetActiveWindow(hwnd_);
+        popupTime_ = GetTickCount64();
+        shakeAt_ = 0;
         if (style_ == Style::Underline) {
             // 父窗口代画 EDIT 的内容，所以需要一个周期刷新来跟上输入法组字。
-            // 只在可见期间跑，150ms 对这个尺寸的窗口可以忽略。
-            SetTimer(hwnd_, IDT_REFRESH, 150, nullptr);
+            // ？？？ 主题还要跑血色渐显与打字抖动，节拍加密到 ~33fps；
+            // 普通主题没必要为此耗电，保持 150ms。
+            SetTimer(hwnd_, IDT_REFRESH, theme.yandere ? 30 : 150, nullptr);
         }
         else {
             KillTimer(hwnd_, IDT_REFRESH);
@@ -553,6 +605,31 @@ namespace UnnamedBot {
             GetClientRect(hwnd, &rc);
 
             const UiTheme theme = CurrentUiTheme();
+            const ULONGLONG now = GetTickCount64();
+
+            // ？？？动效：① 血色渐显（下划线自左向右拉开，文字由暗红升到粉白）
+            //           ② 打字抖动（每次输入给文字一个短促的衰减偏移）
+            float fade = 1.0f;
+            int shakeX = 0;
+            int shakeY = 0;
+            if (theme.yandere) {
+                fade = static_cast<float>(now - popupTime_) / static_cast<float>(kBloodFadeMs);
+                if (fade > 1.0f) {
+                    fade = 1.0f;
+                }
+                if (shakeAt_ != 0) {
+                    const float dt = static_cast<float>(now - shakeAt_);
+                    if (dt < static_cast<float>(kShakeMs)) {
+                        const float decay = 1.0f - dt / static_cast<float>(kShakeMs);
+                        const float amp = kShakeAmpLogical * static_cast<float>(dpi_) / 96.0f * decay;
+                        shakeX = static_cast<int>(std::lround(amp * std::sin(dt * 0.09f)));
+                        shakeY = static_cast<int>(std::lround(amp * 0.45f * std::cos(dt * 0.15f)));
+                    }
+                    else {
+                        shakeAt_ = 0;
+                    }
+                }
+            }
 
             if (style_ == Style::Underline) {
                 // 整窗先铺键色（= 全透明），只在下沿画一条线。
@@ -561,6 +638,10 @@ namespace UnnamedBot {
                 const int inset = kUnderlineInsetLogical * dpi_ / 96;
                 const int thickness = (std::max)(1, kUnderlineThicknessLogical * dpi_ / 96);
                 RECT line = { rc.left + inset, rc.bottom - inset - thickness, rc.right - inset, rc.bottom - inset };
+                if (fade < 1.0f) {
+                    // 自左向右拉开
+                    line.right = line.left + static_cast<LONG>((line.right - line.left) * fade);
+                }
                 HBRUSH lineBrush = CreateSolidBrush(theme.accent);
                 FillRect(dc, &line, lineBrush);
                 DeleteObject(lineBrush);
@@ -569,7 +650,7 @@ namespace UnnamedBot {
                 // 子控件 EDIT 的绘制会被整个丢掉（实测：EDIT 自己的输入法光标在
                 // ——那是系统光标——但字一个都不见）。输入、输入法、选区仍然交给
                 // 原生 EDIT，这里只负责把它的内容按同一套字体/位置贴出来。
-                DrawEditContent(dc, theme);
+                DrawEditContent(dc, theme, fade, shakeX, shakeY);
             }
             else {
                 FillRect(dc, &rc, EnsureBrush(backgroundBrush_, backgroundBrushColor_, theme.surfaceDeep));
@@ -588,9 +669,13 @@ namespace UnnamedBot {
             return 0;
         }
 
-        // EDIT 的文字变了：下划线式是父窗口代画的，必须自己重画一次
+        // EDIT 的文字变了：下划线式是父窗口代画的，必须自己重画一次。
+        // ？？？主题下顺带触发一次打字抖动。
         case WM_COMMAND: {
             if (LOWORD(wParam) == IDC_EDIT && HIWORD(wParam) == EN_CHANGE && style_ == Style::Underline) {
+                if (CurrentUiTheme().yandere) {
+                    shakeAt_ = GetTickCount64();
+                }
                 InvalidateRect(hwnd_, nullptr, FALSE);
             }
             return 0;

@@ -144,6 +144,22 @@ namespace UnnamedBot {
         // 获取可用模型列表
         std::vector<std::string> GetAvailableModels();
 
+        // 服务商探测结果：可达性 + 服务端**真实提供**的模型清单。
+        // 「默认模型」这一行必须由服务商说了算，不能拿内置表硬编码：
+        // 供应商随时上线/下线模型，写死的名字轻则选不中，重则每次请求 400。
+        struct ProviderProbe {
+            bool ok = false;                        // HTTP 200 且解析出了模型
+            bool reachable = false;                 // 至少连上了（含 401/403：地址对、密钥不对）
+            long httpStatus = 0;
+            int latencyMs = 0;
+            std::string detail;                     // 一句给人看的话
+            std::vector<std::string> models;        // 服务端返回的模型 id
+        };
+
+        // 探测指定的服务地址与密钥（配置页里改的是草稿，还没落库，所以显式传入）。
+        // 走 OpenAI 兼容的 GET {baseUrl}/models；网络异常也会被收进 detail，不抛。
+        ProviderProbe ProbeProvider(const std::string& baseUrl, const std::string& apiKey) const;
+
         // 设置代理
         void SetProxy(const std::string& type, const std::string& host, int port);
 

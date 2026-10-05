@@ -76,6 +76,8 @@ namespace UnnamedBot {
 
         HFONT titleFont_ = nullptr;
         HFONT bodyFont_ = nullptr;
+        // 大号百分比：等宽字体，数字跳动时宽度不变，整行不会跟着晃
+        HFONT bigFont_ = nullptr;
         HFONT monoFont_ = nullptr;
         HFONT monoSmFont_ = nullptr;
 

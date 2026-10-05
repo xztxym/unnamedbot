@@ -518,13 +518,25 @@ namespace UnnamedBot {
             // 如果没有找到模型，使用Haru示例
             std::wstring haruPath = L"./models/Haru/Haru.model3.json";
             if (std::filesystem::exists(haruPath)) {
-                return Live2DManager::Instance().LoadModel("Haru", haruPath);
+                if (!Live2DManager::Instance().LoadModel("Haru", haruPath)) {
+                    return false;
+                }
+                Live2DManager::Instance().SwitchModel("Haru");
+                return true;
             }
             LOG_ERROR("AppCore", "No model found in ./models/ directory.");
             return false;
         }
 
-        return Live2DManager::Instance().LoadModel(modelId, modelPath);
+        // 载入之后必须把它切成「当前模型」：Live2DManager::LoadModel 只在手上
+        // 还没有模型时才自动切换（扫描目录时可能已经切过一次），否则
+        // currentModelId_ 会停在旧值上，SaveModelState 又把旧 id 写回配置——
+        // 表现就是「换了模型，下次启动又变回去」。
+        if (!Live2DManager::Instance().LoadModel(modelId, modelPath)) {
+            return false;
+        }
+        Live2DManager::Instance().SwitchModel(modelId);
+        return true;
     }
 
     void AppCore::SetupCallbacks() {
@@ -845,6 +857,56 @@ namespace UnnamedBot {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+    }
+
+    void AppCore::SubmitUserMessage(const std::string& text) {
+        ProcessAIMessage(text);
+        // 回复（或失败提示）已经落库：让中枢页面的对话屏刷新一次。
+        // PushChatHistory 内部只 PostMessage，所以从工作线程调用是安全的。
+        ControlTerminalWindow::Instance().PushChatHistory();
+    }
+
+    AIClient::ProviderProbe AppCore::ProbeProvider(const std::string& baseUrl, const std::string& apiKey) {
+        // ProbeProvider 只读 config_（地址与密钥是显式传入的），不碰会话状态，
+        // 所以探测可以和正在进行的对话并存，不需要额外加锁。
+        return aiClient_.ProbeProvider(baseUrl, apiKey);
+    }
+
+    void AppCore::RefreshPet() {
+        LOG_INFO("AppCore", "Refreshing pet (model + config + window).");
+
+        // 1) 重读配置：位置、缩放、不透明度、点击穿透、快速模式都在里面
+        ReloadConfig();
+
+        // 2) 重新载入模型：换过模型 id 或模型文件被动过时，这一步才是真正生效的地方。
+        //    Unload 与 Load 成对出现，免得旧模型的纹理一直挂在 GPU 上。
+        const std::string modelId = ConfigManager::Instance().GetString(ConfigManager::KEY_MODEL_DEFAULT_ID, "Haru");
+        Live2DManager::Instance().UnloadModel(modelId);
+        if (!LoadDefaultModel()) {
+            LOG_WARN("AppCore", "Refresh: model reload failed, keeping previous state.");
+        }
+
+        // 3) 把窗口摆回来：位置从配置读，并且确保它是可见的
+        if (mainWindow_) {
+            mainWindow_->SetPosition(
+                ConfigManager::Instance().GetInt("window.position_x", 100),
+                ConfigManager::Instance().GetInt("window.position_y", 100));
+            if (!mainWindow_->IsVisible()) {
+                mainWindow_->Show(true);
+            }
+            mainWindow_->RestoreState();
+            TrayIcon::Instance().ShowPet(true);
+        }
+
+        // 4) 命中掩码是按上一帧画面算的，模型换过就必须丢掉
+        renderer_.InvalidateHitMask();
+
+        // 5) 给用户一个看得见的反馈：紧凑模式贴气泡，否则发一条托盘通知
+        const std::wstring text = L"桌宠已刷新";
+        if (IsQuickModeActive() && !isShuttingDown_) {
+            SpeechBubble::Instance().Show(GetMainWindow(), text);
+        }
+        TrayIcon::Instance().ShowNotification(L"桌宠中枢", text, NIIF_INFO, 2500);
     }
 
     void AppCore::UpdateLoop() {

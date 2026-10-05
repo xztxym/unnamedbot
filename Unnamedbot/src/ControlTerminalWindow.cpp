@@ -2,9 +2,11 @@
 
 #include "../include/UiTheme.h"
 
+#include "../include/AppCore.h"
 #include "../include/ConfigManager.h"
 #include "../include/ConfigWebUi.h"
 #include "../include/Logger.h"
+#include "../include/MessageHandler.h"
 #include "../include/PromptLibrary.h"
 #include "../include/ResourceIds.h"
 #include "../include/Utils.h"
@@ -22,6 +24,7 @@
 #include <cstring>
 #include <ctime>
 #include <cwchar>
+#include <thread>
 #include <objbase.h>
 
 namespace UnnamedBot {
@@ -37,8 +40,11 @@ namespace UnnamedBot {
         }
 
         // ===== 窗口尺寸（逻辑像素，96 DPI）=====
-        const int kWinW = 900;
-        const int kWinH = 720;
+        // 中枢界面是「导轨 + 画面」的横向布局（设计稿按 1440×900 画），
+        // 900×720 会把它压扁，所以窗口按 1200×780 开——在 1920×1080@125% 上
+        // 物理尺寸是 1500×975，仍然放得下。
+        const int kWinW = 1200;
+        const int kWinH = 780;
 
         // 服务商预设：常用 OpenAI 兼容接口的 Base URL，以及该服务商可用的模型。
         // 模型名各家会随时调整，这里给的是常见值；用户仍可在「默认模型」里直接手填。
@@ -160,6 +166,39 @@ namespace UnnamedBot {
         const char* const kProviderPresetKey = "api.provider_preset";
         const char* const kModelPresetKey = "api.model_preset";
 
+        // 数值行的可用区间：页面用它画滑块（rangebtn），并夹住手填的数字。
+        // 与 ValidateValue 的边界是同一套，只是这里要给出具体数值而不只是「合规与否」。
+        struct ValueRange {
+            double min;
+            double max;
+            double step;
+        };
+
+        ValueRange RangeFor(const ControlTerminalWindow::FieldDef& def) {
+            const std::string key = def.key ? def.key : "";
+            if (key == "sampling.temperature")        return { 0.0, 2.0, 0.05 };
+            if (key == "sampling.top_p")              return { 0.0, 1.0, 0.01 };
+            if (key == "sampling.frequency_penalty")  return { -2.0, 2.0, 0.05 };
+            if (key == "sampling.presence_penalty")   return { -2.0, 2.0, 0.05 };
+            if (key == "model.default_scale")         return { 0.1, 3.0, 0.05 };
+            if (key == "model.default_opacity")       return { 0.1, 1.0, 0.01 };
+            if (key == "stream.timeout_seconds")      return { 5.0, 300.0, 5.0 };
+            if (key == "context.max_tokens")          return { 256.0, 128000.0, 256.0 };
+            if (key == "context.max_rounds")          return { 1.0, 64.0, 1.0 };
+            if (key == "active.interval_process")     return { -1.0, 3600.0, 5.0 };
+            if (key == "active.interval_weather")     return { -1.0, 7200.0, 10.0 };
+            if (key == "active.interval_screenshot")  return { -1.0, 7200.0, 30.0 };
+            if (key == "active.cooldown_seconds")     return { 0.0, 3600.0, 10.0 };
+            if (key == "attachment.max_size_mb")      return { 1.0, 512.0, 1.0 };
+            if (key == "attachment.total_quota_mb")   return { 1.0, 10240.0, 10.0 };
+            if (key == "attachment.retention_days")   return { 0.0, 365.0, 1.0 };
+            if (key == "logs.retention_days")         return { 0.0, 365.0, 1.0 };
+            if (key == "proxy.port")                  return { 0.0, 65535.0, 1.0 };
+            if (key == "update.check_interval_hours") return { 1.0, 720.0, 1.0 };
+            return def.kind == ControlTerminalWindow::FieldKind::Int ? ValueRange{ 0.0, 1000.0, 1.0 }
+                                                                     : ValueRange{ 0.0, 1.0, 0.01 };
+        }
+
         // Preset 行本身不入库：它只是写入口。服务商行写 api.base_url，
         // 模型行写 api.model_default。
         const char* PresetTargetKeyFor(const ControlTerminalWindow::FieldDef& def) {
@@ -181,6 +220,19 @@ namespace UnnamedBot {
         // 一行 Preset 的有效选项。「可用模型」行按当前的服务地址反查服务商，
         // 所以切换服务商后这一行会跟着变；当前值始终保留在列表里（可能是手填的），
         // 否则自定义网关下整行会空掉。
+        // 服务商探测回来的模型清单（按地址缓存）。
+        // PresetOptionsFor 是匿名命名空间里的自由函数，够不到窗口成员，所以缓存放这里；
+        // 只由 UI 线程读写（探测结果经 PostMessage 回到 UI 线程后才落进来）。
+        struct ProbedModels {
+            std::wstring url;
+            std::vector<std::wstring> models;
+        };
+        ProbedModels g_probedModels;
+
+        // 「默认模型」这一行的候选：
+        //   1) 服务商 /models 真实返回的清单（首选，用户要的就是这个）
+        //   2) 地址能反查到内置服务商时，用内置表兜底（离线/自建网关/401 时用得上）
+        //   3) 当前值始终保留（可能是手填的，不能因为查不到就把人家填的抹掉）
         std::vector<PresetOption> PresetOptionsFor(const std::string& key,
                                                    const std::wstring& currentBaseUrl,
                                                    const std::wstring& currentValue) {
@@ -197,10 +249,17 @@ namespace UnnamedBot {
                 return result;
             }
 
-            const ProviderPreset* provider = FindProviderByUrl(currentBaseUrl);
-            if (provider != nullptr) {
-                for (const std::wstring& model : SplitOptions(provider->models)) {
+            if (!currentBaseUrl.empty() && g_probedModels.url == currentBaseUrl && !g_probedModels.models.empty()) {
+                for (const std::wstring& model : g_probedModels.models) {
                     result.push_back({ model, model });
+                }
+            }
+            else {
+                const ProviderPreset* provider = FindProviderByUrl(currentBaseUrl);
+                if (provider != nullptr) {
+                    for (const std::wstring& model : SplitOptions(provider->models)) {
+                        result.push_back({ model, model });
+                    }
                 }
             }
 
@@ -512,6 +571,16 @@ namespace UnnamedBot {
             Hide();
             return 0;
 
+        // 工作线程请求刷新会话：回到窗口线程再碰 WebView2
+        case WM_APP_PUSH_CHAT:
+            SendChatHistory();
+            return 0;
+
+        // 服务商探测完成：在 UI 线程上推送结果并刷新模型行
+        case WM_APP_PROBE_DONE:
+            FinishProbe();
+            return 0;
+
         case WM_DESTROY:
             DestroyWebView();
             hwnd_ = nullptr;
@@ -704,6 +773,18 @@ namespace UnnamedBot {
                 if (RequiresFor(def, requiresKey, requiresValue)) {
                     field["requires"] = { { "key", requiresKey }, { "value", requiresValue } };
                 }
+                // 人设锁：「？？？」生效期间这一行只读。页面据此禁用控件并给出
+                // 「要换人设请先删掉 prompts/yandere.chr」的说明。
+                if (KeyIs(def, ConfigManager::KEY_QUICK_MODE) && IsPersonaFrozen()) {
+                    field["locked"] = true;
+                }
+                // 数值行带上区间：页面拿它画滑块，不用自己猜默认范围。
+                if (def.kind == FieldKind::Int || def.kind == FieldKind::Double) {
+                    const ValueRange range = RangeFor(def);
+                    field["min"] = range.min;
+                    field["max"] = range.max;
+                    field["step"] = range.step;
+                }
                 fields.push_back(field);
             }
             sections.push_back({
@@ -787,6 +868,17 @@ namespace UnnamedBot {
             { "errors", nlohmann::json::parse(BuildErrorsJson()) },
             { "status", { { "text", Utils::WideToUtf8(statusText_) }, { "kind", statusKind_ } } },
             { "resetScroll", resetScroll },
+            { "probe", [this] {
+                std::lock_guard<std::mutex> lock(probeMutex_);
+                return nlohmann::json{
+                    { "kind", probeKind_ },
+                    { "text", probeText_ },
+                    { "models", probeModelCount_ },
+                    { "source", (!g_probedModels.models.empty() &&
+                                  g_probedModels.url == CurrentValueText(ConfigManager::KEY_API_BASE_URL.c_str()))
+                        ? "provider" : "builtin" },
+                };
+            }() },
             { "theme", {
                 { "yandere", theme.yandere },
                 { "accent", ToCssColor(theme.accent) },
@@ -827,6 +919,173 @@ namespace UnnamedBot {
             return;
         }
         SendToPage(BuildStateJson(resetScroll));
+        // 状态之后紧跟一份会话记录：对话屏据此渲染气泡，不用再单开一次往返。
+        SendChatHistory();
+    }
+
+    // 会话记录下发。角色在页面侧只分三类：me / ai / tool（system 不进气泡）。
+    void ControlTerminalWindow::SendChatHistory() {
+        if (!webviewReady_) {
+            return;
+        }
+
+        nlohmann::json messages = nlohmann::json::array();
+        const std::vector<ConversationMessage> history = MessageHandler::Instance().GetCurrentMessages();
+        for (const ConversationMessage& message : history) {
+            const std::string role = message.role == MessageRole::User ? "me"
+                : (message.role == MessageRole::Tool ? "tool" : "ai");
+            if (message.role == MessageRole::System) {
+                continue;
+            }
+            messages.push_back({
+                { "role", role },
+                { "who", role == "me" ? "You" : (role == "tool" ? "Tool" : "Assistant") },
+                { "text", message.content },
+            });
+        }
+
+        const nlohmann::json payload = {
+            { "type", "chat" },
+            { "messages", messages },
+            { "model", CurrentValueText(ConfigManager::KEY_API_MODEL_DEFAULT.c_str()).empty()
+                ? std::string("-") : Utils::WideToUtf8(CurrentValueText(ConfigManager::KEY_API_MODEL_DEFAULT.c_str())) },
+            { "state", "就绪" },
+        };
+        SendToPage(payload.dump());
+    }
+
+    // 任意线程可调：AI 请求跑在工作线程上，碰 WebView2 必须回到窗口线程。
+    void ControlTerminalWindow::PushChatHistory() {
+        if (hwnd_) {
+            PostMessageW(hwnd_, WM_APP_PUSH_CHAT, 0, 0);
+        }
+    }
+
+    // 后台线程去问服务商要模型清单。用当前草稿的地址与密钥：
+    // 用户刚改完还没保存时，「测一下」应该测的是他刚填的东西。
+    void ControlTerminalWindow::StartProbe() {
+        const std::string baseUrl = draft_[ConfigManager::KEY_API_BASE_URL];
+        const std::string apiKey = draft_[ConfigManager::KEY_API_KEY];
+
+        {
+            std::lock_guard<std::mutex> lock(probeMutex_);
+            probeKind_ = 1;
+            probeText_ = "测试中…";
+            probeUrl_ = baseUrl;
+        }
+        SendProbeState();
+
+        HWND target = hwnd_;
+        std::thread([target, baseUrl, apiKey]() {
+            const AIClient::ProviderProbe probe = AppCore::Instance().ProbeProvider(baseUrl, apiKey);
+            // 结果先落到窗口成员里（加锁），再回 UI 线程推送——WebView2 只能在 UI 线程碰
+            ControlTerminalWindow::Instance().StoreProbeResult(baseUrl, probe);
+            if (target) {
+                PostMessageW(target, WM_APP_PROBE_DONE, 0, 0);
+            }
+            }).detach();
+    }
+
+    // 工作线程侧：把结果存起来（UI 线程稍后来取）。
+    void ControlTerminalWindow::StoreProbeResult(const std::string& baseUrl, const AIClient::ProviderProbe& probe) {
+        std::lock_guard<std::mutex> lock(probeMutex_);
+        probeKind_ = probe.ok ? 2 : (probe.reachable ? 3 : 3);
+        probeText_ = probe.detail;
+        probeUrl_ = baseUrl;
+        probeModelCount_ = static_cast<int>(probe.models.size());
+        probeModels_.clear();
+        for (const std::string& model : probe.models) {
+            probeModels_.push_back(Utils::Utf8ToWide(model));
+        }
+    }
+
+    // UI 线程侧：把探测结果推给页面，并把模型清单换成服务商给的那份。
+    void ControlTerminalWindow::FinishProbe() {
+        std::string text;
+        std::vector<std::wstring> models;
+        int kind = 0;
+        std::string url;
+        {
+            std::lock_guard<std::mutex> lock(probeMutex_);
+            kind = probeKind_;
+            text = probeText_;
+            url = probeUrl_;
+            models = probeModels_;
+        }
+
+        // 用户可能在探测期间又改了地址：过期结果直接丢掉，免得清单串台
+        const std::string current = draft_[ConfigManager::KEY_API_BASE_URL];
+        if (!current.empty() && current != url) {
+            LOG_DEBUG("ControlTerminal", "Probe result for a stale URL dropped.");
+            return;
+        }
+
+        if (!models.empty()) {
+            g_probedModels.url = Utils::Utf8ToWide(url);
+            g_probedModels.models = models;
+            // 服务商给的清单里如果没有当前选中的模型，说明它已经下线了：收敛到第一个，
+            // 否则每次请求都会被服务端拒掉（症状是「AI 永远不回话」）。
+            const std::wstring current_model = CurrentValueText(ConfigManager::KEY_API_MODEL_DEFAULT.c_str());
+            bool present = false;
+            for (const std::wstring& model : models) {
+                if (model == current_model) { present = true; break; }
+            }
+            if (!present && !models.empty() && !current_model.empty()) {
+                draft_[ConfigManager::KEY_API_MODEL_DEFAULT] = Utils::WideToUtf8(models.front());
+                LOG_INFO("ControlTerminal", "Model '" + Utils::WideToUtf8(current_model) +
+                    "' is not offered by this provider; switched to '" + Utils::WideToUtf8(models.front()) + "'.");
+            }
+            PushModelOptions();
+        }
+
+        SendProbeState();
+    }
+
+    // 探测状态推给页面（API 屏的连通性灯 + 说明文字）。
+    void ControlTerminalWindow::SendProbeState() {
+        if (!webviewReady_) {
+            return;
+        }
+        int kind = 0;
+        std::string text;
+        int count = 0;
+        {
+            std::lock_guard<std::mutex> lock(probeMutex_);
+            kind = probeKind_;
+            text = probeText_;
+            count = probeModelCount_;
+        }
+        const nlohmann::json message = {
+            { "type", "probeState" },
+            { "kind", kind },
+            { "text", text },
+            { "models", count },
+            { "source", (!g_probedModels.models.empty() && g_probedModels.url == CurrentValueText(ConfigManager::KEY_API_BASE_URL.c_str()))
+                ? "provider" : "builtin" },
+        };
+        SendToPage(message.dump());
+    }
+
+    // 模型清单单独推一次：页面只重画那一行，不打断别处的输入。
+    void ControlTerminalWindow::PushModelOptions() {
+        if (!webviewReady_) {
+            return;
+        }
+        const std::vector<PresetOption> options = PresetOptionsFor(
+            kModelPresetKey, CurrentValueText(ConfigManager::KEY_API_BASE_URL.c_str()),
+            CurrentValueText(ConfigManager::KEY_API_MODEL_DEFAULT.c_str()));
+        nlohmann::json list = nlohmann::json::array();
+        for (const PresetOption& option : options) {
+            list.push_back({ { "label", Utils::WideToUtf8(option.label) }, { "value", Utils::WideToUtf8(option.value) } });
+        }
+        const nlohmann::json message = {
+            { "type", "presetOptions" },
+            { "key", kModelPresetKey },
+            { "options", list },
+            { "values", nlohmann::json::parse(BuildValuesJson()) },
+            { "source", g_probedModels.url == CurrentValueText(ConfigManager::KEY_API_BASE_URL.c_str()) ? "provider" : "builtin" },
+        };
+        SendToPage(message.dump());
     }
 
     void ControlTerminalWindow::SendStatusOnly() {
@@ -847,6 +1106,11 @@ namespace UnnamedBot {
         if (type == "ready") {
             statePending_ = false;
             SendState(true);
+            // 「可用模型」要显示服务商真实提供的那份，不能等用户手点：
+            // 页面就绪时先问一次（没配密钥就不问，免得白挨一个 401）。
+            if (!draft_[ConfigManager::KEY_API_KEY].empty()) {
+                StartProbe();
+            }
             return;
         }
 
@@ -859,6 +1123,51 @@ namespace UnnamedBot {
 
         if (type == "close") {
             Hide();
+            return;
+        }
+
+        if (type == "refreshPet") {
+            // 中枢主菜单的「刷新」：重读配置 + 重载模型 + 把窗口摆回来。
+            // 要碰窗口与渲染器，所以留在窗口线程上做；先回一条状态，页面不至于干等。
+            SetStatus(L"正在刷新桌宠…", 0);
+            SendStatusOnly();
+            AppCore::Instance().RefreshPet();
+            SetStatus(L"桌宠已刷新（模型与配置已重新载入）", 1);
+            SendStatusOnly();
+            return;
+        }
+
+        if (type == "quit") {
+            // 页面的「退出」确认过了：走和托盘「退出」同一条路，把状态存好再退。
+            LOG_INFO("ControlTerminal", "Quit requested from hub UI.");
+            AppCore::Instance().Shutdown();
+            return;
+        }
+
+        if (type == "chatSend") {
+            // 对话屏发来一句话：交给 AppCore 走完整链路（落库 → 组装 → 流式请求）。
+            // ProcessAIMessage 可能阻塞数秒，不能在 UI 线程上等，所以丢到工作线程。
+            const std::string text = message.value("text", std::string());
+            if (text.empty()) {
+                return;
+            }
+            LOG_INFO("ControlTerminal", "Chat message from hub UI (" + std::to_string(text.size()) + " bytes).");
+            std::thread([text]() {
+                // 完整链路在工作线程上跑；完成后 AppCore 会把会话推回页面。
+                AppCore::Instance().SubmitUserMessage(text);
+                }).detach();
+            return;
+        }
+
+        if (type == "chatNew" || type == "chatResume") {
+            PushChatHistory();
+            return;
+        }
+
+        if (type == "probe") {
+            // 「测试连接」：先把页面上的草稿并进来，再拿这份草稿去问服务商。
+            ApplyPostedValues(message);
+            StartProbe();
             return;
         }
 
@@ -898,13 +1207,20 @@ namespace UnnamedBot {
                 if (snapped) {
                     reply["values"] = nlohmann::json::parse(BuildValuesJson());
                 }
+                reply["source"] = g_probedModels.url == CurrentValueText(ConfigManager::KEY_API_BASE_URL.c_str())
+                    ? "provider" : "builtin";
                 SendToPage(reply.dump());
             }
+
+            // 换了服务商就等于换了一套模型：顺手探测一次，模型行马上变成对方真实提供的那份。
+            // 页面按钮上的「测试连接」走的是同一条路，只是由用户手动触发。
+            StartProbe();
             return;
         }
     }
 
     // 只接受字段表里声明过的键：页面无法写入任意配置项。
+
     void ControlTerminalWindow::ApplyPostedValues(const nlohmann::json& message) {
         const auto valuesIt = message.find("values");
         if (valuesIt == message.end() || !valuesIt->is_object()) return;
@@ -953,6 +1269,17 @@ namespace UnnamedBot {
         const auto it = draft_.find(key);
         if (it != draft_.end()) return Utils::Utf8ToWide(it->second);
         return std::wstring();
+    }
+
+    // 人设锁：「？？？」生效期间不允许再切回别人设。
+    // 判据只有一条——哨兵文件还在 + 当前值就是「？？？」。
+    // 也就是说解锁的唯一方式是删掉 prompts/yandere.chr（删掉后页面连这一项都不再出现，
+    // 存着的值也会在 LoadFromConfig 里回落成「关闭」）。
+    bool ControlTerminalWindow::IsPersonaFrozen() const {
+        if (!PromptLibrary::Instance().HasYandereSentinel()) {
+            return false;
+        }
+        return CurrentValueText(ConfigManager::KEY_QUICK_MODE.c_str()) == L"？？？";
     }
 
     // 服务商与模型必须成套。页面切服务商时只写 api.base_url，api.model_default
@@ -1073,6 +1400,13 @@ namespace UnnamedBot {
         // 与下面 quick.mode 同理——草稿先归一，界面保存后 SendState 会把纠正后的
         // 模型显示出来，用户看得见这次改动。
         SnapModelToProvider();
+
+        // 人设锁的兜底：页面上的按钮虽然禁用了，但宿主这边必须自己再拦一次——
+        // 页面可以被人为改消息绕过，而「？？？」是要坚持到底的（解锁只能删 .chr）。
+        if (IsPersonaFrozen()) {
+            draft_[ConfigManager::KEY_QUICK_MODE] = Utils::WideToUtf8(L"？？？");
+            loaded_[ConfigManager::KEY_QUICK_MODE] = Utils::WideToUtf8(L"？？？");
+        }
 
         // 父开关关闭时 quick.mode 整行在页面上不可见（见 BuildSchemaJson 的 requires）。
         // 这里把草稿强制回写成「关闭」：draft_ 让界面立刻反映，loaded_ 一起同步，

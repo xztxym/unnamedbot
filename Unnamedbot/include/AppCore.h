@@ -46,6 +46,18 @@ namespace UnnamedBot {
         // 安全退出（保存所有状态）
         void SafeShutdown();
 
+        // 中枢「对话」屏的入口：把一句话交给完整链路（落库 → 组装 → 流式请求），
+        // 结束后把会话重新推给配置终端页面。可在任意线程调用（内部走 ProcessAIMessage）。
+        void SubmitUserMessage(const std::string& text);
+
+        // 中枢 API 屏的探测：用当前（可能还没保存的）地址与密钥问一次服务商的模型清单。
+        // 复用 AIClient 的代理与超时设置；可在任意线程调用。
+        AIClient::ProviderProbe ProbeProvider(const std::string& baseUrl, const std::string& apiKey);
+
+        // 刷新桌宠（中枢主菜单的「刷新」）：重读配置 → 重新载入模型 → 把窗口摆回来。
+        // 与「保存」走同一条应用链路，只是不写库。
+        void RefreshPet();
+
     private:
         AppCore() = default;
         ~AppCore() = default;

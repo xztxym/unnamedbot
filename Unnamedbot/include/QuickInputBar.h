@@ -65,10 +65,10 @@ namespace UnnamedBot {
         // 画刷按颜色缓存：同一颜色反复建刷会漏 GDI 对象
         HBRUSH EnsureBrush(HBRUSH& brush, COLORREF& cached, COLORREF color);
         // 下划线式专用：把 EDIT 的文本与未上屏的组字串画到父窗口的 DC 上
-        // （分层窗口不合成子控件，只能自己画）
-        void DrawEditContent(HDC dc, const UiTheme& theme);
+        // （分层窗口不合成子控件，只能自己画）。fade/shake 是 ？？？ 的渐显与打字抖动。
+        void DrawEditContent(HDC dc, const UiTheme& theme, float fade, int shakeX, int shakeY);
         // 下划线式专用：自己画的光标（EDIT 被缩到 1x1，它的系统光标没有意义）
-        void DrawCaret(HDC dc, const UiTheme& theme, const RECT& textRect, int offsetX);
+        void DrawCaret(HDC dc, const UiTheme& theme, const RECT& textRect, int offsetX, COLORREF color);
 
         // 依据参照窗口与工作区可用空间决定落点（物理像素）
         void ComputePosition(HWND anchor, int width, int height, int& x, int& y) const;
@@ -85,6 +85,10 @@ namespace UnnamedBot {
         // 当前 font_ 对应的主题参数，不一致就重建
         const wchar_t* fontFamily_ = nullptr;
         bool fontItalic_ = false;
+
+        // ？？？主题的动效时间戳（非？？？主题恒为 0，绘制时不会加任何偏移）
+        ULONGLONG popupTime_ = 0;   // 弹出时刻：血色渐显的起点
+        ULONGLONG shakeAt_ = 0;     // 最近一次输入的抖动起点（0 = 不抖）
 
         HBRUSH backgroundBrush_ = nullptr;
         COLORREF backgroundBrushColor_ = CLR_INVALID;

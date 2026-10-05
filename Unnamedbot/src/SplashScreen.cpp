@@ -1,5 +1,7 @@
 #include "../include/SplashScreen.h"
 
+#include "../include/UiTheme.h"
+
 #include <cwchar>
 
 namespace UnnamedBot {
@@ -21,9 +23,10 @@ namespace UnnamedBot {
         const COLORREF kAccent = RGB(0x87, 0xb2, 0xff);
 
         // ===== 逻辑尺寸（96 DPI）=====
-        const int kWinW = 470;
-        const int kWinH = 258;
-        const int kMargin = 30;
+        // 比原来宽一些：要让开右侧的大号百分比，并与中枢的排版节奏对齐。
+        const int kWinW = 560;
+        const int kWinH = 300;
+        const int kMargin = 34;
 
         int ClampInt(int value, int low, int high) {
             return value < low ? low : (value > high ? high : value);
@@ -325,28 +328,32 @@ namespace UnnamedBot {
     }
 
     void SplashScreen::CreateFonts() {
-        const wchar_t* sans = L"Microsoft YaHei UI";
+        // 字体跟着主题走：？？？ 下与界面一致用楷体斜体，普通主题用雅黑。
+        const UiTheme theme = CurrentUiTheme();
+        const wchar_t* sans = theme.fontSans;
         const wchar_t* mono = L"Cascadia Mono";
 
-        auto make = [this](int pt, int weight, const wchar_t* face) {
-            return CreateFontW(-Scale(pt), 0, 0, 0, weight, FALSE, FALSE, FALSE,
+        auto make = [this, &theme](int pt, int weight, const wchar_t* face, bool italic) {
+            return CreateFontW(-Scale(pt), 0, 0, 0, weight, italic ? TRUE : FALSE, FALSE, FALSE,
                 DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
                 DEFAULT_PITCH | FF_DONTCARE, face);
         };
 
-        titleFont_ = make(24, FW_SEMIBOLD, sans);
-        bodyFont_ = make(12, FW_NORMAL, sans);
-        monoFont_ = make(10, FW_NORMAL, mono);
-        monoSmFont_ = make(8, FW_NORMAL, mono);
+        titleFont_ = make(24, FW_SEMIBOLD, sans, theme.italic);
+        bodyFont_ = make(12, FW_NORMAL, sans, theme.italic);
+        bigFont_ = make(26, FW_SEMIBOLD, mono, FALSE);   // 百分比：等宽，数字跳动时不会晃
+        monoFont_ = make(10, FW_NORMAL, mono, FALSE);
+        monoSmFont_ = make(8, FW_NORMAL, mono, FALSE);
     }
 
     void SplashScreen::DestroyFonts() {
-        HFONT fonts[] = { titleFont_, bodyFont_, monoFont_, monoSmFont_ };
+        HFONT fonts[] = { titleFont_, bodyFont_, bigFont_, monoFont_, monoSmFont_ };
         for (HFONT font : fonts) {
             if (font) DeleteObject(font);
         }
         titleFont_ = nullptr;
         bodyFont_ = nullptr;
+        bigFont_ = nullptr;
         monoFont_ = nullptr;
         monoSmFont_ = nullptr;
     }
@@ -357,6 +364,15 @@ namespace UnnamedBot {
 
     // ============================================================
     // 绘制
+    // ============================================================
+
+    // ============================================================
+    // 绘制：与「桌宠中枢」的加载屏同一套语言
+    //   顶部：斜切色块 + 启动中 / BOOT · LOADING + 右侧阶段灯
+    //   中部：进度行（标签 + 滑轨 + 大号百分比）、当前步骤、耗时
+    //   底部：一句说明这次等待在做什么
+    // 配色全部取自 CurrentUiTheme()，所以 ？？？ 启动时这里也是酒红，
+    // 不会出现「加载画面冰蓝、进去以后变酒红」的撕裂。
     // ============================================================
 
     void SplashScreen::OnPaint(HWND hwnd) {
@@ -396,85 +412,139 @@ namespace UnnamedBot {
             progress = progress_;
         }
 
-        FillVerticalGradient(memDc, client, kBgTop, kBgBottom);
-        DrawBoxBorder(memDc, client, kCardEdge);
-        SetBkMode(memDc, TRANSPARENT);
-
+        const UiTheme theme = CurrentUiTheme();
         const int margin = Scale(kMargin);
 
-        // 标题与副标题
+        // 底色：面板色 -> 更深一档，跟界面里的 .field 同一个方向
+        FillVerticalGradient(memDc, client, theme.surface, theme.surfaceDeep);
+        DrawBoxBorder(memDc, client, theme.edge);
+        SetBkMode(memDc, TRANSPARENT);
+
+        // ---- 顶部：斜切色块 + 标题 ----
+        const int headTop = Scale(28);
+        const int headHeight = Scale(34);
+        POINT plate[4] = {
+            { margin, headTop + Scale(6) },
+            { margin + Scale(9), headTop },
+            { margin + Scale(9), headTop + headHeight },
+            { margin, headTop + headHeight + Scale(6) },
+        };
+        {
+            HBRUSH brush = CreateSolidBrush(theme.accent);
+            HGDIOBJ oldBrush = SelectObject(memDc, brush);
+            HGDIOBJ oldPen = SelectObject(memDc, GetStockObject(NULL_PEN));
+            Polygon(memDc, plate, 4);
+            SelectObject(memDc, oldPen);
+            SelectObject(memDc, oldBrush);
+            DeleteObject(brush);
+        }
+
         HGDIOBJ oldFont = SelectObject(memDc, titleFont_);
-        DrawSpacedText(memDc, L"UnnamedBot", margin, Scale(32), Scale(3), kIceHigh);
+        SetTextColor(memDc, theme.accentHi);
+        const int titleX = margin + Scale(20);
+        TextOutW(memDc, titleX, headTop + Scale(2), L"启动中", 3);
+        SIZE titleSize = {};
+        GetTextExtentPoint32W(memDc, L"启动中", 3, &titleSize);
 
         SelectObject(memDc, monoSmFont_);
-        DrawSpacedText(memDc, L"DESKTOP PET · BOOT SEQUENCE", margin, Scale(74), Scale(2), kTextMuted);
+        DrawSpacedText(memDc, L"BOOT · LOADING",
+            titleX + titleSize.cx + Scale(14), headTop + Scale(16), Scale(2), theme.textDim);
 
-        const RECT hairline = { margin, Scale(100), width - margin, Scale(100) + 1 };
-        FillColor(memDc, hairline, kHairline);
-
-        // 当前阶段
-        SelectObject(memDc, bodyFont_);
-        SetTextColor(memDc, kTextSecondary);
-        RECT statusRect = { margin, Scale(114), width - margin, Scale(140) };
-        DrawTextW(memDc, status.c_str(), -1, &statusRect,
-            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
-
-        // 进度条
-        const int trackTop = Scale(156);
-        const int trackHeight = Scale(12);
-        const RECT track = { margin, trackTop, width - margin, trackTop + trackHeight };
-        const int trackWidth = track.right - track.left;
-        const int filledWidth = ClampInt(static_cast<int>(trackWidth * progress), 0, trackWidth);
-
-        FillColor(memDc, track, kInputBg);
-
-        // 未完成时，剩余区间有一段高光来回流动：表示「仍在工作」而不是卡死
-        if (progress < 1.0f) {
-            const int sweepWidth = Scale(48);
-            const int remaining = trackWidth - filledWidth;
-            if (remaining > sweepWidth) {
-                const ULONGLONG period = 1400;
-                const ULONGLONG phase = (GetTickCount64() - startTick_) % (period * 2);
-                const float t = (phase < period)
-                    ? static_cast<float>(phase) / static_cast<float>(period)
-                    : 1.0f - static_cast<float>(phase - period) / static_cast<float>(period);
-                const int travel = ClampInt(static_cast<int>(t * static_cast<float>(remaining - sweepWidth)),
-                    0, remaining - sweepWidth);
-                const int sweepLeft = track.left + filledWidth + travel;
-                const RECT sweep = { sweepLeft, track.top + Scale(1), sweepLeft + sweepWidth, track.bottom - Scale(1) };
-                FillColor(memDc, sweep, kHairline);
-            }
+        // 右侧：阶段灯 + 阶段名（与界面顶栏那颗灯同一语义）
+        const wchar_t* phase = (progress >= 1.0f) ? L"完成"
+            : (progress >= 0.55f ? L"渲染" : (progress >= 0.30f ? L"界面" : L"配置"));
+        const int phaseWidth = SpacedTextWidth(memDc, phase, 0);
+        const int dotX = width - margin - phaseWidth - Scale(14);
+        {
+            const RECT dot = { dotX, headTop + Scale(15), dotX + Scale(8), headTop + Scale(23) };
+            FillColor(memDc, dot, theme.accentSoft);
         }
+        SetTextColor(memDc, theme.textDim);
+        TextOutW(memDc, dotX + Scale(14), headTop + Scale(12), phase, static_cast<int>(wcslen(phase)));
 
-        // 已完成部分
-        if (filledWidth > 0) {
-            const RECT fill = { track.left, track.top + Scale(1), track.left + filledWidth, track.bottom - Scale(1) };
-            FillHorizontalGradient(memDc, fill, kIceMid, kAccent);
-        }
+        // 发丝线：与界面里的 .phead 下沿同一位置关系
+        const RECT hairline = { margin, Scale(88), width - margin, Scale(88) + 1 };
+        FillColor(memDc, hairline, theme.edgeSoft);
 
-        DrawBoxBorder(memDc, track, kCardEdge);
-
-        // 页脚：已用时长 + 百分比
-        const double elapsed = static_cast<double>(GetTickCount64() - startTick_) / 1000.0;
-        wchar_t elapsedText[64] = {};
-        swprintf_s(elapsedText, L"ELAPSED %.1fs", elapsed);
+        // ---- 进度行 ----
+        SelectObject(memDc, monoSmFont_);
+        DrawSpacedText(memDc, L"PROGRESS", margin, Scale(104), Scale(2), theme.textDim);
 
         wchar_t percentText[32] = {};
         swprintf_s(percentText, L"%d%%", static_cast<int>(progress * 100.0f + 0.5f));
 
+        // 百分比占右侧固定宽度，滑轨不让位，数字就不会跳
+        const int percentBox = Scale(96);
+        const int trackLeft = margin;
+        const int trackRight = width - margin - percentBox;
+        const int trackTop = Scale(130);
+        const int trackHeight = Scale(12);
+        const RECT track = { trackLeft, trackTop, trackRight, trackTop + trackHeight };
+        const int trackWidth = track.right - track.left;
+        const int filledWidth = ClampInt(static_cast<int>(trackWidth * progress), 0, trackWidth);
+
+        FillColor(memDc, track, theme.surfaceDeep);
+
+        // 未完成时，剩余区间有一段高光来回流动：表示「仍在工作」而不是卡死
+        if (progress < 1.0f) {
+            const int sweepWidth = Scale(56);
+            const int remaining = trackWidth - filledWidth;
+            if (remaining > sweepWidth) {
+                const ULONGLONG period = 1400;
+                const ULONGLONG phaseTick = (GetTickCount64() - startTick_) % (period * 2);
+                const float t = (phaseTick < period)
+                    ? static_cast<float>(phaseTick) / static_cast<float>(period)
+                    : 1.0f - static_cast<float>(phaseTick - period) / static_cast<float>(period);
+                const int travel = ClampInt(static_cast<int>(t * static_cast<float>(remaining - sweepWidth)),
+                    0, remaining - sweepWidth);
+                const int sweepLeft = track.left + filledWidth + travel;
+                const RECT sweep = { sweepLeft, track.top + Scale(1), sweepLeft + sweepWidth, track.bottom - Scale(1) };
+                FillColor(memDc, sweep, theme.edge);
+            }
+        }
+
+        if (filledWidth > 0) {
+            const RECT fill = { track.left, track.top + Scale(1), track.left + filledWidth, track.bottom - Scale(1) };
+            FillHorizontalGradient(memDc, fill, theme.accentMid, theme.accent);
+        }
+        DrawBoxBorder(memDc, track, theme.edge);
+
+        SelectObject(memDc, bigFont_);
+        SetTextColor(memDc, theme.accent);
+        {
+            SIZE percentSize = {};
+            GetTextExtentPoint32W(memDc, percentText, static_cast<int>(wcslen(percentText)), &percentSize);
+            TextOutW(memDc, width - margin - percentSize.cx,
+                trackTop + trackHeight / 2 - percentSize.cy / 2, percentText, static_cast<int>(wcslen(percentText)));
+        }
+
+        // ---- 当前步骤 ----
+        SelectObject(memDc, bodyFont_);
+        SetTextColor(memDc, theme.text);
+        RECT statusRect = { margin, Scale(160), width - margin, Scale(188) };
+        DrawTextW(memDc, status.c_str(), -1, &statusRect,
+            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+
+        // ---- 耗时 / 署名 ----
+        const double elapsed = static_cast<double>(GetTickCount64() - startTick_) / 1000.0;
+        wchar_t elapsedText[64] = {};
+        swprintf_s(elapsedText, L"ELAPSED %.1fs", elapsed);
+
         SelectObject(memDc, monoSmFont_);
-        SetTextColor(memDc, kTextMuted);
-        TextOutW(memDc, margin, Scale(184), elapsedText, static_cast<int>(wcslen(elapsedText)));
+        DrawSpacedText(memDc, elapsedText, margin, Scale(204), Scale(2), theme.textDim);
 
-        const std::wstring percent = percentText;
-        const int percentWidth = SpacedTextWidth(memDc, percent, Scale(2));
-        DrawSpacedText(memDc, percent, width - margin - percentWidth, Scale(184), Scale(2), kIceHigh);
+        const std::wstring signature = L"DESKTOP PET · AGENT HUB";
+        const int signatureWidth = SpacedTextWidth(memDc, signature, Scale(2));
+        DrawSpacedText(memDc, signature, width - margin - signatureWidth, Scale(204), Scale(2), theme.textDim);
 
-        // 底部提示：说明这次等待是做什么的
+        // ---- 底部提示：说明这次等待是做什么的 ----
+        const RECT footerLine = { margin, Scale(232), width - margin, Scale(232) + 1 };
+        FillColor(memDc, footerLine, theme.edgeSoft);
+
         SelectObject(memDc, monoFont_);
-        SetTextColor(memDc, kTextMuted);
-        RECT hintRect = { margin, Scale(212), width - margin, Scale(238) };
-        DrawTextW(memDc, L"启动时需编译 Live2D 着色器，可能耗时数十秒，请勿关闭窗口。", -1, &hintRect,
+        SetTextColor(memDc, theme.textDim);
+        RECT hintRect = { margin, Scale(246), width - margin, Scale(274) };
+        DrawTextW(memDc, L"首次启动需要编译 Live2D 着色器，约 50 秒，请勿关闭窗口。", -1, &hintRect,
             DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
 
         SelectObject(memDc, oldFont);

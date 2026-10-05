@@ -1,6 +1,7 @@
 #include "../include/AIClient.h"
 #include "../include/Logger.h"
 #include <chrono>
+#include <algorithm>
 #include <thread>
 #include <sstream>
 #include <iomanip>
@@ -183,6 +184,78 @@ namespace UnnamedBot {
             LOG_ERROR("AIClient", "Connection test exception: " + errorMessage);
             return false;
         }
+    }
+
+    AIClient::ProviderProbe AIClient::ProbeProvider(const std::string& baseUrl, const std::string& apiKey) const {
+        ProviderProbe probe;
+
+        // 地址末尾的斜杠会让拼出来的 /models 变成 //models，有的网关直接 404
+        std::string url = baseUrl;
+        while (!url.empty() && (url.back() == '/' || url.back() == ' ')) {
+            url.pop_back();
+        }
+        if (url.empty()) {
+            probe.detail = "服务地址为空";
+            return probe;
+        }
+        url += "/models";
+
+        cpr::Header headers = { {"Authorization", "Bearer " + apiKey} };
+        if (!config_.organization.empty()) {
+            headers["OpenAI-Organization"] = config_.organization;
+        }
+        // 探测是给人当场看的，不能按对话的超时（默认 60s）干等；上限压到 12 秒。
+        const int timeoutSeconds = (std::max)(5, (std::min)(config_.timeoutSeconds, 12));
+
+        const auto started = std::chrono::steady_clock::now();
+        try {
+            auto response = cpr::Get(
+                cpr::Url{ url },
+                headers,
+                cpr::Timeout{ std::chrono::seconds(timeoutSeconds) },
+                cpr::Proxies{ GetProxies() }
+            );
+
+            probe.reachable = true;
+            probe.httpStatus = response.status_code;
+            probe.latencyMs = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - started).count());
+
+            if (response.status_code == 200) {
+                auto json = nlohmann::json::parse(response.text, nullptr, false);
+                if (!json.is_discarded() && json.contains("data") && json["data"].is_array()) {
+                    for (const auto& item : json["data"]) {
+                        if (item.contains("id") && item["id"].is_string()) {
+                            probe.models.push_back(item["id"].get<std::string>());
+                        }
+                    }
+                }
+                // 该端点的模型顺序即服务商的默认顺序，保持原样（很多网关会把自己推荐的排前面）
+                probe.ok = true;
+                probe.detail = "HTTP 200 · " + std::to_string(probe.latencyMs) + "ms · " +
+                    std::to_string(probe.models.size()) + " 个模型";
+            }
+            else if (response.status_code == 401 || response.status_code == 403) {
+                probe.detail = "HTTP " + std::to_string(response.status_code) +
+                    " · 地址可达（" + std::to_string(probe.latencyMs) + "ms），但密钥不被接受";
+            }
+            else if (response.status_code == 404) {
+                probe.detail = "HTTP 404 · 地址可达，但该端点没有 /models（自建网关常见）";
+            }
+            else {
+                std::string body = response.text;
+                if (body.size() > 160) body = body.substr(0, 160) + "…";
+                probe.detail = "HTTP " + std::to_string(response.status_code) + " · " + body;
+            }
+        }
+        catch (const std::exception& e) {
+            probe.latencyMs = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - started).count());
+            probe.detail = "连接失败：" + std::string(e.what());
+        }
+
+        LOG_INFO("AIClient", "Probe " + url + " -> " + probe.detail);
+        return probe;
     }
 
     std::vector<std::string> AIClient::GetAvailableModels() {

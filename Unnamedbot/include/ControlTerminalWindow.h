@@ -2,6 +2,9 @@
 
 #include <Windows.h>
 
+// 探测结果里用到 AIClient::ProviderProbe，所以这里要拿到完整声明
+#include "AIClient.h"
+
 #include <wrl/client.h>
 #include <WebView2.h>
 
@@ -9,6 +12,7 @@
 
 #include <functional>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -40,6 +44,12 @@ namespace UnnamedBot {
 
         // 配置保存成功后的回调（AppCore 用它重新加载并应用配置）
         void OnSaved(std::function<void()> callback);
+
+        // 任意线程可调：把当前会话记录重新推给「对话」屏。
+        // AI 请求跑在工作线程上，而 WebView2 只能在 UI 线程碰，所以内部只 PostMessage。
+        void PushChatHistory();
+
+        static constexpr UINT WM_APP_PUSH_CHAT = WM_APP + 41;
 
         // ---------- 配置项描述（终端展示的全部字段） ----------
 
@@ -96,6 +106,9 @@ namespace UnnamedBot {
         // 收敛到该服务商的第一个模型（返回是否改过）。服务商与模型不匹配时
         // 服务端会对每次请求回 HTTP 400。
         bool SnapModelToProvider();
+        // 「？？？」一旦选中就锁住人设行：除非把哨兵文件 prompts/yandere.chr 删掉。
+        // 判定同样看哨兵：文件在 = 锁；文件删了 = 页面上连这一项都不会再出现。
+        bool IsPersonaFrozen() const;
         bool ValidateValue(const FieldDef& def, const std::wstring& value, std::wstring& error) const;
         void Save();
         void Reload();
@@ -116,6 +129,33 @@ namespace UnnamedBot {
         void SendStatusOnly();
         void HandleWebMessage(const std::string& json);
         void ApplyPostedValues(const nlohmann::json& message);
+
+        // ---- 对话（中枢的「对话」屏）----
+        // 真正下发（必须在 UI 线程上调用）。
+        void SendChatHistory();
+
+        // ---- 服务商探测（中枢「API 接入」屏）----
+        // 在后台线程问服务商要模型清单，回来后推送结果。地址与密钥用当前草稿，
+        // 所以「测一下」测的是用户刚填的东西，而不是已经保存的那份。
+        void StartProbe();
+        // 工作线程侧：暂存结果（加锁）
+        void StoreProbeResult(const std::string& baseUrl, const AIClient::ProviderProbe& probe);
+        // UI 线程侧：把结果推给页面，并按服务商给的清单刷新模型行
+        void FinishProbe();
+        void SendProbeState();
+        // 推送模型清单（服务商没给出可用清单时回退到内置表）
+        void PushModelOptions();
+
+        static constexpr UINT WM_APP_PROBE_DONE = WM_APP + 42;
+
+        // 探测结果（跨线程：工作线程写，UI 线程读）。
+        // mutex 是 mutable：BuildStateJson 是 const，但也需要把状态一起下发。
+        mutable std::mutex probeMutex_;
+        int probeKind_ = 0;                         // 0=未测 1=进行中 2=可达 3=失败
+        std::string probeText_;
+        std::string probeUrl_;                      // 结果对应的地址，用来丢弃过期结果
+        int probeModelCount_ = 0;                    // 服务商给出的模型数量（0 = 只能用内置表）
+        std::vector<std::wstring> probeModels_;
 
         // 窗口句柄
         HWND hwnd_ = nullptr;
