@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="{9F2B7C41-3E5A-4D18-9C77-5B1E0A2D6F31}" Name="UnnamedBot" Language="2052" Version="1.0.0"
+           Manufacturer="UnnamedBot" UpgradeCode="{4A7D1E93-6C02-4B85-A1F4-8E3D2C7B5A09}" Codepage="936">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perUser"
+             InstallPrivileges="limited" Description="UnnamedBot 桌宠中控"
+             Comments="AI 桌宠中控（含 Live2D 模型与运行库，无需额外依赖）" />
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="已经安装了更新版本的 UnnamedBot。" />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="D:\VSProject\Unnamedbot\Unnamedbot\x64\Release\Unnamedbot.exe" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPCOMMENTS" Value="AI 桌宠中控" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="LocalAppDataFolder">
+        <Directory Id="ProgramsDir" Name="Programs">
+          <Directory Id="INSTALLFOLDER" Name="UnnamedBot">
+            <Directory Id="d_c515f4270b0f" Name="FrameworkShaders">
+            </Directory>
+            <Directory Id="d_9dfb086f9a3a" Name="models">
+              <Directory Id="d_2ae7bb7af5f5" Name="Haru">
+                <Directory Id="d_3b261d6475aa" Name="Haru.2048">
+                </Directory>
+                <Directory Id="d_02df0965b885" Name="expressions">
+                </Directory>
+                <Directory Id="d_5a90e9b37a2a" Name="motions">
+                </Directory>
+                <Directory Id="d_18e1fa68d752" Name="sounds">
+                </Directory>
+              </Directory>
+              <Directory Id="d_ceb85a97f677" Name="wuwuwu">
+                <Directory Id="d_8daba988d953" Name="wuwuwu.8192">
+                </Directory>
+              </Directory>
+            </Directory>
+            <Directory Id="d_8ce6368f11b7" Name="redists">
+            </Directory>
+
+          </Directory>
+        </Directory>
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="AppMenuDir" Name="UnnamedBot" />
+      </Directory>
+      <Directory Id="DesktopFolder" />
+    </Directory>
+
+    <DirectoryRef Id="TARGETDIR" />
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="c4B946B42FBF3086C" Guid="{E672BF77-7EC4-0CEB-33BC-850E414A599F}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c4B946B42FBF3086C"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c4B946B42FBF3086C" Directory="INSTALLFOLDER" On="uninstall" />
+        <RemoveFolder Id="rmf_menu" Directory="AppMenuDir" On="uninstall" />
+        <File Id="f92963808855D69280B78" Source="D:\VSProject\Unnamedbot\Unnamedbot\x64\Release\Unnamedbot.exe">
+          <Shortcut Id="StartMenuShortcut" Directory="AppMenuDir" Name="UnnamedBot"
+                    WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" Advertise="no" />
+          <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="UnnamedBot"
+                    WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" Advertise="no" />
+        </File>
+      </Component>
+      <Component Id="c660E6CD886FCE5C6" Guid="{CFB8D0BB-129C-BCBC-FB3E-D8BD5BC8FC0B}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c660E6CD886FCE5C6"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c660E6CD886FCE5C6" Directory="INSTALLFOLDER" On="uninstall" />
+        <File Id="fD2E980933DD9A075BCB6" Source="D:\VSProject\Unnamedbot\Unnamedbot\x64\Release\cpr.dll">
+        </File>
+      </Component>
+      <Component Id="c9E3CCB865A538703" Guid="{371F8C22-BEFB-1565-84A7-C6747AD0EF96}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c9E3CCB865A538703"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c9E3CCB865A538703" Directory="INSTALLFOLDER" On="uninstall" />
+        <File Id="fCBF5E012DAF28BB91C19" Source="D:\VSProject\Unnamedbot\Unnamedbot\x64\Release\libcurl.dll">
+        </File>
+      </Component>
+      <Component Id="c797FD482EDD0C275" Guid="{71EF0025-B542-EA79-8EC8-493C7EC1AF3F}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c797FD482EDD0C275"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c797FD482EDD0C275" Directory="INSTALLFOLDER" On="uninstall" />
+        <File Id="f2E2469FA7060767DB83C" Source="D:\VSProject\Unnamedbot\Unnamedbot\x64\Release\z.dll">
+        </File>
+      </Component>
+      <Component Id="c69CB8056E8C01569" Guid="{B29EB7E6-53C8-125F-6A21-C0609BC19C21}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c69CB8056E8C01569"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c69CB8056E8C01569" Directory="INSTALLFOLDER" On="uninstall" />
+        <File Id="f3E13EA23A43AC3C86B70" Source="D:\VSProject\Unnamedbot\Unnamedbot\x64\Release\sqlite3.dll">
+        </File>
+      </Component>
+      <Component Id="c435B76B7C8FCB8E9" Guid="{91406BA6-0473-4205-2E48-8BF9D1E3B07D}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c435B76B7C8FCB8E9"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c435B76B7C8FCB8E9" Directory="INSTALLFOLDER" On="uninstall" />
+        <File Id="fAD8CA808E6C8FA85EFA2" Source="D:\VSProject\Unnamedbot\Unnamedbot\x64\Release\Live2DCubismCore.dll">
+        </File>
+      </Component>
+      <Component Id="c9503AF3ECFB0E8B7" Guid="{8718C35C-27C9-E588-CAC9-696C534B799D}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c9503AF3ECFB0E8B7"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c9503AF3ECFB0E8B7" Directory="INSTALLFOLDER" On="uninstall" />
+        <File Id="f7A7686C01FB95C245C0A" Source="D:\VSProject\Unnamedbot\UnnamedBotSetup\redist\crt\msvcp140.dll">
+        </File>
+      </Component>
+      <Component Id="c2CD6EE71A6FB4A26" Guid="{0396F336-7FE2-EFF4-E0A5-53D8D29358E6}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c2CD6EE71A6FB4A26"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c2CD6EE71A6FB4A26" Directory="INSTALLFOLDER" On="uninstall" />
+        <File Id="fF9F63603BC8B000F5B8B" Source="D:\VSProject\Unnamedbot\UnnamedBotSetup\redist\crt\vcruntime140.dll">
+        </File>
+      </Component>
+      <Component Id="c849E9EF1BB622539" Guid="{ED0F6242-F9D4-BB0F-6E3F-321284AD5B3E}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c849E9EF1BB622539"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c849E9EF1BB622539" Directory="INSTALLFOLDER" On="uninstall" />
+        <File Id="f3FEA0F8B9D6552221549" Source="D:\VSProject\Unnamedbot\UnnamedBotSetup\redist\crt\vcruntime140_1.dll">
+        </File>
+      </Component>
+      <Component Id="cmp_cleanup" Guid="{8660C0DB-4F8C-F6AF-E3CA-6593B5A8882E}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cmp_cleanup"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_ProgramsDir" Directory="ProgramsDir" On="uninstall" />
+        <RemoveFolder Id="rmf_d_9dfb086f9a3a" Directory="d_9dfb086f9a3a" On="uninstall" />
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="d_02df0965b885">
+      <Component Id="c12A48063D8ABEC8E" Guid="{101D1BEF-DE76-55D6-D55D-6050BD251B6A}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c12A48063D8ABEC8E"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c12A48063D8ABEC8E" Directory="d_02df0965b885" On="uninstall" />
+        <File Id="f066A963803D8B74D7E0F" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\expressions\F01.exp3.json">
+        </File>
+      </Component>
+      <Component Id="c4033D0AF4C4F35DD" Guid="{DB96794C-C6C8-364C-B595-AAE608DD6153}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c4033D0AF4C4F35DD"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c4033D0AF4C4F35DD" Directory="d_02df0965b885" On="uninstall" />
+        <File Id="f62523DF4DEC378BEB18B" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\expressions\F02.exp3.json">
+        </File>
+      </Component>
+      <Component Id="c9B2E1EC35635DCF7" Guid="{14C5CFF6-4F95-0F36-E428-B6A41FB1D355}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c9B2E1EC35635DCF7"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c9B2E1EC35635DCF7" Directory="d_02df0965b885" On="uninstall" />
+        <File Id="f3B4C1ACAC3472B768D57" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\expressions\F03.exp3.json">
+        </File>
+      </Component>
+      <Component Id="cCD74FF6BD44A5B93" Guid="{1F3692B9-D4AB-261E-548E-88361B482D12}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cCD74FF6BD44A5B93"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cCD74FF6BD44A5B93" Directory="d_02df0965b885" On="uninstall" />
+        <File Id="f768375F8A1CC7E1418E4" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\expressions\F04.exp3.json">
+        </File>
+      </Component>
+      <Component Id="cCCF700C016F4E5C5" Guid="{4692E1BF-6208-869C-FBFF-97B2BB109E7F}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cCCF700C016F4E5C5"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cCCF700C016F4E5C5" Directory="d_02df0965b885" On="uninstall" />
+        <File Id="f854ED3EF295360AC572E" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\expressions\F05.exp3.json">
+        </File>
+      </Component>
+      <Component Id="c53CC8053E5E4F6F7" Guid="{3C5B849C-8BDE-CB9B-73E3-44CDFACF0C6A}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c53CC8053E5E4F6F7"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c53CC8053E5E4F6F7" Directory="d_02df0965b885" On="uninstall" />
+        <File Id="f7AE245822DF5E3BF18F1" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\expressions\F06.exp3.json">
+        </File>
+      </Component>
+      <Component Id="cAE6DA9C60F6A3603" Guid="{BDDA2A4F-1E65-ED76-12F2-4C5216D3DD60}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cAE6DA9C60F6A3603"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cAE6DA9C60F6A3603" Directory="d_02df0965b885" On="uninstall" />
+        <File Id="f0B502BDA59731B2105ED" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\expressions\F07.exp3.json">
+        </File>
+      </Component>
+      <Component Id="c4D28A562F56DD9F4" Guid="{ED02ADAB-4AA2-F076-9165-338ADF882B32}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c4D28A562F56DD9F4"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c4D28A562F56DD9F4" Directory="d_02df0965b885" On="uninstall" />
+        <File Id="fD966ACC8B17A8C0F4557" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\expressions\F08.exp3.json">
+        </File>
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="d_18e1fa68d752">
+      <Component Id="cAB9D7665220936FD" Guid="{D6F2C974-AA7E-CDB3-0619-AB09F5F86707}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cAB9D7665220936FD"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cAB9D7665220936FD" Directory="d_18e1fa68d752" On="uninstall" />
+        <File Id="f38BF2826F2563FEF1379" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\sounds\haru_Info_04.wav">
+        </File>
+      </Component>
+      <Component Id="c2EE25FB2874BC668" Guid="{3BF41FC8-7524-C07A-7F0D-D3E54640676A}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c2EE25FB2874BC668"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c2EE25FB2874BC668" Directory="d_18e1fa68d752" On="uninstall" />
+        <File Id="f27F2E53A88DD9CD5B256" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\sounds\haru_Info_14.wav">
+        </File>
+      </Component>
+      <Component Id="cFCD61F66BAC552A9" Guid="{F8DF9313-CB6B-1582-7A5D-1A751ACF4F53}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cFCD61F66BAC552A9"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cFCD61F66BAC552A9" Directory="d_18e1fa68d752" On="uninstall" />
+        <File Id="fA5FA98BE554E0381D362" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\sounds\haru_normal_6.wav">
+        </File>
+      </Component>
+      <Component Id="c8E49B89DFC1BEA63" Guid="{70972AC3-EC6C-B752-4E18-37F3EACB9F23}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c8E49B89DFC1BEA63"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c8E49B89DFC1BEA63" Directory="d_18e1fa68d752" On="uninstall" />
+        <File Id="fB12F618724C24732A879" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\sounds\haru_talk_13.wav">
+        </File>
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="d_2ae7bb7af5f5">
+      <Component Id="c1515B8E75E21F9BA" Guid="{628F8565-F68F-3A11-493E-2171D29BA57B}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c1515B8E75E21F9BA"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c1515B8E75E21F9BA" Directory="d_2ae7bb7af5f5" On="uninstall" />
+        <File Id="f8ECB08E63AEFD1830A98" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\Haru.cdi3.json">
+        </File>
+      </Component>
+      <Component Id="c1C4F21090E079571" Guid="{6A01E22A-9DAC-0F95-0F9A-1E2E2528C9B1}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c1C4F21090E079571"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c1C4F21090E079571" Directory="d_2ae7bb7af5f5" On="uninstall" />
+        <File Id="fEB894C61F302CF466C60" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\Haru.moc3">
+        </File>
+      </Component>
+      <Component Id="c0C6ED7F9B0ED7D89" Guid="{E2461404-59CE-9E1F-5EFF-8E2C9B6D5E3F}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c0C6ED7F9B0ED7D89"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c0C6ED7F9B0ED7D89" Directory="d_2ae7bb7af5f5" On="uninstall" />
+        <File Id="f637343F0B423528255F1" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\Haru.model3.json">
+        </File>
+      </Component>
+      <Component Id="c6AA8E3C5036812EA" Guid="{C5182C28-29E7-C9D0-FBE2-7D173FC01249}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c6AA8E3C5036812EA"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c6AA8E3C5036812EA" Directory="d_2ae7bb7af5f5" On="uninstall" />
+        <File Id="f560D25B355F3590DC25F" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\Haru.physics3.json">
+        </File>
+      </Component>
+      <Component Id="c229FCF06A962BAB6" Guid="{55A0699E-28DD-40DB-B3BD-1C58192FBB25}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c229FCF06A962BAB6"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c229FCF06A962BAB6" Directory="d_2ae7bb7af5f5" On="uninstall" />
+        <File Id="fA1FC149D23F6766A8638" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\Haru.pose3.json">
+        </File>
+      </Component>
+      <Component Id="cDEADC0EC06229A0A" Guid="{7CADAEB1-81C6-4DA4-8200-F6DEEB274541}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cDEADC0EC06229A0A"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cDEADC0EC06229A0A" Directory="d_2ae7bb7af5f5" On="uninstall" />
+        <File Id="f009D686353ADAAC16EE2" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\Haru.userdata3.json">
+        </File>
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="d_3b261d6475aa">
+      <Component Id="c8A4FFBA626A89B02" Guid="{8E30F91F-8065-67B5-89CD-0C98484BFF79}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c8A4FFBA626A89B02"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c8A4FFBA626A89B02" Directory="d_3b261d6475aa" On="uninstall" />
+        <File Id="f2109A7B883303BA9451C" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\Haru.2048\texture_00.png">
+        </File>
+      </Component>
+      <Component Id="cC78E7F0F4720B68E" Guid="{8294212E-F54F-7A79-2832-FC4A5F739830}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cC78E7F0F4720B68E"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cC78E7F0F4720B68E" Directory="d_3b261d6475aa" On="uninstall" />
+        <File Id="f2B2211FCD0ECFDEA1E5A" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\Haru.2048\texture_01.png">
+        </File>
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="d_5a90e9b37a2a">
+      <Component Id="cE7F24ED5331C7C9B" Guid="{A01C45A5-1DE0-F18D-C0E8-E1441FCF983E}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cE7F24ED5331C7C9B"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cE7F24ED5331C7C9B" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f838CF59CE565C3B74B08" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_idle.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c10D19C846649DC18" Guid="{8C1AC0D9-7388-E45B-9DB9-DFCC2686C74F}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c10D19C846649DC18"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c10D19C846649DC18" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f7A82E6F9D3C8488E65A5" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m01.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c45F7D016A834B14B" Guid="{AA6E6C5A-22B8-243C-878A-D57C433D2315}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c45F7D016A834B14B"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c45F7D016A834B14B" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="fFC78615ABD0636E213CB" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m02.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c3DDB521004BC2C3F" Guid="{0A13CDB9-CBF0-D541-9B61-6FF3578F28AD}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c3DDB521004BC2C3F"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c3DDB521004BC2C3F" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f7880F7577FDAA46E1786" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m03.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c0FA729BA723B9DAE" Guid="{80293927-2ADC-6C0F-8B2D-42C79E45918F}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c0FA729BA723B9DAE"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c0FA729BA723B9DAE" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f8A1AE752DC5BD4BD2DBB" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m04.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c111787109197328B" Guid="{53FB9A1F-592B-23CC-37C0-6FA57255276C}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c111787109197328B"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c111787109197328B" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f88034916445C32978909" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m05.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c7DBF20327A411247" Guid="{64760D5A-FA6D-CC1E-2DBA-B18488FBE221}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c7DBF20327A411247"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c7DBF20327A411247" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f9E862600E95400BE33EB" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m06.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c234C41E5BA28B334" Guid="{7A5F9734-DA62-4CAE-7419-350D3627827E}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c234C41E5BA28B334"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c234C41E5BA28B334" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f2C5A839B7E8B849390F1" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m07.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cFA35D34DF8FEB623" Guid="{A4F94518-63B2-BBA4-2901-B9E3487451F8}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cFA35D34DF8FEB623"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cFA35D34DF8FEB623" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f235D51B3CB7D836233A2" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m08.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cA3DD416F3D619BCB" Guid="{200E9323-8A23-3B00-B8D2-3EFB71AC03BC}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cA3DD416F3D619BCB"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cA3DD416F3D619BCB" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f60CFE768256143605F3B" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m09.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cAA0343F661E00FFA" Guid="{3973E3F6-BC61-3201-6471-4B70BA0175F7}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cAA0343F661E00FFA"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cAA0343F661E00FFA" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="fB077A73ED7902F305D27" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m10.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c35161CC58B7D3986" Guid="{C7D31080-5069-D9C0-658F-0742498EFFB2}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c35161CC58B7D3986"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c35161CC58B7D3986" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f023ACD80D2B249894ED6" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m11.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cBE8C171672AA0182" Guid="{BD61BA9B-BEAD-D45E-D9B8-1C8FC648FF82}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cBE8C171672AA0182"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cBE8C171672AA0182" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f9B2BCC9F830BD4C18228" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m12.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cDD6D333A6BE418B5" Guid="{1765F37B-2DDE-B97B-FBDA-65BAA26B2F07}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cDD6D333A6BE418B5"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cDD6D333A6BE418B5" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f2DD561F61020E6208E80" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m13.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cB4676642F6D6F3D7" Guid="{7AE78981-B51F-EC09-A7AD-1FD871C62DFE}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cB4676642F6D6F3D7"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cB4676642F6D6F3D7" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="fFB910DAD0ACDD4A1640F" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m14.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c765D9531B6E02990" Guid="{FF91F423-9218-2A2F-CF79-89F4500CF230}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c765D9531B6E02990"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c765D9531B6E02990" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f689AD6C72797B094D67D" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m15.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cC4A4E99AC31B8CB5" Guid="{FE420ACE-9A90-1B2C-CF4D-97A3D40C554B}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cC4A4E99AC31B8CB5"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cC4A4E99AC31B8CB5" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f2FA7F2DDD7C13CCE76B1" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m16.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cC39D5EFC1A065231" Guid="{17D3E660-FD41-11EC-F406-EAAB5365C3EA}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cC39D5EFC1A065231"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cC39D5EFC1A065231" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f5282261F0DF3383B3840" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m17.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c234359761A3A72F8" Guid="{D2AC6509-CA1B-73C9-2401-B94D59F7E5FF}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c234359761A3A72F8"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c234359761A3A72F8" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="fDA1DF02E1A82767522DD" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m18.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c5DAFC99B712F93DC" Guid="{869DD1CD-27C7-5FE6-9079-071B558732B2}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c5DAFC99B712F93DC"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c5DAFC99B712F93DC" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f33BC2889E63605F79542" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m19.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c29CC20B83B15486A" Guid="{F9B92CA4-0EBF-EE30-43F8-22F1AE9E80FE}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c29CC20B83B15486A"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c29CC20B83B15486A" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="fABB339A3D9E99581F556" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m20.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c8EB6E0BF4A88B9CF" Guid="{BC9008AE-D8C8-4547-6630-96A3E2A3988F}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c8EB6E0BF4A88B9CF"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c8EB6E0BF4A88B9CF" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f651C80A3A0B370A29393" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m21.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c34EB5FB2FA8D9347" Guid="{FC2866C3-3E3B-0129-EBEE-9113DB869929}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c34EB5FB2FA8D9347"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c34EB5FB2FA8D9347" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f3E9DCEF2DE8266A7890B" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m22.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c58A190E911A7AB17" Guid="{553BAE43-CF63-ED64-1FFB-D448CF99E7AB}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c58A190E911A7AB17"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c58A190E911A7AB17" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f51C1C2874DE3FCE6EBAC" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m23.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cB427D23C1D192C00" Guid="{271DBF4C-3949-236E-8A2D-422EFB0AAC3F}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cB427D23C1D192C00"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cB427D23C1D192C00" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="fC3E625F8938C3B43501F" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m24.motion3.json">
+        </File>
+      </Component>
+      <Component Id="cBB2C111929530ECB" Guid="{A763D73F-49FD-AF56-CF7E-780F783F95AE}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cBB2C111929530ECB"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cBB2C111929530ECB" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f6171B601BFD30EFB43BD" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m25.motion3.json">
+        </File>
+      </Component>
+      <Component Id="c4EA7D31577C2313E" Guid="{7E0E5D4D-34B9-7FD0-7BAB-DD2EDFFA9C58}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c4EA7D31577C2313E"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c4EA7D31577C2313E" Directory="d_5a90e9b37a2a" On="uninstall" />
+        <File Id="f50DE3EE5A3991CF4A1D6" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\Haru\motions\haru_g_m26.motion3.json">
+        </File>
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="d_8ce6368f11b7">
+      <Component Id="c804DDFD72E944C1F" Guid="{BE247BFB-3012-8B9B-BA69-F756B029B734}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c804DDFD72E944C1F"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c804DDFD72E944C1F" Directory="d_8ce6368f11b7" On="uninstall" />
+        <File Id="f90D102058EA9DD983DF4" Source="D:\VSProject\Unnamedbot\UnnamedBotSetup\redist\MicrosoftEdgeWebView2Setup.exe">
+        </File>
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="d_8daba988d953">
+      <Component Id="c6C294F8364BAD0BB" Guid="{176CCA8C-A505-ADC9-0720-4CA75BB10FCC}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c6C294F8364BAD0BB"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c6C294F8364BAD0BB" Directory="d_8daba988d953" On="uninstall" />
+        <File Id="f3E3B52408B5AB623EF09" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\wuwuwu\wuwuwu.8192\texture_00.png">
+        </File>
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="d_c515f4270b0f">
+      <Component Id="cF34D0F41DB8C5323" Guid="{3C4725DB-B54B-7555-089B-08F4C3A82D08}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cF34D0F41DB8C5323"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cF34D0F41DB8C5323" Directory="d_c515f4270b0f" On="uninstall" />
+        <File Id="f0FF6B0022F10A593CAE5" Source="D:\VSProject\Unnamedbot\Unnamedbot\x64\Release\FrameworkShaders\CubismBlendMode.fx">
+        </File>
+      </Component>
+      <Component Id="c7FBDC869D85EEBAD" Guid="{5D539D83-39E0-3AA4-2F84-EAF35653B29F}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c7FBDC869D85EEBAD"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c7FBDC869D85EEBAD" Directory="d_c515f4270b0f" On="uninstall" />
+        <File Id="fC89E236FA5A4BC8038EA" Source="D:\VSProject\Unnamedbot\Unnamedbot\x64\Release\FrameworkShaders\CubismEffect.fx">
+        </File>
+      </Component>
+    </DirectoryRef>
+    <DirectoryRef Id="d_ceb85a97f677">
+      <Component Id="cCFE7BF5780A33F83" Guid="{F397C4A8-CA1A-7C47-5D1C-598FE2DEF487}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cCFE7BF5780A33F83"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cCFE7BF5780A33F83" Directory="d_ceb85a97f677" On="uninstall" />
+        <File Id="fDA86F24F67D8061475EC" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\wuwuwu\icon.png">
+        </File>
+      </Component>
+      <Component Id="cDF4CA4BC642EE53C" Guid="{3A881501-D6BD-39BB-B3BA-0F7E8863FAE5}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cDF4CA4BC642EE53C"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cDF4CA4BC642EE53C" Directory="d_ceb85a97f677" On="uninstall" />
+        <File Id="fEB22241129B75BFCD6F5" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\wuwuwu\wuwuwu.cdi3.json">
+        </File>
+      </Component>
+      <Component Id="c6A2268644347E49E" Guid="{97205D54-0410-921F-EFD5-2A98FAEA74EB}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c6A2268644347E49E"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c6A2268644347E49E" Directory="d_ceb85a97f677" On="uninstall" />
+        <File Id="f6C3441B48DCFC86103B1" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\wuwuwu\wuwuwu.moc3">
+        </File>
+      </Component>
+      <Component Id="c00F02098CF3B6DC5" Guid="{0F077530-1D1A-3F94-AD15-B44961094EA3}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="c00F02098CF3B6DC5"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_c00F02098CF3B6DC5" Directory="d_ceb85a97f677" On="uninstall" />
+        <File Id="f877CC202E2265F9D7C45" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\wuwuwu\wuwuwu.model3.json">
+        </File>
+      </Component>
+      <Component Id="cD370A649240E4953" Guid="{D80DA58C-FFCA-C96D-B957-3D8C6FA0236A}">
+        <RegistryValue Root="HKCU" Key="Software\UnnamedBot\Components" Name="cD370A649240E4953"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <RemoveFolder Id="rmf_cD370A649240E4953" Directory="d_ceb85a97f677" On="uninstall" />
+        <File Id="f691B8696EC20DE59062A" Source="D:\VSProject\Unnamedbot\Unnamedbot\models\wuwuwu\wuwuwu.physics3.json">
+        </File>
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="MainFeature" Title="UnnamedBot" Level="1">
+      <ComponentRef Id="c4B946B42FBF3086C" />
+      <ComponentRef Id="c660E6CD886FCE5C6" />
+      <ComponentRef Id="c9E3CCB865A538703" />
+      <ComponentRef Id="c797FD482EDD0C275" />
+      <ComponentRef Id="c69CB8056E8C01569" />
+      <ComponentRef Id="c435B76B7C8FCB8E9" />
+      <ComponentRef Id="c9503AF3ECFB0E8B7" />
+      <ComponentRef Id="c2CD6EE71A6FB4A26" />
+      <ComponentRef Id="c849E9EF1BB622539" />
+      <ComponentRef Id="c804DDFD72E944C1F" />
+      <ComponentRef Id="cF34D0F41DB8C5323" />
+      <ComponentRef Id="c7FBDC869D85EEBAD" />
+      <ComponentRef Id="c1515B8E75E21F9BA" />
+      <ComponentRef Id="c1C4F21090E079571" />
+      <ComponentRef Id="c0C6ED7F9B0ED7D89" />
+      <ComponentRef Id="c6AA8E3C5036812EA" />
+      <ComponentRef Id="c229FCF06A962BAB6" />
+      <ComponentRef Id="cDEADC0EC06229A0A" />
+      <ComponentRef Id="c12A48063D8ABEC8E" />
+      <ComponentRef Id="c4033D0AF4C4F35DD" />
+      <ComponentRef Id="c9B2E1EC35635DCF7" />
+      <ComponentRef Id="cCD74FF6BD44A5B93" />
+      <ComponentRef Id="cCCF700C016F4E5C5" />
+      <ComponentRef Id="c53CC8053E5E4F6F7" />
+      <ComponentRef Id="cAE6DA9C60F6A3603" />
+      <ComponentRef Id="c4D28A562F56DD9F4" />
+      <ComponentRef Id="c8A4FFBA626A89B02" />
+      <ComponentRef Id="cC78E7F0F4720B68E" />
+      <ComponentRef Id="cE7F24ED5331C7C9B" />
+      <ComponentRef Id="c10D19C846649DC18" />
+      <ComponentRef Id="c45F7D016A834B14B" />
+      <ComponentRef Id="c3DDB521004BC2C3F" />
+      <ComponentRef Id="c0FA729BA723B9DAE" />
+      <ComponentRef Id="c111787109197328B" />
+      <ComponentRef Id="c7DBF20327A411247" />
+      <ComponentRef Id="c234C41E5BA28B334" />
+      <ComponentRef Id="cFA35D34DF8FEB623" />
+      <ComponentRef Id="cA3DD416F3D619BCB" />
+      <ComponentRef Id="cAA0343F661E00FFA" />
+      <ComponentRef Id="c35161CC58B7D3986" />
+      <ComponentRef Id="cBE8C171672AA0182" />
+      <ComponentRef Id="cDD6D333A6BE418B5" />
+      <ComponentRef Id="cB4676642F6D6F3D7" />
+      <ComponentRef Id="c765D9531B6E02990" />
+      <ComponentRef Id="cC4A4E99AC31B8CB5" />
+      <ComponentRef Id="cC39D5EFC1A065231" />
+      <ComponentRef Id="c234359761A3A72F8" />
+      <ComponentRef Id="c5DAFC99B712F93DC" />
+      <ComponentRef Id="c29CC20B83B15486A" />
+      <ComponentRef Id="c8EB6E0BF4A88B9CF" />
+      <ComponentRef Id="c34EB5FB2FA8D9347" />
+      <ComponentRef Id="c58A190E911A7AB17" />
+      <ComponentRef Id="cB427D23C1D192C00" />
+      <ComponentRef Id="cBB2C111929530ECB" />
+      <ComponentRef Id="c4EA7D31577C2313E" />
+      <ComponentRef Id="cAB9D7665220936FD" />
+      <ComponentRef Id="c2EE25FB2874BC668" />
+      <ComponentRef Id="cFCD61F66BAC552A9" />
+      <ComponentRef Id="c8E49B89DFC1BEA63" />
+      <ComponentRef Id="cCFE7BF5780A33F83" />
+      <ComponentRef Id="cDF4CA4BC642EE53C" />
+      <ComponentRef Id="c6A2268644347E49E" />
+      <ComponentRef Id="c00F02098CF3B6DC5" />
+      <ComponentRef Id="cD370A649240E4953" />
+      <ComponentRef Id="c6C294F8364BAD0BB" />
+      <ComponentRef Id="cmp_cleanup" />
+    </Feature>
+
+    <UIRef Id="WixUI_Minimal" />
+  </Product>
+</Wix>
