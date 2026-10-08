@@ -1,5 +1,3 @@
-
-
 # Unnamedbot
 
 ## 项目简介
@@ -15,7 +13,7 @@
 
 ## 目录结构
 
-```text
+```
 Unnamedbot.slnx                 # 项目解决方案文件 (支持 Rider/VS Code/VS 等)
 Unnamedbot/                     # 项目主程序目录
 └── ThirdParty/                 # 第三方依赖管理目录
