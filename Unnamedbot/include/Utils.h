@@ -40,6 +40,12 @@ namespace UnnamedBot {
 		std::string UrlEncode(const std::string& str);
 		std::string UrlDecode(const std::string& str);
 
+		// 把 BGRA8 原始像素编成 JPEG（WIC）。
+		// 截屏拿到的是裸像素，直接 base64 塞进请求既超限也不是模型认的图片格式；
+		// JPEG 质量 80 的 1920x1080 大约是 250 KB，base64 后约 340 KB，远低于 32 MiB 上限。
+		// 调用线程需要已初始化 COM（内部用 WIC 工厂）。
+		std::vector<uint8_t> EncodeJpegBgra(const uint8_t* pixels, int width, int height, int stride, int quality = 80);
+
 		// 路径/文本编码转换
 		// C++20 下 path::u8string() 返回 std::u8string，不能隐式转换为 std::string，
 		// 因此统一通过该函数获取 UTF-8 字节串（sqlite3、日志、HTTP 均需要 UTF-8）。

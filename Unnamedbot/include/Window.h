@@ -81,6 +81,19 @@ namespace UnnamedBot {
         void OnMouseDrag(DragEventCallback callback);
         void OnMouseHover(std::function<void(int x, int y)> callback);
 
+        // 「请求退出」：中枢页面把退出请求 PostMessage 到这个窗口，再由这里转成回调。
+        // （AppCore::WindowProc 那套消息窗口其实从未创建，所以不能往那边发。）
+        void OnQuitRequested(WindowEventCallback callback);
+        static constexpr UINT WM_QUIT_REQUESTED = WM_APP + 51;
+
+        // 托盘回调与全局热键：两者都注册在桌宠窗口上（见 AppCore::InitializeTrayIcon /
+        // RegisterHotkeys），但 Window 自己不关心它们——转成回调交给 AppCore。
+        // 没有这两条转发，消息会落到 DefWindowProc 被静静丢掉，
+        // 表现就是「托盘右键没反应」「热键没反应」。
+        using TrayCallback = std::function<void(WPARAM wParam, LPARAM lParam)>;
+        void OnTrayCallback(UINT messageId, TrayCallback callback);
+        void OnHotkey(std::function<void(int id)> callback);
+
         // 检查窗口是否可见
         bool IsVisible() const;
 
@@ -193,6 +206,11 @@ namespace UnnamedBot {
         MouseEventCallback onMouseClick_;
         DragEventCallback onMouseDrag_;
         std::function<void(int x, int y)> onMouseHover_;
+        WindowEventCallback onQuitRequested_;
+        // 托盘回调消息的 id（创建托盘时给定）与其处理回调
+        UINT trayMessageId_ = 0;
+        TrayCallback onTray_;
+        std::function<void(int id)> onHotkey_;
 
         // 线程安全
         std::atomic<bool> isRunning_ = false;

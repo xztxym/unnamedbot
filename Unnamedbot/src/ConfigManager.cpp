@@ -15,6 +15,7 @@ namespace UnnamedBot {
     const std::string ConfigManager::KEY_API_KEY = "api.key";
     const std::string ConfigManager::KEY_API_ORG_ID = "api.org_id";
     const std::string ConfigManager::KEY_API_MODEL_DEFAULT = "api.model_default";
+    const std::string ConfigManager::KEY_API_MODEL_VISION = "api.model_vision";
 
     const std::string ConfigManager::KEY_SAMPLING_TEMPERATURE = "sampling.temperature";
     const std::string ConfigManager::KEY_SAMPLING_TOP_P = "sampling.top_p";
@@ -283,6 +284,8 @@ namespace UnnamedBot {
             {KEY_API_KEY, ""},
             {KEY_API_ORG_ID, ""},
             {KEY_API_MODEL_DEFAULT, "gpt-4o"},
+            // 默认就用 DeepSeek 带视觉的模型：截屏巡检要的是「看得懂画面」
+            {KEY_API_MODEL_VISION, "deepseek-flash"},
             {KEY_SAMPLING_TEMPERATURE, "1.0"},
             {KEY_SAMPLING_TOP_P, "1.0"},
             {KEY_SAMPLING_FREQUENCY_PENALTY, "0.0"},

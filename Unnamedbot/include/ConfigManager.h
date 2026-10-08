@@ -79,6 +79,10 @@ namespace UnnamedBot {
         static const std::string KEY_API_KEY;
         static const std::string KEY_API_ORG_ID;
         static const std::string KEY_API_MODEL_DEFAULT;
+        // 图片分析（主动触发里的截屏巡检）用的模型。
+        // DeepSeek 的视觉能力就挂在 deepseek-flash 上（旧名 deepseek-v4-flash-vision-exp
+        // 已并入），所以默认值给它；换成别的服务商时在这里改。
+        static const std::string KEY_API_MODEL_VISION;
 
         // 采样参数
         static const std::string KEY_SAMPLING_TEMPERATURE;

@@ -62,6 +62,8 @@ namespace UnnamedBot {
     // 消息处理器回调
     using NewMessageCallback = std::function<void(const ConversationMessage& message)>;
     using TriggerCallback = std::function<void(const TriggerEvent& event)>;
+    // 主动触发后拿到的回复文本（宿主用它弹气泡/通知）
+    using TriggerReplyCallback = std::function<void(const std::string& reply)>;
     using AIRequestCallback = std::function<std::string(
         const std::vector<ConversationMessage>& messages,
         std::vector<ConversationMessage>& aiResponse
@@ -178,6 +180,11 @@ namespace UnnamedBot {
         // 注册新消息回调（用于UI更新）
         void OnNewMessage(NewMessageCallback callback);
 
+        // 主动触发生成的回复：交给宿主展示（气泡 + 托盘通知）。
+        // 这条路径不经过 AppCore::ProcessAIMessage，所以没有任何人负责把回复显示出来——
+        // 之前的表现就是「触发了，但屏幕上什么都没发生」。
+        void OnTriggerReply(TriggerReplyCallback callback);
+
         // ============ 搜索和导出 ============
 
         // 搜索消息
@@ -242,6 +249,7 @@ namespace UnnamedBot {
         // 回调
         NewMessageCallback newMessageCallback_;
         TriggerCallback triggerCallback_;
+        TriggerReplyCallback triggerReplyCallback_;
         AIRequestCallback aiRequestCallback_;
 
         // 线程安全

@@ -638,6 +638,11 @@ namespace UnnamedBot {
         newMessageCallback_ = callback;
     }
 
+    void MessageHandler::OnTriggerReply(TriggerReplyCallback callback) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        triggerReplyCallback_ = std::move(callback);
+    }
+
     // ============ 搜索和导出 ============
 
     std::vector<ConversationMessage> MessageHandler::SearchMessages(
@@ -900,9 +905,14 @@ namespace UnnamedBot {
         }
 
         // 构建触发消息
-        std::string triggerMessage = "Trigger event: " + event.description;
+        // 注意：这不是用户在提问，而是「它自己察觉到一件事」。
+        // 写成英文的 Trigger event + JSON，模型很容易当成一次问答去「回答」；
+        // 这里明确要求它主动开口，并把变化用中文说清楚。
+        std::string triggerMessage =
+            "（系统提示：你刚刚察觉到下面这件事。没有人向你提问，也不需要回答任何问题——"
+            "主动对他说一句话即可，一句就够。）\n察觉到的变化：" + event.description;
         if (!event.data.empty()) {
-            triggerMessage += "\nData: " + event.data.dump();
+            triggerMessage += "\n细节：" + event.data.dump();
         }
 
         // 添加用户消息（作为主动触发的上下文）
@@ -934,6 +944,13 @@ namespace UnnamedBot {
             if (msg.role == MessageRole::Assistant || msg.role == MessageRole::Tool) {
                 AddMessage(msg.role, msg.content, msg.extraData);
             }
+        }
+
+        // 主动触发的回复要有人负责展示：这条路径不经过 AppCore::ProcessAIMessage，
+        // 不回调出去的话，屏幕上什么都不会发生（「触发了但没反应」）。
+        if (!aiResponse.empty() && triggerReplyCallback_) {
+            const std::string reply = aiResponse;
+            triggerReplyCallback_(reply);
         }
     }
 

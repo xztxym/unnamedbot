@@ -54,6 +54,10 @@ namespace UnnamedBot {
         // 复用 AIClient 的代理与超时设置；可在任意线程调用。
         AIClient::ProviderProbe ProbeProvider(const std::string& baseUrl, const std::string& apiKey);
 
+        // 截屏巡检：抓屏 → JPEG → base64 → 交给配置里的视觉模型看一眼，
+        // 回复落库并弹出来。含编码与网络，所以自己开工作线程跑。
+        void AnalyzeScreenshot();
+
         // 刷新桌宠（中枢主菜单的「刷新」）：重读配置 → 重新载入模型 → 把窗口摆回来。
         // 与「保存」走同一条应用链路，只是不写库。
         void RefreshPet();
@@ -181,6 +185,17 @@ namespace UnnamedBot {
         std::string lastCity_;
         double lastLatitude_ = 0.0;
         double lastLongitude_ = 0.0;
+
+        // 主动触发各自的「下次该检查的时刻」。
+        // 原来这三项巡检写的是 static counter % N 的硬编码节拍，配置里的
+        // active.interval_* 秒数完全不起作用；改成按配置间隔各自计时。
+        // 截屏分析进行中：一次没跑完就跳过这一轮，不叠请求
+        std::atomic<bool> screenshotInFlight_ = false;
+
+        std::chrono::steady_clock::time_point nextProcessCheck_{};
+        std::chrono::steady_clock::time_point nextWeatherCheck_{};
+        std::chrono::steady_clock::time_point nextScreenshotCheck_{};
+        bool ipCheckedOnce_ = false;   // active.ip_check_on_start：启动时查一次即可
 
         // 状态保存间隔（秒）
         static const int SAVE_INTERVAL_SECONDS = 5;

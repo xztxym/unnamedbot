@@ -359,6 +359,19 @@ namespace UnnamedBot {
         onMouseHover_ = callback;
     }
 
+    void Window::OnQuitRequested(WindowEventCallback callback) {
+        onQuitRequested_ = std::move(callback);
+    }
+
+    void Window::OnTrayCallback(UINT messageId, TrayCallback callback) {
+        trayMessageId_ = messageId;
+        onTray_ = std::move(callback);
+    }
+
+    void Window::OnHotkey(std::function<void(int id)> callback) {
+        onHotkey_ = std::move(callback);
+    }
+
     bool Window::IsVisible() const {
         // 以窗口真实状态为准：窗口也可能被系统或外部调用显示/隐藏，
         // 仅缓存 visible_ 会与屏幕上的实际状态脱节（渲染循环按此决定是否绘制）。
@@ -504,6 +517,16 @@ namespace UnnamedBot {
 
     // 实例窗口过程
     LRESULT Window::HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+        // 托盘回调消息没有固定 id（创建托盘时指定），所以只能按 id 判定，且必须放在
+        // switch 之前——switch 体内的语句在任何 case 之前都是不可达的。
+        // 少了这一步，托盘右键会落到 DefWindowProc：菜单永远弹不出来。
+        if (trayMessageId_ != 0 && msg == trayMessageId_) {
+            if (onTray_) {
+                onTray_(wParam, lParam);
+            }
+            return 0;
+        }
+
         switch (msg) {
         case WM_NCHITTEST: {
             // 关闭穿透：整窗接收鼠标（“抓住窗口任何位置”的旧行为）
@@ -626,6 +649,23 @@ namespace UnnamedBot {
             pt.y = GET_Y_LPARAM(lParam);
             if (onMouseClick_) {
                 onMouseClick_(pt.x, pt.y, false);
+            }
+            return 0;
+        }
+
+        // 中枢页面的「退出」转成了这个自定义消息：在这里转成回调，
+        // 让 AppCore 在消息循环里安全退出（而不是在 WebView2 的回调里拆自己）。
+        case Window::WM_QUIT_REQUESTED: {
+            if (onQuitRequested_) {
+                onQuitRequested_();
+            }
+            return 0;
+        }
+
+        // 全局热键：注册在桌宠窗口上，处理逻辑在 AppCore
+        case WM_HOTKEY: {
+            if (onHotkey_) {
+                onHotkey_(static_cast<int>(wParam));
             }
             return 0;
         }

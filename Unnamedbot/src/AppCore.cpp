@@ -211,6 +211,21 @@ namespace UnnamedBot {
         return true;
     }
 
+    namespace {
+        // 当前「有可见窗口的前端进程」清单（名字用 | 连起来，便于比较）。
+        // 启动时先记一份当基线，第一次巡检就能发现变化，而不是先空转一个间隔。
+        std::string CurrentFrontendProcessList() {
+            std::string list;
+            for (const auto& proc : MCPUtils::GetFrontendProcesses()) {
+                auto it = proc.find("name");
+                if (it != proc.end()) {
+                    list += it->second + "|";
+                }
+            }
+            return list;
+        }
+    } // namespace
+
     int AppCore::Run() {
         if (!isRunning_) {
             LOG_ERROR("AppCore", "Application not initialized.");
@@ -218,6 +233,22 @@ namespace UnnamedBot {
         }
 
         LOG_INFO("AppCore", "Application running.");
+
+        // 主动触发：先把进程清单记一份基线。否则第一次巡检只能用来「建立基线」，
+        // 用户看到的第一个间隔是空转的（表现就是「不按我设的时间来」）。
+        lastProcessList_ = CurrentFrontendProcessList();
+        LOG_INFO("AppCore", "Proactive trigger baselines primed (" +
+            std::to_string(lastProcessList_.size()) + " bytes of process list).");
+
+        // 把生效的排期打出来，便于核对「是否严格按自定义时间」
+        {
+            auto& cfg = ConfigManager::Instance();
+            LOG_INFO("AppCore", "Proactive schedule: process=" +
+                std::to_string(cfg.GetInt(ConfigManager::KEY_ACTIVE_INTERVAL_PROCESS, 60)) + "s weather=" +
+                std::to_string(cfg.GetInt(ConfigManager::KEY_ACTIVE_INTERVAL_WEATHER, 300)) + "s screenshot=" +
+                std::to_string(cfg.GetInt(ConfigManager::KEY_ACTIVE_INTERVAL_SCREENSHOT, 1800)) + "s cooldown=" +
+                std::to_string(cfg.GetInt(ConfigManager::KEY_ACTIVE_COOLDOWN_SECONDS, 480)) + "s (<=0 = off)");
+        }
 
         // 启动时不弹出任何提示：屏幕上只保留主窗口本身
 
@@ -254,16 +285,29 @@ namespace UnnamedBot {
         UnregisterHotkeys();
 
         // 关闭各个模块
+        // 逐步打点：退出阶段的崩溃（ucrtbase 的「请求了严重的程序退出」）只能靠
+        // 「最后一条日志停在哪一步」定位。
+        LOG_DEBUG("AppCore", "Shutdown step: TaskScheduler");
         TaskScheduler::Instance().Shutdown();
+        LOG_DEBUG("AppCore", "Shutdown step: UpdateManager");
         UpdateManager::Instance().Shutdown();
+        LOG_DEBUG("AppCore", "Shutdown step: AttachmentManager");
         AttachmentManager::Instance().Shutdown();
+        LOG_DEBUG("AppCore", "Shutdown step: SpeechBubble");
         SpeechBubble::Instance().Shutdown();
+        LOG_DEBUG("AppCore", "Shutdown step: QuickInputBar");
         QuickInputBar::Instance().Shutdown();
+        LOG_DEBUG("AppCore", "Shutdown step: ControlTerminalWindow");
         ControlTerminalWindow::Instance().Shutdown();
+        LOG_DEBUG("AppCore", "Shutdown step: Live2DManager");
         Live2DManager::Instance().Shutdown();
+        LOG_DEBUG("AppCore", "Shutdown step: Renderer");
         renderer_.Shutdown();
+        LOG_DEBUG("AppCore", "Shutdown step: TrayIcon");
         TrayIcon::Instance().Shutdown();
+        LOG_DEBUG("AppCore", "Shutdown step: Database");
         Database::Instance().Close();
+        LOG_DEBUG("AppCore", "Shutdown step: CoUninitialize");
 
         // 与 Initialize 中的 CoInitializeEx 配对（套间模式冲突时未曾初始化，不能反初始化）
         if (comInitialized_) {
@@ -273,6 +317,15 @@ namespace UnnamedBot {
 
         isRunning_ = false;
         LOG_INFO("AppCore", "Application shut down.");
+
+        // 到这里该收的都收好了：线程已 join、数据库已关、状态已保存、窗口已销毁。
+        // 但 WebView2 的 controller->Close() 是异步的（浏览器进程还在收尾），
+        // 而 CRT 的退出路径会再走一遍静态析构 + DLL 分离，正好落在
+        // 「WebView2 还没退完就被 detach」的窗口里 —— 表现为 ucrtbase 抛
+        // FAST_FAIL_FATAL_APP_EXIT（「请求了严重的程序退出」，退出码 0xC0000409）。
+        // 所以这里直接结束进程，跳过那段析构。OS 会把剩下的资源一并回收。
+        LOG_INFO("AppCore", "Terminating process to avoid the CRT exit path.");
+        ::ExitProcess(0);
     }
 
     void AppCore::SafeShutdown() {
@@ -372,31 +425,33 @@ namespace UnnamedBot {
         mainWindow_->SetHitTestProvider([this](int x, int y) { return HitTestClient(x, y); });
 
         // 设置窗口回调
+        // 鼠标约定（两种模式统一）：右键 = 输入，左键 = 拖动/不拦截。
+        // 快速模式原来左右键各弹一个输入条（左=面板式、右=下划线式），
+        // 等于同一件事有两个入口；现在只留右键，弹的是原来左键那条面板式输入条。
         mainWindow_->OnMouseClick([this](int x, int y, bool isLeftDown) {
             if (isLeftDown) {
                 LOG_DEBUG("AppCore", "Left click at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
-                if (IsQuickModeActive()) {
-                    // 快速模式：左键点击圆点/人物 → 贴着窗口弹出迷你输入条
-                    QuickInputBar::Instance().Popup(GetMainWindow(), [this](const std::string& text) {
-                        // 发起网络请求前先脱离 UI 线程：否则请求期间窗口会卡住，
-                        // 输入条也会弹不回来
-                        std::thread([this, text]() { ProcessAIMessage(text); }).detach();
-                        });
-                }
-                else if (Live2DManager::Instance().HitTest(x, y)) {
-                    // 切换消息框
-                    // TODO: 显示/隐藏消息框
-                }
+                return;
+            }
+
+            LOG_DEBUG("AppCore", "Right click at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
+            // Ctrl+右键 保留原来那套上下文菜单（配置终端 / 隐藏 / 总在最前 / 退出）。
+            // 托盘右键也有同一套，这里留着只是为了不改变老习惯。
+            if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
+                ShowContextMenu();
+                return;
+            }
+
+            if (IsQuickModeActive()) {
+                // 快速模式（圆点）：面板式输入条，贴着圆点弹出
+                QuickInputBar::Instance().Popup(GetMainWindow(), [this](const std::string& text) {
+                    // 发起网络请求前先脱离 UI 线程：否则请求期间窗口会卡住，
+                    // 输入条也会弹不回来
+                    std::thread([this, text]() { ProcessAIMessage(text); }).detach();
+                    });
             }
             else {
-                LOG_DEBUG("AppCore", "Right click at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
-                // Ctrl+右键 保留原来那套上下文菜单（配置终端 / 隐藏 / 总在最前 / 退出）。
-                // 托盘右键也有同一套，这里留着只是为了不改变老习惯。
-                if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
-                    ShowContextMenu();
-                    return;
-                }
-                // 右键人物 → 极简输入条：整条透明，只剩一条下划线（？？？时是血红）。
+                // 常规模式（模型）：极简输入条，整条透明，只剩一条下划线（？？？时是血红）。
                 QuickInputBar::Instance().PopupUnderline(GetMainWindow(), [this](const std::string& text) {
                     std::thread([this, text]() { ProcessAIMessage(text); }).detach();
                     });
@@ -419,6 +474,25 @@ namespace UnnamedBot {
         mainWindow_->OnWindowResize([this](int width, int height) {
             // 窗口大小变化时调整渲染器
             renderer_.Resize(width, height);
+            });
+
+        // 中枢页面「退出」：页面把请求 PostMessage 到桌宠窗口，这里在消息循环里安全退出。
+        // 绝不能在 WebView2 的消息回调里直接拆 webview——回调会返回到已释放的 COM 对象上，
+        // 表现就是 ucrtbase 抛「请求了严重的程序退出」。
+        mainWindow_->OnQuitRequested([this]() {
+            LOG_INFO("AppCore", "Quit confirmed from hub UI; shutting down.");
+            ControlTerminalWindow::Instance().Hide();
+            SafeShutdown();
+            });
+
+        // 托盘回调与全局热键都注册在桌宠窗口上（见 InitializeTrayIcon / RegisterHotkeys），
+        // 但处理逻辑在 AppCore。Window 不认这两类消息，不接这一步它们会被 DefWindowProc 丢掉：
+        // 表现就是「托盘右键没反应」「热键没反应」。
+        mainWindow_->OnTrayCallback(WM_TRAYICON, [](WPARAM wParam, LPARAM lParam) {
+            TrayIcon::Instance().HandleTrayMessage(wParam, lParam);
+            });
+        mainWindow_->OnHotkey([this](int id) {
+            HandleHotkey(static_cast<WPARAM>(id));
             });
 
         return true;
@@ -550,6 +624,18 @@ namespace UnnamedBot {
                 NIIF_INFO,
                 3000
             );
+            });
+
+        MessageHandler::Instance().OnTriggerReply([](const std::string& reply) {
+            // 主动触发的回复要「看得见」：贴到鼠标指针旁的气泡 + 一条托盘通知。
+            // 这条路径不经过 ProcessAIMessage，所以之前触发了也没有任何显示。
+            if (reply.empty()) {
+                return;
+            }
+            LOG_INFO("AppCore", "Proactive trigger reply: " + reply.substr(0, 60));
+            SpeechBubble::Instance().ShowNearActiveWindow(Utils::Utf8ToWide(reply));
+            TrayIcon::Instance().ShowNotification(L"桌宠", Utils::Utf8ToWide(reply), NIIF_INFO, 5000);
+            ControlTerminalWindow::Instance().PushChatHistory();
             });
 
         // 设置AI请求回调
@@ -832,7 +918,7 @@ namespace UnnamedBot {
             const std::wstring text = L"请求失败：" + Utils::Utf8ToWide(error);
             TrayIcon::Instance().ShowNotification(L"AI 请求失败", text, NIIF_WARNING, 5000);
             if (IsQuickModeActive() && !isShuttingDown_) {
-                SpeechBubble::Instance().Show(GetMainWindow(), text);
+                SpeechBubble::Instance().ShowNearActiveWindow(text);
             }
             return;
         }
@@ -847,7 +933,7 @@ namespace UnnamedBot {
 
         // 快速模式：回复直接贴到屏幕上（没有 Live2D 可看，托盘气泡太容易错过）
         if (IsQuickModeActive() && !isShuttingDown_) {
-            SpeechBubble::Instance().Show(GetMainWindow(), Utils::Utf8ToWide(reply));
+            SpeechBubble::Instance().ShowNearActiveWindow(Utils::Utf8ToWide(reply));
         }
     }
 
@@ -904,7 +990,7 @@ namespace UnnamedBot {
         // 5) 给用户一个看得见的反馈：紧凑模式贴气泡，否则发一条托盘通知
         const std::wstring text = L"桌宠已刷新";
         if (IsQuickModeActive() && !isShuttingDown_) {
-            SpeechBubble::Instance().Show(GetMainWindow(), text);
+            SpeechBubble::Instance().ShowNearActiveWindow(text);
         }
         TrayIcon::Instance().ShowNotification(L"桌宠中枢", text, NIIF_INFO, 2500);
     }
@@ -915,7 +1001,7 @@ namespace UnnamedBot {
         // 设置定时器间隔
         const int UPDATE_INTERVAL_MS = 100; // 100ms
         const int SAVE_INTERVAL_MS = SAVE_INTERVAL_SECONDS * 1000;
-        const int TRIGGER_CHECK_INTERVAL_MS = 5000; // 5秒
+        const int TRIGGER_CHECK_INTERVAL_MS = 1000; // 1 秒：主动触发的计时分辨率（原来是 5 秒）
 
         auto lastSaveTime = std::chrono::steady_clock::now();
         auto lastTriggerCheck = std::chrono::steady_clock::now();
@@ -958,7 +1044,15 @@ namespace UnnamedBot {
                     int height = 0;
                     renderer_.GetSize(width, height);
                     const float radius = QuickDotRadius();
-                    const DirectX::XMFLOAT4 color(0.66f, 0.81f, 1.0f, 1.0f);
+                    // 圆点颜色跟主题走：？？？ 时是血色，普通模式是冰蓝。
+                    // 原来这里写死了冰蓝，切到 ？？？ 后屏幕上唯一的可见物还是蓝色，
+                    // 与整套皮肤对不上。
+                    const UiTheme theme = CurrentUiTheme();
+                    const DirectX::XMFLOAT4 color(
+                        GetRValue(theme.accent) / 255.0f,
+                        GetGValue(theme.accent) / 255.0f,
+                        GetBValue(theme.accent) / 255.0f,
+                        1.0f);
                     renderer_.DrawDot(width * 0.5f, height * 0.5f, radius, color);
                 }
                 else {
@@ -976,6 +1070,36 @@ namespace UnnamedBot {
 
         LOG_DEBUG("AppCore", "Update thread stopped.");
     }
+
+    namespace {
+        bool DueAt(std::chrono::steady_clock::time_point& next, int intervalSeconds, const char* name) {
+            if (intervalSeconds <= 0) {
+                return false;
+            }
+            const auto now = std::chrono::steady_clock::now();
+            if (next.time_since_epoch().count() == 0) {
+                next = now + std::chrono::seconds(intervalSeconds);
+                LOG_DEBUG("AppCore", std::string("Trigger '") + name + "' scheduled every " +
+                    std::to_string(intervalSeconds) + "s.");
+                return false;
+            }
+            if (now < next) {
+                return false;
+            }
+            // 从「上次计划时刻」推进，而不是从 now 起算：
+            // 否则每次都会把检查本身的开销累加进去，跑久了越差越多。
+            next += std::chrono::seconds(intervalSeconds);
+            if (next < now) {
+                // 落后超过一个整周期（休眠 / 卡顿）→ 重新对齐，避免补跑一串
+                const auto behind = std::chrono::duration_cast<std::chrono::seconds>(now - next).count();
+                if (behind >= intervalSeconds) {
+                    next = now + std::chrono::seconds(intervalSeconds);
+                }
+            }
+            LOG_DEBUG("AppCore", std::string("Trigger '") + name + "' fired on schedule.");
+            return true;
+        }
+    } // namespace
 
     void AppCore::CheckActiveTriggers() {
         // 检查冷却
@@ -1001,17 +1125,9 @@ namespace UnnamedBot {
         if (interval < 0) return;
 
         // 简化：每N秒检查一次进程变化
-        // 实际应由定时器驱动
-        static int counter = 0;
-        counter++;
-        if (counter % 10 != 0) return; // 每10次检查一次（约50秒）
+        if (!DueAt(nextProcessCheck_, interval, "process")) return;
 
-        auto processes = MCPUtils::GetFrontendProcesses();
-        std::string currentList;
-        for (const auto& proc : processes) {
-            currentList += proc.at("name") + "|";
-        }
-
+        const std::string currentList = CurrentFrontendProcessList();
         if (lastProcessList_ != currentList && !lastProcessList_.empty()) {
             // 进程列表发生变化
             LOG_INFO("AppCore", "Process list changed.");
@@ -1035,10 +1151,7 @@ namespace UnnamedBot {
         int interval = ConfigManager::Instance().GetInt(ConfigManager::KEY_ACTIVE_INTERVAL_WEATHER, -1);
         if (interval < 0) return;
 
-        // 简化：每N秒检查一次天气
-        static int counter = 0;
-        counter++;
-        if (counter % 60 != 0) return; // 每60次检查一次（约5分钟）
+        if (!DueAt(nextWeatherCheck_, interval, "weather")) return;
 
         std::string city = MCPUtils::GetCityByIP(MCPUtils::GetPublicIP());
         if (city.empty()) return;
@@ -1065,6 +1178,12 @@ namespace UnnamedBot {
     void AppCore::CheckIPChange() {
         bool checkOnStart = ConfigManager::Instance().GetBool(ConfigManager::KEY_ACTIVE_IP_CHECK_ON_START, true);
         if (!checkOnStart) return;
+
+        // 配置键的名字就是「启动时检查 IP」：查一次就够。
+        // 原来它被 CheckActiveTriggers 每 5 秒调一次，而这里每次都发一次公网 IP 请求——
+        // 等于每 5 秒打一次网络，既是浪费，也会把触发冷却一直占着。
+        if (ipCheckedOnce_) return;
+        ipCheckedOnce_ = true;
 
         // 获取当前IP和位置
         std::string currentIP = MCPUtils::GetPublicIP();
@@ -1099,32 +1218,108 @@ namespace UnnamedBot {
         int interval = ConfigManager::Instance().GetInt(ConfigManager::KEY_ACTIVE_INTERVAL_SCREENSHOT, -1);
         if (interval < 0) return;
 
-        // 简化：每N秒检查一次
-        static int counter = 0;
-        counter++;
-        if (counter % 180 != 0) return; // 每180次检查一次（约15分钟）
+        if (!DueAt(nextScreenshotCheck_, interval, "screenshot")) return;
 
-        LOG_DEBUG("AppCore", "Capturing screen for trigger...");
+        // 交给视觉模型真正「看一眼」。抓屏 + 编码 + 网络都在工作线程里做，
+        // 这里只占住冷却并派出去，别让渲染循环等它。
+        LOG_INFO("AppCore", "Screenshot trigger fired; analysing with the vision model.");
+        triggerCooling_ = true;
+        lastTriggerTime_ = std::chrono::steady_clock::now();
+        AnalyzeScreenshot();
+    }
 
-        // 获取屏幕截图
-        std::vector<unsigned char> imageData;
-        int width, height;
-        if (!MCPUtils::CaptureScreen(imageData, width, height)) {
-            LOG_ERROR("AppCore", "Failed to capture screen.");
+    void AppCore::AnalyzeScreenshot() {
+        // 上一张还在分析就跳过这一轮：宁可少看一次，也不要叠请求
+        if (screenshotInFlight_.exchange(true)) {
+            LOG_DEBUG("AppCore", "Screenshot analysis already running; skipping this round.");
             return;
         }
 
-        TriggerEvent event;
-        event.type = TriggerEventType::ScreenCapture;
-        event.description = "Screen captured for analysis";
-        event.data["width"] = width;
-        event.data["height"] = height;
-        event.data["size"] = imageData.size();
-        event.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+        std::thread([this]() {
+            struct Guard {
+                std::atomic<bool>& flag;
+                ~Guard() { flag = false; }
+            } guard{ screenshotInFlight_ };
 
-        MessageHandler::Instance().HandleTriggerEvent(event);
-        triggerCooling_ = true;
-        lastTriggerTime_ = std::chrono::steady_clock::now();
+            // 工作线程里绝不能让异常逃出去：detached 线程上未捕获的异常
+            // 会直接 std::terminate 掉整个进程（表现是「一触发就崩」）。
+            try {
+            // 工作线程要用 COM（WIC 编码）：自己初始化一次
+            const HRESULT com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+            std::vector<unsigned char> pixels;
+            int width = 0;
+            int height = 0;
+            if (!MCPUtils::CaptureScreen(pixels, width, height) || pixels.empty()) {
+                LOG_ERROR("AppCore", "Screen capture failed; screenshot trigger skipped.");
+                if (SUCCEEDED(com)) CoUninitialize();
+                return;
+            }
+
+            // 裸像素既不是模型认的图片格式，塞进请求也会撑爆体积：先编成 JPEG
+            const std::vector<uint8_t> jpeg = Utils::EncodeJpegBgra(
+                pixels.data(), width, height, width * 4, 80);
+            if (jpeg.empty()) {
+                LOG_ERROR("AppCore", "JPEG encoding failed; screenshot trigger skipped.");
+                if (SUCCEEDED(com)) CoUninitialize();
+                return;
+            }
+            LOG_INFO("AppCore", "Screenshot encoded: " + std::to_string(width) + "x" +
+                std::to_string(height) + " · " + std::to_string(jpeg.size() / 1024) + " KB JPEG");
+
+            Message systemMsg;
+            systemMsg.role = MessageRole::System;
+            systemMsg.content = ComposeSystemPrompt();
+
+            Message userMsg;
+            userMsg.role = MessageRole::User;
+            userMsg.content =
+                "（系统提示：这是他自己屏幕上的画面，你刚偷看了一眼。"
+                "不要罗列画面里有什么，用一句话说出你注意到的、和他有关的事。）";
+            nlohmann::json attachment;
+            attachment["type"] = "image";
+            attachment["mime_type"] = "image/jpeg";
+            attachment["url"] = "";          // 显式给出：走 base64 分支
+            attachment["base64"] = Utils::Base64Encode(jpeg);
+            userMsg.attachments.push_back(attachment);
+
+            // 视觉模型单独一项配置：默认就是 DeepSeek 带视觉的 deepseek-flash
+            const std::string visionModel = ConfigManager::Instance().GetString(
+                ConfigManager::KEY_API_MODEL_VISION, "deepseek-flash");
+            LOG_DEBUG("AppCore", "Vision analysis via model: " + visionModel);
+
+            const auto response = aiClient_.SendChatMessage(
+                { systemMsg, userMsg }, {}, "none", visionModel);
+            LOG_INFO("AppCore", "Vision request returned: content=" +
+                std::to_string(response.content.size()) + " bytes, failed=" +
+                (aiClient_.LastRequestFailed() ? ("yes (" + aiClient_.LastRequestError() + ")") : "no"));
+
+            if (response.content.empty() || aiClient_.LastRequestFailed()) {
+                LOG_WARN("AppCore", "Vision analysis failed: " + aiClient_.LastRequestError());
+                if (SUCCEEDED(com)) CoUninitialize();
+                return;
+            }
+
+            // 落库，让对话页也能看到这次「偷看」
+            auto& handler = MessageHandler::Instance();
+            handler.AddMessage(MessageRole::User, "（看一眼屏幕）", nlohmann::json::object(),
+                "trigger_screencapture", true);
+            handler.AddAIResponse(response.content);
+
+            LOG_INFO("AppCore", "Vision trigger reply: " + response.content.substr(0, 60));
+            SpeechBubble::Instance().ShowNearActiveWindow(Utils::Utf8ToWide(response.content));
+            TrayIcon::Instance().ShowNotification(L"桌宠", Utils::Utf8ToWide(response.content), NIIF_INFO, 5000);
+            ControlTerminalWindow::Instance().PushChatHistory();
+
+            if (SUCCEEDED(com)) CoUninitialize();
+            }
+            catch (const std::exception& e) {
+                LOG_ERROR("AppCore", std::string("Screenshot analysis threw: ") + e.what());
+            }
+            catch (...) {
+                LOG_ERROR("AppCore", "Screenshot analysis threw an unknown exception.");
+            }
+            }).detach();
     }
 
     void AppCore::SaveState() {

@@ -106,10 +106,13 @@ namespace UnnamedBot {
         const AIClientConfig& GetConfig() const { return config_; }
 
         // 发送聊天请求（非流式）
+        // modelOverride 非空时用指定模型发这一次请求：视觉分析用带视觉能力的模型
+        // （DeepSeek 的 deepseek-flash 就支持图片），日常对话仍用用户选的模型。
         AIResponse SendChatMessage(
             const std::vector<Message>& messages,
             const std::vector<ToolDefinition>& tools = {},
-            const std::string& toolChoice = "auto"
+            const std::string& toolChoice = "auto",
+            const std::string& modelOverride = ""
         );
 
         // 发送聊天请求（流式）
@@ -169,7 +172,8 @@ namespace UnnamedBot {
             const std::vector<Message>& messages,
             const std::vector<ToolDefinition>& tools,
             const std::string& toolChoice,
-            bool stream
+            bool stream,
+            const std::string& modelOverride = ""
         );
 
         // 解析响应（非流式）

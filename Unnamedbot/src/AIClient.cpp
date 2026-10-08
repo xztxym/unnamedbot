@@ -60,7 +60,8 @@ namespace UnnamedBot {
     AIResponse AIClient::SendChatMessage(
         const std::vector<Message>& messages,
         const std::vector<ToolDefinition>& tools,
-        const std::string& toolChoice
+        const std::string& toolChoice,
+        const std::string& modelOverride
     ) {
         std::lock_guard<std::mutex> lock(mutex_);
 
@@ -73,9 +74,9 @@ namespace UnnamedBot {
 
         // 构建请求
         std::string url = config_.baseUrl + "/chat/completions";
-        nlohmann::json body = BuildRequestBody(messages, tools, toolChoice, false);
+        nlohmann::json body = BuildRequestBody(messages, tools, toolChoice, false, modelOverride);
 
-        LOG_DEBUG("AIClient", "Sending request to: " + url + ", model: " + config_.model);
+        LOG_DEBUG("AIClient", "Sending request to: " + url + ", model: " + (modelOverride.empty() ? config_.model : modelOverride));
 
         // 发送请求
         std::string responseBody = SendRequestWithRetry(url, body);
@@ -320,11 +321,12 @@ namespace UnnamedBot {
         const std::vector<Message>& messages,
         const std::vector<ToolDefinition>& tools,
         const std::string& toolChoice,
-        bool stream
+        bool stream,
+        const std::string& modelOverride
     ) {
         nlohmann::json body;
 
-        body["model"] = config_.model;
+        body["model"] = modelOverride.empty() ? config_.model : modelOverride;
         body["temperature"] = config_.temperature;
         body["top_p"] = config_.topP;
         body["frequency_penalty"] = config_.frequencyPenalty;
@@ -740,13 +742,22 @@ namespace UnnamedBot {
                         nlohmann::json imageContent;
                         imageContent["type"] = "image_url";
 
-                        std::string imageUrl = attachment["url"];
+                        // 取值一律用 value()/contains：nlohmann 的 operator[] 在键缺失时会
+                        // 插入 null，再隐式转 std::string 就抛 type_error ——
+                        // 这种异常发生在工作线程里会直接 std::terminate 掉整个进程。
+                        // （曾经就是这样：只给 base64 不给 url，一发起视觉请求就崩。）
+                        std::string imageUrl = attachment.value("url", std::string());
                         if (imageUrl.empty()) {
                             // 如果是Base64数据
-                            std::string base64Data = attachment["base64"];
+                            const std::string base64Data = attachment.value("base64", std::string());
                             if (!base64Data.empty()) {
-                                imageUrl = "data:" + attachment["mime_type"].get<std::string>() + ";base64," + base64Data;
+                                const std::string mime = attachment.value("mime_type", std::string("image/jpeg"));
+                                imageUrl = "data:" + mime + ";base64," + base64Data;
                             }
+                        }
+                        if (imageUrl.empty()) {
+                            LOG_WARN("AIClient", "Image attachment without url/base64; skipped.");
+                            continue;
                         }
                         imageContent["image_url"]["url"] = imageUrl;
                         contentArray.push_back(imageContent);

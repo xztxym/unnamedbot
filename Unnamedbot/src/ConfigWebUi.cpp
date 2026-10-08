@@ -974,7 +974,6 @@ body.yandere .back:hover .tx{background:rgba(76,26,44,1)}
 body.yandere .ctl:focus-within{background:rgba(52,20,34,1)}
 body.yandere .btn{background:rgba(46,18,30,.88)}
 body.yandere .btn:hover{background:rgba(64,24,40,1)}
-body.yandere .btn.ghost{background:rgba(42,16,28,.5)}
 body.yandere .pcard{background:rgba(40,16,28,.6)}
 body.yandere .pcard .portrait{background:linear-gradient(160deg, rgba(226,122,144,.26), rgba(40,16,28,.9))}
 body.yandere .pcard .ptraits span{background:rgba(226,122,144,.08)}
@@ -1015,6 +1014,225 @@ body.yandere .shead .sno{background:linear-gradient(100deg,var(--accentSoft),#F8
 /* 虚线分隔在小字底下会削弱可读性，降一档 */
 .rows > .row{border-bottom-color:rgba(255,255,255,.06)}
 body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
+
+
+/* ---- 选中态的可读性 + 平滑 ----
+   设计稿的白色斜带只有 ~40px 高、还带倾斜，而选中文字是纯黑：把「开始」放大看，
+   字的上半截落在带子外面，压回深底就是黑字黑底。这里把带子拉成覆盖整行的斜切色板
+   （角度保留），黑字就始终落在浅底上；顺带把选中/取消的过渡都做成有时长的，
+   原来是「选中 100ms、取消 0ms」——取消那一下是硬切，看着就是不平滑。 */
+.opt .plates{transition:opacity 160ms var(--e-out)}
+.opt .red{transition:opacity 160ms var(--e-out)}
+.opt .pair{transition:transform 140ms var(--e-out)}
+.opt.sel .plates .white{clip-path:polygon(0% 84%, 100% 0%, 100% 100%, 0% 100%)}
+.opt .plates .white{clip-path:polygon(0% 84%, 100% 0%, 100% 100%, 0% 100%)}
+.opt.sel .pair{transition:transform 180ms var(--e-spring)}
+/* 侧栏的高亮也跟上：原来背景是瞬切 */
+.rail button{transition:color var(--t-hover) linear, background 180ms var(--e-out), transform 180ms var(--e-out)}
+
+/* ---- 退出确认弹层 ----
+   两个问题：① 取消按钮是 .btn.ghost，在深色弹层上几乎看不见，
+   看起来就像「只有一个退出选项」；② 弹层是 display 直接切换，硬闪。
+   这里给取消一个看得见的描边按钮，并让弹层淡入缩放出现、Esc / 点外部关闭。 */
+.overlay{
+  opacity:0;visibility:hidden;display:flex;
+  transition:opacity 180ms var(--e-out), visibility 0s linear 180ms;
+  backdrop-filter:blur(0px);
+}
+.overlay.on{opacity:1;visibility:visible;transition:opacity 200ms var(--e-out), visibility 0s linear, backdrop-filter 200ms}
+.ovbox{transform:translateY(14px) scale(.985);transition:transform 200ms var(--e-out)}
+.overlay.on .ovbox{transform:none}
+.overlay .acts .btn{border-color:var(--panel-line);color:var(--tx-hi);background:var(--panel-hi)}
+.overlay .acts .btn:hover{border-color:var(--ink-c);color:#fff}
+.overlay .acts .btn.outline{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.42);color:var(--tx-hi);
+}
+.overlay .acts .btn.outline:hover{background:rgba(255,255,255,.14);border-color:var(--ink-c)}
+body.yandere .overlay .acts .btn.outline{
+  background:rgba(255,214,224,.08);border-color:rgba(246,201,210,.5);color:#FFF1F4;
+}
+body.yandere .overlay .acts .btn.outline:hover{background:rgba(255,214,224,.18)}
+.overlay .acts .btn .cap{
+  margin-left:var(--s3);font-family:var(--ff-mono);font-size:10px;letter-spacing:.1em;
+  color:var(--tx-3);border:1px solid var(--panel-line);padding:1px 5px;
+}
+.overlay .acts .btn.outline .cap{border-color:rgba(255,255,255,.3);color:var(--tx-2)}
+
+
+/* 设计稿里的 .ghost 是主菜单那个巨型幽灵数字（position:absolute + 37vh 字号），
+   和按钮变体 .btn.ghost 撞了名：取消按钮一旦用 ghost，就会被那条规则扔出弹层
+   （实测 rect 变成 48x150 飘在左上角）。所以按钮的次级样式改叫 .outline。 */
+.btn.outline{border-color:var(--panel-line);background:rgba(3,31,100,.5);color:var(--tx-hi)}
+.btn.outline:hover{background:var(--panel-hi);border-color:var(--ink-c)}
+body.yandere .btn.outline{background:rgba(46,18,30,.6);border-color:rgba(246,201,210,.42)}
+body.yandere .btn.outline:hover{background:rgba(64,24,40,.85)}
+
+
+/* ============================================================
+   GUI 动效与交互反馈
+   ------------------------------------------------------------
+   这里补的是「手感」层：进场落位、悬停/按下反馈、数值变化提示、
+   新消息入场。屏幕之间与菜单选中态的过渡在各自的段落里。
+   ============================================================ */
+
+/* ---- 按钮：原来 hover 只是把深蓝从 .85 提到 1.0，肉眼几乎看不出；
+       现在给抬升 + 描边 + 阴影三件事，按下再收回去。 ---- */
+.btn{
+  transition:background 160ms var(--e-out), border-color 160ms var(--e-out),
+             color 160ms var(--e-out), transform 120ms var(--e-out),
+             box-shadow 160ms var(--e-out);
+}
+.btn:hover{
+  transform:translateY(-2px);
+  border-color:var(--ink-c);
+  box-shadow:0 6px 18px rgba(0,0,0,.32), 0 0 0 1px rgba(119,254,252,.25) inset;
+}
+.btn:active{transform:translateY(0) scale(.985);box-shadow:none}
+.btn:focus-visible{outline:2px solid var(--ink-c);outline-offset:2px}
+.btn:disabled{opacity:.45;transform:none;box-shadow:none;cursor:not-allowed}
+body.yandere .btn:hover{
+  border-color:var(--accentSoft, #E88A9C);
+  box-shadow:0 6px 18px rgba(0,0,0,.42), 0 0 0 1px rgba(232,138,156,.28) inset;
+}
+body.yandere .btn:focus-visible{outline-color:#E88A9C}
+
+/* ---- 进场：分区卡片自上而下依次落位（屏幕级的淡入在 .view 那一段） ---- */
+.view.on .sec{animation:cardIn 340ms var(--e-out) both}
+.view.on .sec:nth-child(1){animation-delay:20ms}
+.view.on .sec:nth-child(2){animation-delay:60ms}
+.view.on .sec:nth-child(3){animation-delay:100ms}
+.view.on .sec:nth-child(4){animation-delay:140ms}
+.view.on .sec:nth-child(5){animation-delay:180ms}
+.view.on .sec:nth-child(6){animation-delay:220ms}
+.view.on .lampbar{animation:cardIn 300ms var(--e-out) both}
+@keyframes cardIn{from{opacity:0;transform:translate3d(0,18px,0)}to{opacity:1;transform:none}}
+
+/* ---- 字段行：悬停时左缘亮一下，长列表里知道自己在哪一行 ---- */
+.rows > .row{transition:background 150ms var(--e-out), box-shadow 150ms var(--e-out)}
+.rows > .row:hover{
+  background:linear-gradient(90deg, rgba(119,254,252,.07), transparent 62%);
+  box-shadow:inset 3px 0 0 var(--ink-c);
+}
+body.yandere .rows > .row:hover{
+  background:linear-gradient(90deg, rgba(232,138,156,.10), transparent 62%);
+  box-shadow:inset 3px 0 0 var(--accentSoft, #E88A9C);
+}
+
+/* ---- 数值变化：滑块拖动时让数字闪一下，不然不知道哪一行在动 ---- */
+.row .val.flash, .rv.flash{animation:valFlash 380ms var(--e-out)}
+@keyframes valFlash{
+  0%{color:var(--ink-c);text-shadow:0 0 14px currentColor}
+  100%{color:inherit;text-shadow:none}
+}
+
+/* ---- 卡片：轻微抬升（只对非滚动的整体卡片，避免列表里到处乱动） ---- */
+.sec .panelbox{transition:box-shadow 200ms var(--e-out), border-color 200ms var(--e-out)}
+.sec .panelbox:hover{border-color:rgba(119,254,252,.45)}
+body.yandere .sec .panelbox:hover{border-color:rgba(232,138,156,.42)}
+
+/* ---- 开关 / 单选：颜色之外再补上位移，切换更有实体感 ---- */
+.tog button{transition:background 140ms var(--e-out), color 140ms var(--e-out), transform 120ms var(--e-out)}
+.tog button:not(:disabled):hover{transform:translateY(-1px)}
+.tog button:not(:disabled):active{transform:translateY(0) scale(.97)}
+
+/* ---- 对话气泡：新消息入场（只给新增的那一条加 .in，见 renderChat） ---- */
+.bub.in{animation:bubIn 260ms var(--e-out) both}
+@keyframes bubIn{from{opacity:0;transform:translate3d(0,12px,0)}to{opacity:1;transform:none}}
+
+/* ---- 侧栏当前项：左侧一条随状态呼吸的强调条 ---- */
+.rail button[aria-current="true"]{position:relative}
+.rail button[aria-current="true"]::before{
+  content:"";position:absolute;left:0;top:16%;bottom:16%;width:3px;
+  background:var(--ink-c);animation:railPulse 2.6s ease-in-out infinite;
+}
+@keyframes railPulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+/* ---- 顶栏状态灯：状态变化时闪一下，比只换颜色更容易注意到 ---- */
+.dot{transition:background 200ms var(--e-out), box-shadow 200ms var(--e-out)}
+.dot.on{animation:dotPop 260ms var(--e-out)}
+@keyframes dotPop{0%{transform:scale(.6)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+
+/* ---- 加载进度：百分比数字跳动时不要抖 ---- */
+.loadpct{font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){
+  .view.on .sec, .view.on .lampbar, .bub.in, .dot.on, .rail button[aria-current="true"]::before{animation:none !important}
+  .btn:hover, .rows > .row:hover{transform:none}
+}
+
+
+/* ---- ？？？ 下几处「看得见但费劲」的地方 ----
+   ① 选中项的红字重影叠在白色色板上会糊成一片（设计稿的 double exposure）；
+   ② 对话里的工具气泡、栏目标签、meta 这类 12px 小字，在酒底上再抬一档；
+   ③ 连通性灯条未命中的格子 55% 太虚。 */
+body.yandere .opt.sel .red{opacity:.42}
+body.yandere .bub.tool{color:var(--tx-hi)}
+body.yandere .bub.tool em{color:#F6C9D2}
+body.yandere .chatwrap .pcap,
+body.yandere .chatwrap .slot span,
+body.yandere .meta,
+body.yandere .statline,
+body.yandere .probeline .statline,
+body.yandere .tiny,
+body.yandere .row .note,
+body.yandere .row .lb em,
+body.yandere .loadstep{color:#D9C0C7}
+.lampbar .lamp{opacity:.7}
+body.yandere .lampbar .lamp{opacity:.75}
+
+
+/* ---- 适配层里剩下的硬编码深蓝 → 随主题翻转的令牌 ----
+   「模型/服务商选择」的候选块、多选方块、加载滑轨、气泡底、弹层遮罩、
+   ESC 键帽都还写着固定的海军蓝，？？？ 下会露出一块块蓝。
+   这里给适配层自己定义三个底色令牌，普通主题是深蓝、？？？ 是深酒红。 */
+:root{
+  --host-chip:rgba(1,26,72,.62);   /* 可点击的小块：预设、多选、次级按钮 */
+  --host-well:rgba(1,10,40,.72);   /* 凹槽：进度滑轨 */
+  --host-veil:rgba(1,8,30,.84);    /* 弹层遮罩 */
+}
+body.yandere{
+  --host-chip:rgba(52,20,32,.62);
+  --host-well:rgba(24,8,14,.78);
+  --host-veil:rgba(18,6,11,.86);
+}
+.pset{background:var(--host-chip)}
+.ms label{background:var(--host-chip)}
+.loadbar{background:var(--host-well)}
+.bub{background:var(--host-chip)}
+.overlay{background:var(--host-veil)}
+.btn.outline{background:var(--host-chip)}
+/* ESC 键帽（返回条上的、弹层里的） */
+.cap{background:var(--host-chip);border:1px solid var(--panel-line);color:var(--ink-c)}
+.back .cap{background:var(--host-chip)}
+body.yandere .cap,body.yandere .back .cap{color:#F6C9D2;border-color:rgba(246,201,210,.4)}
+
+/* ---- ？？？ 下的主按钮（测试连接 / 保存）：设计稿是深色字压粉板，
+       普通主题的亮粉上没问题（约 7:1），但 ？？？ 的粉板是深酒红，
+       深字压上去只剩 ~2:1 —— 看起来就是「深红字压深红底」。这里换浅字并把底色提亮一档。 ---- */
+body.yandere .btn.primary{background:#C8385A;border-color:#E88A9C;color:#FFF3F6}
+body.yandere .btn.primary:hover{background:#D94A68;border-color:#F6C9D2}
+body.yandere .btn.primary:active{background:#B02F4E}
+
+/* ---- ？？？ 下的分区序号牌：设计稿的渐变末尾是硬编码浅粉，
+       在酒色场里整体偏暗，黑字压不实。给一块实心浅玫瑰 + 深字（约 7.5:1）。 ---- */
+body.yandere .shead .sno{background:#E88A9C;color:#22060C}
+
+/* ---- 主菜单项：指针悬停时也要有反馈 ----
+   原来只有「选中」才有视觉变化，如果指针停在某一项上而它恰好不是选中项，
+   看起来就是「没反应」。这里给未选中项一个轻微的放大与描边光晕。
+   注意用 :not(.sel) —— 否则悬停在选中项上会把它的放大压回去。 */
+.opt:not(.sel):hover .pair{transform:scale(1.14)}
+.opt:not(.sel):hover .lab .cjk{text-shadow:0 0 20px currentColor}
+.opt:not(.sel):hover .en{color:var(--ink-c)}
+.opt .hit{cursor:pointer}
+
+
+/* ---- 主菜单命中区：设计稿的 .hit 是整行 200px 高，而相邻行只隔 92px，
+       于是命中区大面积重叠，谁在上面完全由 z-index 决定。
+       「刷新」是 z-index:0，被上下两个 z-index:1 的行夹住 →
+       指针停在它上面，命中的却是邻居：表现就是「刷新键悬浮/点击没反应」。
+       把命中区收成一行的高度（与行距一致，上下不重叠），每一项都能碰到。 */
+.opt .hit{inset:auto 0 auto 0;top:50%;height:92px;transform:translateY(-50%)}
 
 </style>
 </head>
@@ -1158,7 +1376,7 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
         </section>
       </div>
       <footer class="botbar">
-        <button class="btn ghost sm" type="button" data-go="home">跳过</button>
+        <button class="btn outline sm" type="button" data-go="home">跳过</button>
         <span class="sp"></span>
         <span class="bm">BOOT · 首次启动需要编译 Live2D 着色器，约 50 秒</span>
       </footer>
@@ -1177,7 +1395,7 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
       <div class="pagewrap">
         <div class="phead enc">
           <button class="back" type="button" data-back="home"><span class="arw"></span>
-            <span class="tx">返回<em class="en">Back</em></span><span class="cap">ESC</span></button>
+            <span class="tx">返回<em class="en">Back</em></span></button>
           <h2>API 接入<em>Connection</em></h2>
           <div class="rhs">
             <div class="k">链路状态</div>
@@ -1204,7 +1422,7 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
         <span style="width:var(--s4)"></span>
         <button class="btn sm" type="button" data-act="save">保存</button>
         <span style="width:var(--s3)"></span>
-        <button class="btn sm ghost" type="button" data-act="reload">重载</button>
+        <button class="btn sm outline" type="button" data-act="reload">重载</button>
       </footer>
     </section>
 
@@ -1221,7 +1439,7 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
       <div class="pagewrap">
         <div class="phead enc">
           <button class="back" type="button" data-back="home"><span class="arw"></span>
-            <span class="tx">返回<em class="en">Back</em></span><span class="cap">ESC</span></button>
+            <span class="tx">返回<em class="en">Back</em></span></button>
           <h2>设置<em>Settings</em></h2>
           <div class="rhs">
             <div class="k">生效于本机会话</div>
@@ -1235,7 +1453,7 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
         <span style="width:var(--s3)"></span>
         <button class="btn" type="button" data-act="reload">重载</button>
         <span style="width:var(--s3)"></span>
-        <button class="btn ghost" type="button" data-act="restore">恢复默认</button>
+        <button class="btn outline" type="button" data-act="restore">恢复默认</button>
         <span class="sp"></span>
         <span class="bm" id="setStatus"></span>
       </footer>
@@ -1254,13 +1472,13 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
       <div class="pagewrap">
         <div class="phead enc">
           <button class="back" type="button" data-back="home"><span class="arw"></span>
-            <span class="tx">返回<em class="en">Back</em></span><span class="cap">ESC</span></button>
+            <span class="tx">返回<em class="en">Back</em></span></button>
           <h2>对话<em>Conversation</em></h2>
           <div class="rhs">
             <div class="k">会话</div>
             <div class="v"><span class="dot on" id="sessDot"></span><b id="sessState">已连接</b></div>
           </div>
-          <button class="btn sm ghost" type="button" data-go="settings">设置</button>
+          <button class="btn sm outline" type="button" data-go="settings">设置</button>
         </div>
         <div class="chatwrap">
           <aside class="petcol">
@@ -1324,7 +1542,7 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
     <h3>退出桌宠中枢<em>Quit</em></h3>
     <p>未保存的改动会丢失。桌宠本体也会一起退出，托盘图标随之消失。</p>
     <div class="acts">
-      <button class="btn ghost" type="button" data-overlay-close>取消</button>
+      <button class="btn outline" type="button" data-overlay-close>取消<span class="cap">ESC</span></button>
       <button class="btn primary" type="button" data-act="quit">退出</button>
     </div>
   </div>
@@ -1672,6 +1890,12 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
   // ---- 事件（整页委托：原型里不存在死键，这里也不留） ----
   document.addEventListener("click", function (ev) {
     var t = ev.target;
+    // 点弹层外面的暗底 = 取消（弹层本身是 .overlay，箱体是 .ovbox）
+    if (t.classList && t.classList.contains("overlay")) {
+      var open0 = document.querySelectorAll(".overlay.on");
+      for (var n = 0; n < open0.length; n++) open0[n].classList.remove("on");
+      return;
+    }
     if (t.closest && t.closest("[data-drag]")) {
       // 窗口没有标题栏：交给宿主进系统移动循环
       post({ type: "drag" });
@@ -1889,12 +2113,23 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
     if (knob) knob.style.left = (ratio * 100).toFixed(2) + "%";
   }
 
+  // 数值闪一下：拖动滑块时让人看见是哪一行在变（动画类用完就摘掉，下次才重放）
+  function flashValue(key) {
+    var row = document.querySelector('.row[data-row=' + JSON.stringify(key) + '] .val');
+    if (!row) return;
+    row.classList.remove('flash');
+    void row.offsetWidth;
+    row.classList.add('flash');
+    setTimeout(function () { row.classList.remove('flash'); }, 420);
+  }
+
   function applyRange(btn, num) {
     var key = btn.getAttribute("data-key");
     var f = findField(key);
     btn.setAttribute("aria-valuenow", String(num));
     paintRange(btn);
     var shown = f ? formatValue(f, num) : String(num);
+    flashValue(key);
     var row = btn.closest(".row");
     var input = row ? row.querySelector('.val input[data-role="num"]') : null;
     if (input && String(input.value) !== String(num)) input.value = shown;
@@ -2000,15 +2235,24 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
     return '<div class="bub' + cls + '">' + who + body + '</div>';
   }
 
+  var animatedBubbles = 0;   // 已经播过入场动画的条数：流式增量重渲染时不重播
+
   function renderChat() {
     var log = $("chatLog");
     if (!log) return;
     if (!chatMessages.length) {
       log.innerHTML = '<div class="bub sys">还没有会话记录。在下面输入一句话开始。</div>';
+      animatedBubbles = 0;
     } else {
       var html = "";
-      for (var i = 0; i < chatMessages.length; i++) html += bubbleHtml(chatMessages[i]);
+      for (var i = 0; i < chatMessages.length; i++) {
+        // 只给「比上次多出来的」那几条挂 .in：否则每次流式增量重渲染，
+        // 整屏气泡都会重新播一遍入场动画，看起来就是一直在抖。
+        var fresh = (i >= animatedBubbles) ? " in" : "";
+        html += bubbleHtml(chatMessages[i]).replace('class="bub', 'class="bub' + fresh);
+      }
       log.innerHTML = html;
+      animatedBubbles = chatMessages.length;
     }
     var last = log.lastElementChild;
     if (last && chatMessages.length && chatMessages[chatMessages.length - 1].streaming) last.classList.add("stream");
@@ -2293,6 +2537,11 @@ body.yandere .rows > .row{border-bottom-color:rgba(240,175,188,.14)}
     renderChat();
     setApiState(true, "API 已接入");
     setProgress(68, "正在编译 Live2D 着色器…");
+    // 预览用：?mock=1&overlay=exit 直接把退出弹层打开，便于截图核对两个按钮
+    if (/overlay=exit/.test(location.search)) {
+      var mockOverlay = $("ovExit");
+      if (mockOverlay) mockOverlay.classList.add("on");
+    }
     var want = (location.hash || "").replace("#", "");
     if (SCREENS[want]) show(want, false, true);
     paintMenu();

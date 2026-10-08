@@ -16,6 +16,7 @@ namespace UnnamedBot {
         constexpr int kPadLogical = 12;          // 文本内边距
         constexpr int kGapLogical = 10;          // 与锚点的间距
         constexpr int kEdgeLogical = 8;          // 与工作区边缘的最小距离
+        constexpr int kCursorOffsetLogical = 18; // 跟随时与鼠标指针的错开距离
         constexpr int kMaxWidthLogical = 300;    // 文本换行宽度上限
         constexpr int kRadiusLogical = 8;        // 圆角半径
 
@@ -221,6 +222,20 @@ namespace UnnamedBot {
     }
 
     void SpeechBubble::Show(HWND anchor, const std::wstring& text) {
+        ShowInternal(anchor, text, 0);
+    }
+
+    void SpeechBubble::ShowAtCursor(const std::wstring& text) {
+        // 指针位置取不到（极少见）时 ShowInternal 会退回锚点窗口的算法
+        ShowInternal(nullptr, text, 1);
+    }
+
+    void SpeechBubble::ShowNearActiveWindow(const std::wstring& text) {
+        ShowInternal(nullptr, text, 2);
+    }
+
+    // 两种落点共用的显示流程：量文本 → 定位 → 建渲染目标 → 画 → 显示 → 重新计时
+    void SpeechBubble::ShowInternal(HWND anchor, const std::wstring& text, int placement) {
         if (text.empty()) {
             Hide();
             return;
@@ -236,7 +251,12 @@ namespace UnnamedBot {
         int width = 0;
         int height = 0;
         MeasureText(text_, width, height);
-        ComputePosition(anchor, width, height, bubbleX_, bubbleY_);
+
+        switch (placement) {
+        case 1:  ComputePositionAtCursor(width, height, bubbleX_, bubbleY_); break;
+        case 2:  ComputePositionNearActiveWindow(width, height, bubbleX_, bubbleY_); break;
+        default: ComputePosition(anchor, width, height, bubbleX_, bubbleY_); break;
+        }
 
         if (!EnsureRenderTarget(width, height)) {
             return;
@@ -249,6 +269,135 @@ namespace UnnamedBot {
         KillTimer(hwnd_, IDT_AUTOHIDE);
         SetTimer(hwnd_, IDT_AUTOHIDE, AutoHideMilliseconds(text_.size()), nullptr);
         visible_ = true;
+    }
+
+    // 跟着鼠标指针落点：贴在指针右下方（错开一点，别压住指针本身），
+    // 右边/下面放不下就翻到左边/上面，最后整体夹进当前显示器的工作区。
+    // 按当前活动窗口定位：回复要落在「你正在用的那个窗口」里。
+    // 多窗口 / 多显示器时，纯屏幕坐标会让气泡飘到无关的地方去。
+    void SpeechBubble::ComputePositionNearActiveWindow(int width, int height, int& x, int& y) const {
+        HWND foreground = GetForegroundWindow();
+
+        // 前台窗口是我们自己的（桌宠 / 配置中枢 / 气泡 / 输入条）时，
+        // 说明用户正在跟桌宠打交道 —— 回到「贴桌宠」的老行为最自然。
+        bool ours = false;
+        if (foreground) {
+            DWORD pid = 0;
+            GetWindowThreadProcessId(foreground, &pid);
+            ours = (pid == GetCurrentProcessId()) || foreground == hwnd_ || foreground == anchor_;
+        }
+        if (!foreground || ours) {
+            ComputePosition(anchor_, width, height, x, y);
+            return;
+        }
+
+        RECT target = {};
+        if (!GetWindowRect(foreground, &target) ||
+            (target.right - target.left) < 80 || (target.bottom - target.top) < 60) {
+            // 拿不到像样的窗口矩形（比如前台是桌面/任务栏）→ 退回指针算法
+            ComputePositionAtCursor(width, height, x, y);
+            return;
+        }
+
+        const int offset = kCursorOffsetLogical * dpi_ / 96;
+        const int edge = kEdgeLogical * dpi_ / 96;
+
+        POINT cursor = {};
+        const bool hasCursor = GetCursorPos(&cursor) != FALSE;
+        const bool cursorInside = hasCursor &&
+            cursor.x >= target.left && cursor.x <= target.right &&
+            cursor.y >= target.top && cursor.y <= target.bottom;
+
+        int px = 0;
+        int py = 0;
+        if (cursorInside) {
+            // 指针就在这个窗口里：贴着指针，但整块气泡必须留在窗口内
+            px = cursor.x + offset;
+            py = cursor.y + offset;
+            if (px + width > target.right - edge) px = cursor.x - offset - width;
+            if (py + height > target.bottom - edge) py = cursor.y - offset - height;
+        }
+        else {
+            // 指针在别处：贴这个窗口的右下角
+            px = target.right - width - offset;
+            py = target.bottom - height - offset;
+        }
+
+        // 屏幕工作区还是要夹一次：窗口可能贴着屏幕边或被最大化
+        MONITORINFO info = {};
+        info.cbSize = sizeof(MONITORINFO);
+        HMONITOR monitor = MonitorFromWindow(foreground, MONITOR_DEFAULTTONEAREST);
+        if (!GetMonitorInfoW(monitor, &info)) {
+            info.rcWork = RECT{ 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
+        }
+        const int workLeft = static_cast<int>(info.rcWork.left);
+        const int workTop = static_cast<int>(info.rcWork.top);
+        const int workRight = static_cast<int>(info.rcWork.right);
+        const int workBottom = static_cast<int>(info.rcWork.bottom);
+
+        // 先夹进目标窗口，再夹进工作区（窗口本身一般就在工作区内）
+        const int minX = (std::max)(static_cast<int>(target.left) + edge, workLeft + edge);
+        const int minY = (std::max)(static_cast<int>(target.top) + edge, workTop + edge);
+        const int maxX = (std::min)(static_cast<int>(target.right) - width - edge,
+                                    (std::max)(minX, workRight - width - edge));
+        const int maxY = (std::min)(static_cast<int>(target.bottom) - height - edge,
+                                    (std::max)(minY, workBottom - height - edge));
+
+        x = std::clamp(px, minX, (std::max)(minX, maxX));
+        y = std::clamp(py, minY, (std::max)(minY, maxY));
+
+        // 与其它落点方式一致的、由文本决定的确定性错位：连续两条不会完全重合
+        const unsigned hash = HashText(text_);
+        const int jitter = 8 * dpi_ / 96;
+        x = std::clamp(x + static_cast<int>(hash % static_cast<unsigned>(jitter * 2 + 1)) - jitter,
+            minX, (std::max)(minX, maxX));
+        y = std::clamp(y + static_cast<int>((hash >> 8) % static_cast<unsigned>(jitter * 2 + 1)) - jitter,
+            minY, (std::max)(minY, maxY));
+    }
+
+    void SpeechBubble::ComputePositionAtCursor(int width, int height, int& x, int& y) const {
+        POINT cursor = {};
+        if (!GetCursorPos(&cursor)) {
+            // 取不到指针：退回「锚到桌宠」的老路，至少还有个合理位置
+            ComputePosition(anchor_, width, height, x, y);
+            return;
+        }
+
+        const int offset = kCursorOffsetLogical * dpi_ / 96;
+        const int edge = kEdgeLogical * dpi_ / 96;
+
+        MONITORINFO info = {};
+        info.cbSize = sizeof(MONITORINFO);
+        HMONITOR monitor = MonitorFromPoint(cursor, MONITOR_DEFAULTTONEAREST);
+        if (!GetMonitorInfoW(monitor, &info)) {
+            info.rcWork = RECT{ 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
+        }
+        const RECT work = info.rcWork;
+        const int workLeft = static_cast<int>(work.left);
+        const int workTop = static_cast<int>(work.top);
+        const int workRight = static_cast<int>(work.right);
+        const int workBottom = static_cast<int>(work.bottom);
+
+        // 右下 → 左下 → 右上 → 左上
+        int px = cursor.x + offset;
+        int py = cursor.y + offset;
+        if (px + width > workRight - edge) {
+            px = cursor.x - offset - width;
+        }
+        if (py + height > workBottom - edge) {
+            py = cursor.y - offset - height;
+        }
+
+        x = std::clamp(px, workLeft + edge, (std::max)(workLeft + edge, workRight - width - edge));
+        y = std::clamp(py, workTop + edge, (std::max)(workTop + edge, workBottom - height - edge));
+
+        // 与锚点窗口那套一样，叠一点由文本决定的确定性错位：连续两条不会完全重合
+        const unsigned hash = HashText(text_);
+        const int jitter = 10 * dpi_ / 96;
+        x += static_cast<int>(hash % static_cast<unsigned>(jitter * 2 + 1)) - jitter;
+        y = std::clamp(y + static_cast<int>((hash >> 8) % static_cast<unsigned>(jitter * 2 + 1)) - jitter,
+            workTop + edge, (std::max)(workTop + edge, workBottom - height - edge));
+        x = std::clamp(x, workLeft + edge, (std::max)(workLeft + edge, workRight - width - edge));
     }
 
     void SpeechBubble::Hide() {

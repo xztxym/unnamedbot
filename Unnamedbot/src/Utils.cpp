@@ -1,5 +1,7 @@
 #include "../include/Utils.h"
+#include "../include/Logger.h"
 #include <Windows.h>
+#include <wincodec.h>       // EncodeJpegBgra：WIC 的 JPEG 编码器
 #include <fstream>
 #include <filesystem>
 #include <regex>
@@ -180,6 +182,123 @@ namespace UnnamedBot {
                 result.pop_back();
             }
             return result;
+        }
+
+        std::vector<uint8_t> EncodeJpegBgra(const uint8_t* pixels, int width, int height, int stride, int quality) {
+            if (!pixels || width <= 0 || height <= 0) {
+                return {};
+            }
+            if (stride <= 0) {
+                stride = width * 4;
+            }
+
+            // WIC：BGRA8 源位图 → 24bppBGR 转换器 → JPEG 编码器 → 内存流。
+            // 用内存流（CreateStreamOnHGlobal）取结果，不落盘。
+            IWICImagingFactory* factory = nullptr;
+            HRESULT hr = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                IID_PPV_ARGS(&factory));
+            if (FAILED(hr) || !factory) {
+                LOG_ERROR("Utils", "WIC factory creation failed; JPEG encoding unavailable.");
+                return {};
+            }
+
+            std::vector<uint8_t> jpeg;
+            IStream* stream = nullptr;
+            IWICBitmapEncoder* encoder = nullptr;
+            IWICBitmapFrameEncode* frame = nullptr;
+            IWICBitmap* source = nullptr;
+            IWICFormatConverter* converter = nullptr;
+            IPropertyBag2* props = nullptr;
+
+            do {
+                const UINT bufferSize = static_cast<UINT>(stride) * static_cast<UINT>(height);
+                if (FAILED(CreateStreamOnHGlobal(nullptr, TRUE, &stream))) {
+                    break;
+                }
+                if (FAILED(factory->CreateBitmapFromMemory(
+                    static_cast<UINT>(width), static_cast<UINT>(height),
+                    GUID_WICPixelFormat32bppBGRA, static_cast<UINT>(stride), bufferSize,
+                    const_cast<BYTE*>(pixels), &source))) {
+                    break;
+                }
+                if (FAILED(factory->CreateFormatConverter(&converter))) {
+                    break;
+                }
+                // JPEG 编码器吃 24bppBGR，显式转一次，别让它自己挑格式
+                if (FAILED(converter->Initialize(source, GUID_WICPixelFormat24bppBGR,
+                    WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom))) {
+                    break;
+                }
+                if (FAILED(factory->CreateEncoder(GUID_ContainerFormatJpeg, nullptr, &encoder))) {
+                    break;
+                }
+                if (FAILED(encoder->Initialize(stream, WICBitmapEncoderNoCache))) {
+                    break;
+                }
+                if (FAILED(encoder->CreateNewFrame(&frame, &props))) {
+                    break;
+                }
+                if (FAILED(frame->Initialize(props))) {
+                    break;
+                }
+
+                // 质量：WIC 的 JPEG 用 ImageQuality（0.0~1.0）。
+                // IPropertyBag2::Write 的形状是 Write(属性个数, PROPBAG2[], VARIANT[])。
+                if (props) {
+                    PROPBAG2 option = {};
+                    option.pstrName = const_cast<LPOLESTR>(L"ImageQuality");
+                    VARIANT value = {};
+                    value.vt = VT_R4;
+                    value.fltVal = static_cast<float>(quality) / 100.0f;
+                    props->Write(1, &option, &value);
+                }
+
+                WICPixelFormatGUID format = GUID_WICPixelFormat24bppBGR;
+                if (FAILED(frame->SetSize(static_cast<UINT>(width), static_cast<UINT>(height)))) {
+                    break;
+                }
+                if (FAILED(frame->SetPixelFormat(&format))) {
+                    break;
+                }
+                if (FAILED(frame->WriteSource(converter, nullptr))) {
+                    break;
+                }
+                if (FAILED(frame->Commit())) {
+                    break;
+                }
+                if (FAILED(encoder->Commit())) {
+                    break;
+                }
+
+                // 取结果：先问流长度，再读出来
+                STATSTG stat = {};
+                if (FAILED(stream->Stat(&stat, STATFLAG_NONAME))) {
+                    break;
+                }
+                const ULONGLONG size = stat.cbSize.QuadPart;
+                if (size == 0) {
+                    break;
+                }
+                LARGE_INTEGER zero = {};
+                stream->Seek(zero, STREAM_SEEK_SET, nullptr);
+
+                jpeg.resize(static_cast<size_t>(size));
+                ULONG read = 0;
+                if (FAILED(stream->Read(jpeg.data(), static_cast<ULONG>(jpeg.size()), &read)) || read == 0) {
+                    jpeg.clear();
+                    break;
+                }
+                jpeg.resize(read);
+            } while (false);
+
+            if (props) props->Release();
+            if (converter) converter->Release();
+            if (source) source->Release();
+            if (frame) frame->Release();
+            if (encoder) encoder->Release();
+            if (stream) stream->Release();
+            factory->Release();
+            return jpeg;
         }
 
         std::vector<uint8_t> Base64Decode(const std::string& base64) {

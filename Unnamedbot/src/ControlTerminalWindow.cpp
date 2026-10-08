@@ -287,6 +287,8 @@ namespace UnnamedBot {
             { "api.key",           L"API 密钥", L"API KEY",      L"数据库加密存储",  FieldKind::Text, L"",                          nullptr, true,  320 },
             { "api.org_id",        L"组织标识", L"ORG ID",       L"可留空",          FieldKind::Text, L"",                          nullptr, false, 320 },
             { "api.model_default", L"默认模型", L"MODEL",        L"对话默认模型",    FieldKind::Text, L"gpt-4o",                    nullptr, false, 280 },
+            // 截屏巡检要把图片交给能看图的模型；DeepSeek 侧就是 deepseek-flash
+            { "api.model_vision",  L"视觉模型", L"VISION MODEL", L"图片分析用；deepseek-flash 可看图", FieldKind::Text, L"deepseek-flash", nullptr, false, 280 },
         };
 
         // ===== 卡片 02：采样参数 =====
@@ -1138,9 +1140,16 @@ namespace UnnamedBot {
         }
 
         if (type == "quit") {
-            // 页面的「退出」确认过了：走和托盘「退出」同一条路，把状态存好再退。
-            LOG_INFO("ControlTerminal", "Quit requested from hub UI.");
-            AppCore::Instance().Shutdown();
+            // 页面确认过退出了。但这里仍处在 WebView2 的消息回调里：直接 Shutdown
+            // 会拆掉 webview 自身，回调随即返回到已释放的 COM 对象上，
+            // 表现就是 ucrtbase.dll 抛「请求了严重的程序退出」。
+            // 所以只把请求转交给主窗口的消息队列，等这个回调返回之后再退。
+            LOG_INFO("ControlTerminal", "Quit requested from hub UI; deferring to the pet window.");
+            if (HWND main = AppCore::Instance().GetMainWindow()) {
+                // Window::WM_QUIT_REQUESTED：桌宠窗口收到后转成回调，由 AppCore 退出。
+                // （AppCore 自己那套消息窗口从未创建，不能往那边发。）
+                PostMessageW(main, Window::WM_QUIT_REQUESTED, 0, 0);
+            }
             return;
         }
 
