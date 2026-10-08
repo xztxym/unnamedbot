@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <filesystem>
 #include <vector>
 
 namespace UnnamedBot {
@@ -22,6 +23,9 @@ namespace UnnamedBot {
         // 提示词目录：与 logs/data/models 同级，位于程序的工作目录下。
         std::wstring FolderPathWide() const;
         std::string FolderPathUtf8() const;
+
+        // 提示词目录的实际位置（工作目录优先，否则 exe 目录）
+        std::filesystem::path ResolveFolder() const;
 
         // 确保目录存在（启动时调用一次）。已存在也算成功。
         bool EnsureFolder() const;

@@ -184,6 +184,25 @@ namespace UnnamedBot {
             return result;
         }
 
+        std::filesystem::path ExecutableDirectory() {
+            wchar_t buffer[MAX_PATH] = {};
+            const DWORD length = ::GetModuleFileNameW(nullptr, buffer, MAX_PATH);
+            if (length == 0 || length >= MAX_PATH) {
+                std::error_code ec;
+                return std::filesystem::current_path(ec);
+            }
+            return std::filesystem::path(buffer).parent_path();
+        }
+
+        std::filesystem::path ResolveAppRelative(const std::wstring& relative) {
+            std::error_code ec;
+            const std::filesystem::path inWorkingDir = std::filesystem::path(relative);
+            if (std::filesystem::exists(inWorkingDir, ec)) {
+                return inWorkingDir;
+            }
+            return ExecutableDirectory() / relative;
+        }
+
         std::vector<uint8_t> EncodeJpegBgra(const uint8_t* pixels, int width, int height, int stride, int quality) {
             if (!pixels || width <= 0 || height <= 0) {
                 return {};

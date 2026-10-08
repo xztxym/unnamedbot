@@ -141,6 +141,20 @@ namespace {
         LOG_INFO("Live2DManager", "Live2D framework initialized.");
 
         // 扫描模型目录
+        // 模型目录同样是「工作目录优先、否则 exe 目录」：装到别处后
+        // ./models 往往不存在，而 exe 旁边就是安装时放好的 models。
+        {
+            std::error_code ec;
+            if (!std::filesystem::exists(modelDirectory_, ec)) {
+                const std::filesystem::path fallback =
+                    std::filesystem::path(Utils::ExecutableDirectory()) / L"models";
+                if (std::filesystem::exists(fallback, ec)) {
+                    modelDirectory_ = fallback.wstring();
+                    LOG_INFO("Live2DManager", "Model directory resolved to exe dir: " +
+                        Utils::PathToUtf8(modelDirectory_));
+                }
+            }
+        }
         ScanModelDirectory();
 
         // 恢复模型状态

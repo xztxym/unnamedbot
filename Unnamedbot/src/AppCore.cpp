@@ -61,7 +61,9 @@ namespace UnnamedBot {
         LOG_INFO("AppCore", "========================================");
 
         // 初始化日志系统（首先初始化）
-        Logger::Instance().Initialize(L"./logs", 30);
+        // 日志与数据库都按「工作目录优先、否则 exe 目录」解析：
+        // 装好之后从快捷方式启动时工作目录不可控，否则 data/logs 会散落到随机位置。
+        Logger::Instance().Initialize(Utils::ResolveAppRelative(L"logs").wstring().c_str(), 30);
         Logger::Instance().SetMinLevel(LogLevel::Debug);
         Logger::Instance().SetConsoleOutput(true);
         LOG_INFO("AppCore", "Logger initialized.");
@@ -77,7 +79,10 @@ namespace UnnamedBot {
         }
 
         // 初始化数据库
-        if (!Database::Instance().Initialize(L"./data/app.db")) {
+        const std::filesystem::path dataDir = Utils::ResolveAppRelative(L"data");
+        std::error_code dataEc;
+        std::filesystem::create_directories(dataDir, dataEc);
+        if (!Database::Instance().Initialize((dataDir / L"app.db").wstring().c_str())) {
             LOG_ERROR("AppCore", "Failed to initialize database.");
             return false;
         }

@@ -46,6 +46,15 @@ namespace UnnamedBot {
 		// 调用线程需要已初始化 COM（内部用 WIC 工厂）。
 		std::vector<uint8_t> EncodeJpegBgra(const uint8_t* pixels, int width, int height, int stride, int quality = 80);
 
+		// exe 所在目录。安装之后从快捷方式、任务栏跳转列表、文件关联启动时，
+		// 工作目录并不等于 exe 目录，"data/logs/models/prompts" 这类相对路径
+		// 必须有一个与工作目录无关的基准。
+		std::filesystem::path ExecutableDirectory();
+
+		// 相对路径的落地位置：工作目录下已经存在就沿用它（开发时的布局，
+		// 直接跑 x64\Release 时仍在工程目录里读写），否则落到 exe 目录旁边。
+		std::filesystem::path ResolveAppRelative(const std::wstring& relative);
+
 		// 路径/文本编码转换
 		// C++20 下 path::u8string() 返回 std::u8string，不能隐式转换为 std::string，
 		// 因此统一通过该函数获取 UTF-8 字节串（sqlite3、日志、HTTP 均需要 UTF-8）。

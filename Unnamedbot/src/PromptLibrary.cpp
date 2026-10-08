@@ -11,7 +11,8 @@ namespace UnnamedBot {
     namespace {
 
         // 提示词目录：与 logs/data/models 同级，相对程序的工作目录。
-        const wchar_t* const kPromptFolder = L"./prompts";
+        // 提示词目录也按「工作目录优先、否则 exe 目录」解析（见 Utils::ResolveAppRelative）
+const wchar_t* const kPromptFolder = L"prompts";
 
         // 哨兵文件：它的**存在**决定配置页是否给出「？？？」选项，内容不参与提示词拼装。
         const wchar_t* const kYandereSentinel = L"yandere.chr";
@@ -43,16 +44,21 @@ namespace UnnamedBot {
     }
 
     std::wstring PromptLibrary::FolderPathWide() const {
-        return kPromptFolder;
+        return ResolveFolder().wstring();
     }
 
     std::string PromptLibrary::FolderPathUtf8() const {
-        return Utils::PathToUtf8(std::filesystem::path(kPromptFolder));
+        return Utils::PathToUtf8(ResolveFolder());
+    }
+
+    // 提示词目录：工作目录下已有就用它（开发布局），否则落在 exe 旁边
+    std::filesystem::path PromptLibrary::ResolveFolder() const {
+        return Utils::ResolveAppRelative(kPromptFolder);
     }
 
     bool PromptLibrary::EnsureFolder() const {
         std::error_code error;
-        const std::filesystem::path folder(kPromptFolder);
+        const std::filesystem::path folder = ResolveFolder();
         if (std::filesystem::exists(folder, error)) {
             return true;
         }
