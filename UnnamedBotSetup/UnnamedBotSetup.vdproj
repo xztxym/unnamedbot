@@ -11,401 +11,591 @@
 "SccLocalPath" = "8:"
 "SccAuxPath" = "8:"
 "SccProvider" = "8:"
-
     "Hierarchy"
     {
         "Entry"
         {
-        "MsmKey" = "8:_51A64603578832AA9C0986EDD3115764"
+        "MsmKey" = "8:_0372DCD451EAA1F09450C01370E6220F"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_4AED126D6EAE7117BC372BCFBC7189BA"
+        "MsmKey" = "8:_C1765B09B9C74BD92A3F494256653FCA"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_C3506360CE8F42F10DC844E3FF6ED999"
+        "MsmKey" = "8:_64FF40BCEFDC2B4FD62259527830B8C3"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_697B87DC73264CFF5CA8EA9117561C9D"
+        "MsmKey" = "8:_B39979674D12382FCD50CC0FB4CA4EE6"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_5CAD5792BB209694DB6E36BAA2CA83EA"
+        "MsmKey" = "8:_9B3CF2051915CD35C5C80A0D9473C73B"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_C6D584DACC0C537011B9C062E9A9A93D"
+        "MsmKey" = "8:_B8B8B3DCE36D36464699D42CECF57BB4"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_7E22E31BC672D6B7C69AF89AEBC96606"
+        "MsmKey" = "8:_C2016D7C4930F5342185750A53A9F769"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_09354CFD31BC414F013D2848C949D2E2"
+        "MsmKey" = "8:_2F2B938E4F0D0A1D723040BD7E5C644D"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_65CD63CEC1A0533007FA1F788BFEDAE6"
+        "MsmKey" = "8:_46C596B0E919F7B7A099058D79BD0818"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_8B9183B2B0967EBA69EB94966CD67BCA"
+        "MsmKey" = "8:_66351CD31C8F8907EFDAF22D34899F7F"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_07A2E86A306D2FF2A61414306FE9E562"
+        "MsmKey" = "8:_4756D6880B4FED0318ED8A0CE55E9B91"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_DE40A93053D09DF83E98F1EBCB4C415C"
+        "MsmKey" = "8:_FA0E8CA62966E0751436C29744F2BA61"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_CAD3CB00A7E5F795F533556BD46DE3B4"
+        "MsmKey" = "8:_20F9785A61F952DEC11B9BFB19AA61B5"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_B7482C0EC4C22CD3ED00FE5234DAE32A"
+        "MsmKey" = "8:_6C38BDD07B25451F8BCB4BC550969F85"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_FC8F62BFB0A9E00BEFA03E3025176631"
+        "MsmKey" = "8:_5895D450846E36D1F8CEB407FAE5E533"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_FE251524C5AD2BFC414A46728F9C7423"
+        "MsmKey" = "8:_3A88D8E745FDACEB99C1495CD9FC8724"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_1D5592E28C1E444B68DF0C02D10AC931"
+        "MsmKey" = "8:_1900CAC7B25D8C27BB35A5C09B8232EF"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_40F5F01D31128D4BAE2838A242CB1A48"
+        "MsmKey" = "8:_ED856B7818AF58A996B56AB9D12E3F7B"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_DBA439C0A49DC3287A57C8A0E2D526C5"
+        "MsmKey" = "8:_40A2579BF0943F6543818DDDB4AFCA30"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_45238D2AB6D795817DF56066E9A775A3"
+        "MsmKey" = "8:_4EFA5BF5F31B7799E58AB2998EB9B625"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_6E4E2FDE7845158479522CFBB0ACD671"
+        "MsmKey" = "8:_E807B7CC961A2BED158C86518EE344B5"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_ECBA7DFFF6DF3DB954696827260D3246"
+        "MsmKey" = "8:_04287267AB285B0FF99EA9BFF262ED94"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_225FEF9ACA0FDAD0A182576B6163EBF6"
+        "MsmKey" = "8:_C94F2D71F23EEFF594B95D9238B11449"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_1A91C5C4AAFDF1B390F212110F345B94"
+        "MsmKey" = "8:_D2B3A29AB3208C210889E91EF1B0A28E"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_B6BC055831173A3764881F0BE2739405"
+        "MsmKey" = "8:_17CA8594427747416AAA137111BC4400"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_96F31635AD42DAC11DA0EDE3FB7DBB72"
+        "MsmKey" = "8:_C60315043E27C1F2C940D5F2204F7B41"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_CEE4A69499600CF8B4F3D34641F28DDD"
+        "MsmKey" = "8:_6F5C5EBA4CB33F0B85D9AF9623BB43DF"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_0CA2E40C61B3B30B6BE44BA0E5B382FB"
+        "MsmKey" = "8:_516CEE4E20047158453385B05FF6D938"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_3B44BCE11DB1064E75ED47B4B8911434"
+        "MsmKey" = "8:_155D0A6308049C73DD58F596D4635034"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_D243EF81CBDB0130BCECDA3EF4DF13B9"
+        "MsmKey" = "8:_197C48A10AB7997D4982DBF671F27FF3"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_6578135DAC9A77E92951EF2A10642E2B"
+        "MsmKey" = "8:_48CD61D3D2CAB92CD03B37B24E36C614"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_EF7DE96267447F61F3EC3DDECDC21DD2"
+        "MsmKey" = "8:_45AC6CF5AAD2028EFFF11E942E87FA77"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_9DE5627B9C848AB05C8A6A7DAF921B2F"
+        "MsmKey" = "8:_EADDF487ACA7EB01033679127CD16F6C"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_13243A4B6A08ED2C1E6A61247F6D1053"
+        "MsmKey" = "8:_BBD0FF3970B7C392857897E96D18215F"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_0F7F70C0389AD624F4A3C882489DE9F0"
+        "MsmKey" = "8:_C7733C67A9A5E1E39DBA3C3ADE438527"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_C6BA2F9D15B0C61D82C3B4D87D3E15FE"
+        "MsmKey" = "8:_C91A212DB643511A5C221AD3BD6F0953"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_660A7E604F07FA1589A5477BBAE3E6E6"
+        "MsmKey" = "8:_9734BA105CBD9E43D7CFA35C5794F829"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_2BAD4F59C629DFFDDF17437080389211"
+        "MsmKey" = "8:_B38C24F0455869A4DCAC719E2DE5455A"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_050F85E0B21735586CAF74FAF67D1A28"
+        "MsmKey" = "8:_CE21F8EAD6D0AC40049525709B373AAB"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_195F74EC9367D9F021E2C4305B1B6AA2"
+        "MsmKey" = "8:_5A4E63C19D68026A3873D7A84541D3C1"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_849335E15DDC7AAEEE87FD347946F3D6"
+        "MsmKey" = "8:_BD216F8B9A23475DAA3447EC8315EEFF"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_CBA7A26CDAD48D84489FC47013922C5C"
+        "MsmKey" = "8:_6DAD43B45FD0C6DC21D629187BCEF02E"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_00613142CE3F4270364E27CA75FD4838"
+        "MsmKey" = "8:_E48B716E3872ACB0E489184C760BCAAE"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_087BECD56D7DFAB1AFD44BE456583E30"
+        "MsmKey" = "8:_3F659ABDE66E3525F808DE9ED1955338"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_454CF73D54EC03341F8864167CB999E9"
+        "MsmKey" = "8:_26E5CD16A0AE853F326687790DD33C53"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_388B570DB443431E72A2BA705DDC1EC6"
+        "MsmKey" = "8:_A6B6CEB6C2A71D53A6885250C540EB11"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_8288111B1C1BC8E2B2EA6501CE1B1858"
+        "MsmKey" = "8:_B2E4BC8086F2EA161FCA48C893FA6B40"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_B817D661138AC5F879AF936332B5CAFA"
+        "MsmKey" = "8:_E27EA4B35B07F4979BDD2A120EFB4DA1"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_313660D10F1058223D5E5E45F1DE78A9"
+        "MsmKey" = "8:_3E771131957CDB037DD905F5C9F7AEDC"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_65F87071CDF799E01822C39C3635EC37"
+        "MsmKey" = "8:_7D14745A842A76396C819DB89A5C7512"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_6ECC09C3DB3CDD10D85E902339B8EC8B"
+        "MsmKey" = "8:_16615A55C1EC6D54535012876E6FDF4C"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_021D50D66E919DB7566F654DFDDBECE0"
+        "MsmKey" = "8:_97B4B54C6FC853C5FB7B6549A09A42E1"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_6844BE0563CAAEB3671843B46AA34746"
+        "MsmKey" = "8:_55640C0056D645D10D0A12718362C9AD"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_1A9ECD71CB8EEC6E1FF852330762BF11"
+        "MsmKey" = "8:_DEA69A828AD43F554469087FBC26BA88"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_66F5CF0B4E4BD1369F474AE025B52446"
+        "MsmKey" = "8:_5C051DA7E005DFF9AAE6E11D33436032"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_8B1E96ECF66488465131C0AD4F0659EE"
+        "MsmKey" = "8:_60E86A0674394517DC28AB6F59016898"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_CBBA9950620B2BF8223031C7FE2840E7"
+        "MsmKey" = "8:_7E447B9C3EC51FF349EDBCD0284522B9"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_EAE5BCA5FA15A49E35C41D2272D61904"
+        "MsmKey" = "8:_A0491889C3DBD0C561CB1F4135DA9A90"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_8A0D7F9986DEB265A935382AACBA1FA1"
+        "MsmKey" = "8:_E556268F295B82236A17EF374DC7EC42"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_4E3B43977A0DC823C3F1A26BBBF7D024"
+        "MsmKey" = "8:_8D20D48D6E34241300E4B7EDED35FBEF"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_E982D6A4B3F134C024383A4D59E51F59"
+        "MsmKey" = "8:_D168FE9AEC1597BC258D95F1A29EDD72"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_7A217C9D50AB52B528A4664585470238"
+        "MsmKey" = "8:_989344A751B1C59DD23CC5978A961727"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_F0E2456B6012BA7D7B864F470C71E386"
+        "MsmKey" = "8:_9306ED35F9AB26E032472CD12D62C9C0"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_C7C0FE56415A02F80C5128F6FAEBEBD1"
+        "MsmKey" = "8:_F0659026E793BDE19144860A124AF04E"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_0C9020AB32D459B98EDF2AACE3E47542"
+        "MsmKey" = "8:_D2D279958E4BC7C1C1A91C6D04C96991"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_04B025103BDD457692DEC13F39815098"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_0A1B5ED9C13F4957B53F2FABB1F43332"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_0D49CA199F4B43F28E8011C27AAA14A8"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_0EDA226BA17B4F2B86AC67E80021E680"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_2699C82C012A4C1D8DF68B718581307E"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_2A7F8FCCF5204B60A727F22B9EE2259D"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_2DFFB3C05694D8E1082240D452FC5506"
+        "OwnerKey" = "8:_A86C9B83515A448A924A536EF0A295D4"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_2FFB7F47BC858DED522027D9812BEFD6"
+        "OwnerKey" = "8:_A86C9B83515A448A924A536EF0A295D4"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_4357974FCBC24261B57D4147DB66BA78"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_4B5110172F4F4656965804FA19783BC7"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_4D61B75DE6BA41A7BA331CEAC6DC6A6A"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_61DD47B28AB93FEA2348A8CA1A0D4453"
+        "OwnerKey" = "8:_A86C9B83515A448A924A536EF0A295D4"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_62257BC503334F6798570F867F95E623"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_63C7C890E0B7446DB1993B6E250853E0"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_77C209264D08E6B9BD45CC917BF5D0AD"
+        "OwnerKey" = "8:_A86C9B83515A448A924A536EF0A295D4"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_78D4DA7C1A97412FA182B8FC1917A28B"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_797E309167E94699A1BDC14744A3AEC8"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_8B64A4699327456290BB8EBE0AAED001"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_93AFA6EE947E4298A412077A59CC16ED"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_A0332F6363F540A4B16962DC47903D52"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_A426BC2A65F244599C9EE4AABB99CD88"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_A6CC3F2D1F3541988C6F4D0B80617729"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_A86C9B83515A448A924A536EF0A295D4"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_A8AA2EBBF25B4D28AC9B120229FF7F09"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_B1B5260CD143441A82E6D32A78FA30C2"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_B9B03EDAF16C4970981DB66230D33A2F"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_CF69F2DDB9D94620B64903E4F1C807C3"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_DCFCE86877B64E04B8C36C6BA3474333"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_EC85200039024A35ACB676356E56CCDE"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F0F97738AA39426DA7AF4C1C17D12F72"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_F2028E587553487B8BE1409B634213EA"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_FC06323E58034190BD5998AB38173861"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
-
     "Configurations"
     {
         "Debug"
@@ -467,11 +657,9 @@
     }
     "Deployable"
     {
-
         "CustomAction"
         {
         }
-
         "DefaultFeature"
         {
         "Name" = "8:DefaultFeature"
@@ -484,15 +672,14 @@
             {
             }
         }
-
         "File"
         {
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_51A64603578832AA9C0986EDD3115764"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_0372DCD451EAA1F09450C01370E6220F"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\x64\\Release\\Unnamedbot.exe"
             "TargetName" = "8:Unnamedbot.exe"
             "Tag" = "8:"
-            "Folder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -507,12 +694,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4AED126D6EAE7117BC372BCFBC7189BA"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C1765B09B9C74BD92A3F494256653FCA"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\x64\\Release\\cpr.dll"
             "TargetName" = "8:cpr.dll"
             "Tag" = "8:"
-            "Folder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -527,12 +714,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C3506360CE8F42F10DC844E3FF6ED999"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_64FF40BCEFDC2B4FD62259527830B8C3"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\x64\\Release\\libcurl.dll"
             "TargetName" = "8:libcurl.dll"
             "Tag" = "8:"
-            "Folder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -547,12 +734,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_697B87DC73264CFF5CA8EA9117561C9D"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B39979674D12382FCD50CC0FB4CA4EE6"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\x64\\Release\\z.dll"
             "TargetName" = "8:z.dll"
             "Tag" = "8:"
-            "Folder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -567,12 +754,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5CAD5792BB209694DB6E36BAA2CA83EA"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_9B3CF2051915CD35C5C80A0D9473C73B"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\x64\\Release\\sqlite3.dll"
             "TargetName" = "8:sqlite3.dll"
             "Tag" = "8:"
-            "Folder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -587,12 +774,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C6D584DACC0C537011B9C062E9A9A93D"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B8B8B3DCE36D36464699D42CECF57BB4"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\x64\\Release\\Live2DCubismCore.dll"
             "TargetName" = "8:Live2DCubismCore.dll"
             "Tag" = "8:"
-            "Folder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -607,12 +794,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_7E22E31BC672D6B7C69AF89AEBC96606"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C2016D7C4930F5342185750A53A9F769"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\crt\\msvcp140.dll"
             "TargetName" = "8:msvcp140.dll"
             "Tag" = "8:"
-            "Folder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -627,12 +814,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_09354CFD31BC414F013D2848C949D2E2"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2F2B938E4F0D0A1D723040BD7E5C644D"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\crt\\vcruntime140.dll"
             "TargetName" = "8:vcruntime140.dll"
             "Tag" = "8:"
-            "Folder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -647,12 +834,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_65CD63CEC1A0533007FA1F788BFEDAE6"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_46C596B0E919F7B7A099058D79BD0818"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\crt\\vcruntime140_1.dll"
             "TargetName" = "8:vcruntime140_1.dll"
             "Tag" = "8:"
-            "Folder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -667,12 +854,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_8B9183B2B0967EBA69EB94966CD67BCA"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_66351CD31C8F8907EFDAF22D34899F7F"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\MicrosoftEdgeWebView2Setup.exe"
             "TargetName" = "8:MicrosoftEdgeWebView2Setup.exe"
             "Tag" = "8:"
-            "Folder" = "8:_8CE6368F11B76912C23B27968A43103D"
+            "Folder" = "8:_A64B29E1EE1926AF6B42424D2A27B98D"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -687,12 +874,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_07A2E86A306D2FF2A61414306FE9E562"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4756D6880B4FED0318ED8A0CE55E9B91"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\x64\\Release\\FrameworkShaders\\CubismBlendMode.fx"
             "TargetName" = "8:CubismBlendMode.fx"
             "Tag" = "8:"
-            "Folder" = "8:_C515F4270B0F61622CB11F6B4BEEE570"
+            "Folder" = "8:_45F85E2E1A362108D0BA3FF824B9F83A"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -707,12 +894,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_DE40A93053D09DF83E98F1EBCB4C415C"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_FA0E8CA62966E0751436C29744F2BA61"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\x64\\Release\\FrameworkShaders\\CubismEffect.fx"
             "TargetName" = "8:CubismEffect.fx"
             "Tag" = "8:"
-            "Folder" = "8:_C515F4270B0F61622CB11F6B4BEEE570"
+            "Folder" = "8:_45F85E2E1A362108D0BA3FF824B9F83A"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -727,12 +914,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CAD3CB00A7E5F795F533556BD46DE3B4"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_20F9785A61F952DEC11B9BFB19AA61B5"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\Haru.cdi3.json"
             "TargetName" = "8:Haru.cdi3.json"
             "Tag" = "8:"
-            "Folder" = "8:_2AE7BB7AF5F550776904D3BD516A05E4"
+            "Folder" = "8:_3ED97565CB514232D5F9BDD5873DA308"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -747,12 +934,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B7482C0EC4C22CD3ED00FE5234DAE32A"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_6C38BDD07B25451F8BCB4BC550969F85"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\Haru.moc3"
             "TargetName" = "8:Haru.moc3"
             "Tag" = "8:"
-            "Folder" = "8:_2AE7BB7AF5F550776904D3BD516A05E4"
+            "Folder" = "8:_3ED97565CB514232D5F9BDD5873DA308"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -767,12 +954,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_FC8F62BFB0A9E00BEFA03E3025176631"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5895D450846E36D1F8CEB407FAE5E533"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\Haru.model3.json"
             "TargetName" = "8:Haru.model3.json"
             "Tag" = "8:"
-            "Folder" = "8:_2AE7BB7AF5F550776904D3BD516A05E4"
+            "Folder" = "8:_3ED97565CB514232D5F9BDD5873DA308"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -787,12 +974,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_FE251524C5AD2BFC414A46728F9C7423"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_3A88D8E745FDACEB99C1495CD9FC8724"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\Haru.physics3.json"
             "TargetName" = "8:Haru.physics3.json"
             "Tag" = "8:"
-            "Folder" = "8:_2AE7BB7AF5F550776904D3BD516A05E4"
+            "Folder" = "8:_3ED97565CB514232D5F9BDD5873DA308"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -807,12 +994,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_1D5592E28C1E444B68DF0C02D10AC931"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_1900CAC7B25D8C27BB35A5C09B8232EF"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\Haru.pose3.json"
             "TargetName" = "8:Haru.pose3.json"
             "Tag" = "8:"
-            "Folder" = "8:_2AE7BB7AF5F550776904D3BD516A05E4"
+            "Folder" = "8:_3ED97565CB514232D5F9BDD5873DA308"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -827,12 +1014,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_40F5F01D31128D4BAE2838A242CB1A48"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_ED856B7818AF58A996B56AB9D12E3F7B"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\Haru.userdata3.json"
             "TargetName" = "8:Haru.userdata3.json"
             "Tag" = "8:"
-            "Folder" = "8:_2AE7BB7AF5F550776904D3BD516A05E4"
+            "Folder" = "8:_3ED97565CB514232D5F9BDD5873DA308"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -847,12 +1034,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_DBA439C0A49DC3287A57C8A0E2D526C5"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_40A2579BF0943F6543818DDDB4AFCA30"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\expressions\\F01.exp3.json"
             "TargetName" = "8:F01.exp3.json"
             "Tag" = "8:"
-            "Folder" = "8:_02DF0965B885943B9FFDADC7D286A087"
+            "Folder" = "8:_43E06CAB984CFCA3014CA24D2A70F482"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -867,12 +1054,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_45238D2AB6D795817DF56066E9A775A3"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4EFA5BF5F31B7799E58AB2998EB9B625"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\expressions\\F02.exp3.json"
             "TargetName" = "8:F02.exp3.json"
             "Tag" = "8:"
-            "Folder" = "8:_02DF0965B885943B9FFDADC7D286A087"
+            "Folder" = "8:_43E06CAB984CFCA3014CA24D2A70F482"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -887,12 +1074,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_6E4E2FDE7845158479522CFBB0ACD671"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_E807B7CC961A2BED158C86518EE344B5"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\expressions\\F03.exp3.json"
             "TargetName" = "8:F03.exp3.json"
             "Tag" = "8:"
-            "Folder" = "8:_02DF0965B885943B9FFDADC7D286A087"
+            "Folder" = "8:_43E06CAB984CFCA3014CA24D2A70F482"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -907,12 +1094,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_ECBA7DFFF6DF3DB954696827260D3246"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_04287267AB285B0FF99EA9BFF262ED94"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\expressions\\F04.exp3.json"
             "TargetName" = "8:F04.exp3.json"
             "Tag" = "8:"
-            "Folder" = "8:_02DF0965B885943B9FFDADC7D286A087"
+            "Folder" = "8:_43E06CAB984CFCA3014CA24D2A70F482"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -927,12 +1114,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_225FEF9ACA0FDAD0A182576B6163EBF6"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C94F2D71F23EEFF594B95D9238B11449"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\expressions\\F05.exp3.json"
             "TargetName" = "8:F05.exp3.json"
             "Tag" = "8:"
-            "Folder" = "8:_02DF0965B885943B9FFDADC7D286A087"
+            "Folder" = "8:_43E06CAB984CFCA3014CA24D2A70F482"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -947,12 +1134,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_1A91C5C4AAFDF1B390F212110F345B94"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D2B3A29AB3208C210889E91EF1B0A28E"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\expressions\\F06.exp3.json"
             "TargetName" = "8:F06.exp3.json"
             "Tag" = "8:"
-            "Folder" = "8:_02DF0965B885943B9FFDADC7D286A087"
+            "Folder" = "8:_43E06CAB984CFCA3014CA24D2A70F482"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -967,12 +1154,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B6BC055831173A3764881F0BE2739405"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_17CA8594427747416AAA137111BC4400"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\expressions\\F07.exp3.json"
             "TargetName" = "8:F07.exp3.json"
             "Tag" = "8:"
-            "Folder" = "8:_02DF0965B885943B9FFDADC7D286A087"
+            "Folder" = "8:_43E06CAB984CFCA3014CA24D2A70F482"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -987,12 +1174,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_96F31635AD42DAC11DA0EDE3FB7DBB72"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C60315043E27C1F2C940D5F2204F7B41"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\expressions\\F08.exp3.json"
             "TargetName" = "8:F08.exp3.json"
             "Tag" = "8:"
-            "Folder" = "8:_02DF0965B885943B9FFDADC7D286A087"
+            "Folder" = "8:_43E06CAB984CFCA3014CA24D2A70F482"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1007,12 +1194,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CEE4A69499600CF8B4F3D34641F28DDD"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_6F5C5EBA4CB33F0B85D9AF9623BB43DF"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\Haru.2048\\texture_00.png"
             "TargetName" = "8:texture_00.png"
             "Tag" = "8:"
-            "Folder" = "8:_3B261D6475AA9843DEE967B072DF1D62"
+            "Folder" = "8:_C494DE63CB653A492533A8315233F3EF"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1027,12 +1214,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_0CA2E40C61B3B30B6BE44BA0E5B382FB"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_516CEE4E20047158453385B05FF6D938"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\Haru.2048\\texture_01.png"
             "TargetName" = "8:texture_01.png"
             "Tag" = "8:"
-            "Folder" = "8:_3B261D6475AA9843DEE967B072DF1D62"
+            "Folder" = "8:_C494DE63CB653A492533A8315233F3EF"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1047,12 +1234,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_3B44BCE11DB1064E75ED47B4B8911434"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_155D0A6308049C73DD58F596D4635034"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_idle.motion3.json"
             "TargetName" = "8:haru_g_idle.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1067,12 +1254,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D243EF81CBDB0130BCECDA3EF4DF13B9"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_197C48A10AB7997D4982DBF671F27FF3"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m01.motion3.json"
             "TargetName" = "8:haru_g_m01.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1087,12 +1274,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_6578135DAC9A77E92951EF2A10642E2B"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_48CD61D3D2CAB92CD03B37B24E36C614"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m02.motion3.json"
             "TargetName" = "8:haru_g_m02.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1107,12 +1294,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_EF7DE96267447F61F3EC3DDECDC21DD2"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_45AC6CF5AAD2028EFFF11E942E87FA77"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m03.motion3.json"
             "TargetName" = "8:haru_g_m03.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1127,12 +1314,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_9DE5627B9C848AB05C8A6A7DAF921B2F"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_EADDF487ACA7EB01033679127CD16F6C"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m04.motion3.json"
             "TargetName" = "8:haru_g_m04.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1147,12 +1334,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_13243A4B6A08ED2C1E6A61247F6D1053"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_BBD0FF3970B7C392857897E96D18215F"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m05.motion3.json"
             "TargetName" = "8:haru_g_m05.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1167,12 +1354,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_0F7F70C0389AD624F4A3C882489DE9F0"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C7733C67A9A5E1E39DBA3C3ADE438527"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m06.motion3.json"
             "TargetName" = "8:haru_g_m06.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1187,12 +1374,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C6BA2F9D15B0C61D82C3B4D87D3E15FE"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C91A212DB643511A5C221AD3BD6F0953"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m07.motion3.json"
             "TargetName" = "8:haru_g_m07.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1207,12 +1394,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_660A7E604F07FA1589A5477BBAE3E6E6"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_9734BA105CBD9E43D7CFA35C5794F829"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m08.motion3.json"
             "TargetName" = "8:haru_g_m08.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1227,12 +1414,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2BAD4F59C629DFFDDF17437080389211"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B38C24F0455869A4DCAC719E2DE5455A"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m09.motion3.json"
             "TargetName" = "8:haru_g_m09.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1247,12 +1434,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_050F85E0B21735586CAF74FAF67D1A28"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CE21F8EAD6D0AC40049525709B373AAB"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m10.motion3.json"
             "TargetName" = "8:haru_g_m10.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1267,12 +1454,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_195F74EC9367D9F021E2C4305B1B6AA2"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5A4E63C19D68026A3873D7A84541D3C1"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m11.motion3.json"
             "TargetName" = "8:haru_g_m11.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1287,12 +1474,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_849335E15DDC7AAEEE87FD347946F3D6"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_BD216F8B9A23475DAA3447EC8315EEFF"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m12.motion3.json"
             "TargetName" = "8:haru_g_m12.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1307,12 +1494,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CBA7A26CDAD48D84489FC47013922C5C"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_6DAD43B45FD0C6DC21D629187BCEF02E"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m13.motion3.json"
             "TargetName" = "8:haru_g_m13.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1327,12 +1514,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_00613142CE3F4270364E27CA75FD4838"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_E48B716E3872ACB0E489184C760BCAAE"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m14.motion3.json"
             "TargetName" = "8:haru_g_m14.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1347,12 +1534,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_087BECD56D7DFAB1AFD44BE456583E30"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_3F659ABDE66E3525F808DE9ED1955338"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m15.motion3.json"
             "TargetName" = "8:haru_g_m15.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1367,12 +1554,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_454CF73D54EC03341F8864167CB999E9"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_26E5CD16A0AE853F326687790DD33C53"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m16.motion3.json"
             "TargetName" = "8:haru_g_m16.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1387,12 +1574,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_388B570DB443431E72A2BA705DDC1EC6"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A6B6CEB6C2A71D53A6885250C540EB11"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m17.motion3.json"
             "TargetName" = "8:haru_g_m17.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1407,12 +1594,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_8288111B1C1BC8E2B2EA6501CE1B1858"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B2E4BC8086F2EA161FCA48C893FA6B40"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m18.motion3.json"
             "TargetName" = "8:haru_g_m18.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1427,12 +1614,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B817D661138AC5F879AF936332B5CAFA"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_E27EA4B35B07F4979BDD2A120EFB4DA1"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m19.motion3.json"
             "TargetName" = "8:haru_g_m19.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1447,12 +1634,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_313660D10F1058223D5E5E45F1DE78A9"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_3E771131957CDB037DD905F5C9F7AEDC"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m20.motion3.json"
             "TargetName" = "8:haru_g_m20.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1467,12 +1654,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_65F87071CDF799E01822C39C3635EC37"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_7D14745A842A76396C819DB89A5C7512"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m21.motion3.json"
             "TargetName" = "8:haru_g_m21.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1487,12 +1674,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_6ECC09C3DB3CDD10D85E902339B8EC8B"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_16615A55C1EC6D54535012876E6FDF4C"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m22.motion3.json"
             "TargetName" = "8:haru_g_m22.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1507,12 +1694,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_021D50D66E919DB7566F654DFDDBECE0"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_97B4B54C6FC853C5FB7B6549A09A42E1"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m23.motion3.json"
             "TargetName" = "8:haru_g_m23.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1527,12 +1714,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_6844BE0563CAAEB3671843B46AA34746"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_55640C0056D645D10D0A12718362C9AD"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m24.motion3.json"
             "TargetName" = "8:haru_g_m24.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1547,12 +1734,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_1A9ECD71CB8EEC6E1FF852330762BF11"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_DEA69A828AD43F554469087FBC26BA88"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m25.motion3.json"
             "TargetName" = "8:haru_g_m25.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1567,12 +1754,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_66F5CF0B4E4BD1369F474AE025B52446"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5C051DA7E005DFF9AAE6E11D33436032"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\motions\\haru_g_m26.motion3.json"
             "TargetName" = "8:haru_g_m26.motion3.json"
             "Tag" = "8:"
-            "Folder" = "8:_5A90E9B37A2A084996720660F83F5D3F"
+            "Folder" = "8:_C50E6E50C3DF38DA2D9C6E4F3069738F"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1587,12 +1774,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_8B1E96ECF66488465131C0AD4F0659EE"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_60E86A0674394517DC28AB6F59016898"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\sounds\\haru_Info_04.wav"
             "TargetName" = "8:haru_Info_04.wav"
             "Tag" = "8:"
-            "Folder" = "8:_18E1FA68D7525A2DA231606C56E594FE"
+            "Folder" = "8:_F42AE78BCB650E38DFFA6EB432644992"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1607,12 +1794,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CBBA9950620B2BF8223031C7FE2840E7"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_7E447B9C3EC51FF349EDBCD0284522B9"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\sounds\\haru_Info_14.wav"
             "TargetName" = "8:haru_Info_14.wav"
             "Tag" = "8:"
-            "Folder" = "8:_18E1FA68D7525A2DA231606C56E594FE"
+            "Folder" = "8:_F42AE78BCB650E38DFFA6EB432644992"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1627,12 +1814,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_EAE5BCA5FA15A49E35C41D2272D61904"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A0491889C3DBD0C561CB1F4135DA9A90"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\sounds\\haru_normal_6.wav"
             "TargetName" = "8:haru_normal_6.wav"
             "Tag" = "8:"
-            "Folder" = "8:_18E1FA68D7525A2DA231606C56E594FE"
+            "Folder" = "8:_F42AE78BCB650E38DFFA6EB432644992"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1647,12 +1834,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_8A0D7F9986DEB265A935382AACBA1FA1"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_E556268F295B82236A17EF374DC7EC42"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\Haru\\sounds\\haru_talk_13.wav"
             "TargetName" = "8:haru_talk_13.wav"
             "Tag" = "8:"
-            "Folder" = "8:_18E1FA68D7525A2DA231606C56E594FE"
+            "Folder" = "8:_F42AE78BCB650E38DFFA6EB432644992"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1667,12 +1854,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4E3B43977A0DC823C3F1A26BBBF7D024"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_8D20D48D6E34241300E4B7EDED35FBEF"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\wuwuwu\\icon.png"
             "TargetName" = "8:icon.png"
             "Tag" = "8:"
-            "Folder" = "8:_CEB85A97F677DDCEB4E5422D88409405"
+            "Folder" = "8:_1637DABA41E677764E0A5EC5B1057D71"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1687,12 +1874,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_E982D6A4B3F134C024383A4D59E51F59"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D168FE9AEC1597BC258D95F1A29EDD72"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\wuwuwu\\wuwuwu.cdi3.json"
             "TargetName" = "8:wuwuwu.cdi3.json"
             "Tag" = "8:"
-            "Folder" = "8:_CEB85A97F677DDCEB4E5422D88409405"
+            "Folder" = "8:_1637DABA41E677764E0A5EC5B1057D71"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1707,12 +1894,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_7A217C9D50AB52B528A4664585470238"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_989344A751B1C59DD23CC5978A961727"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\wuwuwu\\wuwuwu.moc3"
             "TargetName" = "8:wuwuwu.moc3"
             "Tag" = "8:"
-            "Folder" = "8:_CEB85A97F677DDCEB4E5422D88409405"
+            "Folder" = "8:_1637DABA41E677764E0A5EC5B1057D71"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1727,12 +1914,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_F0E2456B6012BA7D7B864F470C71E386"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_9306ED35F9AB26E032472CD12D62C9C0"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\wuwuwu\\wuwuwu.model3.json"
             "TargetName" = "8:wuwuwu.model3.json"
             "Tag" = "8:"
-            "Folder" = "8:_CEB85A97F677DDCEB4E5422D88409405"
+            "Folder" = "8:_1637DABA41E677764E0A5EC5B1057D71"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1747,12 +1934,12 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C7C0FE56415A02F80C5128F6FAEBEBD1"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_F0659026E793BDE19144860A124AF04E"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\wuwuwu\\wuwuwu.physics3.json"
             "TargetName" = "8:wuwuwu.physics3.json"
             "Tag" = "8:"
-            "Folder" = "8:_CEB85A97F677DDCEB4E5422D88409405"
+            "Folder" = "8:_1637DABA41E677764E0A5EC5B1057D71"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1767,12 +1954,632 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_0C9020AB32D459B98EDF2AACE3E47542"
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D2D279958E4BC7C1C1A91C6D04C96991"
             {
             "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\Unnamedbot\\models\\wuwuwu\\wuwuwu.8192\\texture_00.png"
             "TargetName" = "8:texture_00.png"
             "Tag" = "8:"
-            "Folder" = "8:_8DABA988D9532BBE5C80FA444F1B3F24"
+            "Folder" = "8:_FA72A51C30BF74173F77DB63BF0D6B16"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_04B025103BDD457692DEC13F39815098"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:readme.rtf"
+            "Tag" = "8:"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_0A1B5ED9C13F4957B53F2FABB1F43332"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:welcome.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_0D49CA199F4B43F28E8011C27AAA14A8"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:icon.png"
+            "Tag" = "8:"
+            "Folder" = "8:_CC1F04C61B6D4525B063FADAF0E86FBD"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_0EDA226BA17B4F2B86AC67E80021E680"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:begin.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2699C82C012A4C1D8DF68B718581307E"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:button.png"
+            "Tag" = "8:"
+            "Folder" = "8:_34BFDFE849DA4F8A890823F2624CF07D"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2A7F8FCCF5204B60A727F22B9EE2259D"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:quit.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2DFFB3C05694D8E1082240D452FC5506"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:ucrtbased.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_2FFB7F47BC858DED522027D9812BEFD6"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:MSVCP140D.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4357974FCBC24261B57D4147DB66BA78"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:dirty_ice.png"
+            "Tag" = "8:"
+            "Folder" = "8:_E1E58D5C1FF2426982C887163FE50EE1"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4B5110172F4F4656965804FA19783BC7"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:setb.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4D61B75DE6BA41A7BA331CEAC6DC6A6A"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:broken_ice.png"
+            "Tag" = "8:"
+            "Folder" = "8:_E1E58D5C1FF2426982C887163FE50EE1"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_61DD47B28AB93FEA2348A8CA1A0D4453"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:simplekit.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_62257BC503334F6798570F867F95E623"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:beginb.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_63C7C890E0B7446DB1993B6E250853E0"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:new_save.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_77C209264D08E6B9BD45CC917BF5D0AD"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:VCRUNTIME140D.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_78D4DA7C1A97412FA182B8FC1917A28B"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:quita.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_797E309167E94699A1BDC14744A3AEC8"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:snow.png"
+            "Tag" = "8:"
+            "Folder" = "8:_E1E58D5C1FF2426982C887163FE50EE1"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_8B64A4699327456290BB8EBE0AAED001"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:begina.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_93AFA6EE947E4298A412077A59CC16ED"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:quitb.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A0332F6363F540A4B16962DC47903D52"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:lynn_r.png"
+            "Tag" = "8:"
+            "Folder" = "8:_D294028932704F6B873DB1A817E052A5"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A426BC2A65F244599C9EE4AABB99CD88"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:icon.ico"
+            "Tag" = "8:"
+            "Folder" = "8:_CC1F04C61B6D4525B063FADAF0E86FBD"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A6CC3F2D1F3541988C6F4D0B80617729"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:water.png"
+            "Tag" = "8:"
+            "Folder" = "8:_E1E58D5C1FF2426982C887163FE50EE1"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A8AA2EBBF25B4D28AC9B120229FF7F09"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:saveb.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B1B5260CD143441A82E6D32A78FA30C2"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:light_ice.png"
+            "Tag" = "8:"
+            "Folder" = "8:_E1E58D5C1FF2426982C887163FE50EE1"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B9B03EDAF16C4970981DB66230D33A2F"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:button_c.png"
+            "Tag" = "8:"
+            "Folder" = "8:_34BFDFE849DA4F8A890823F2624CF07D"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CF69F2DDB9D94620B64903E4F1C807C3"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:set.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_DCFCE86877B64E04B8C36C6BA3474333"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:ice.png"
+            "Tag" = "8:"
+            "Folder" = "8:_E1E58D5C1FF2426982C887163FE50EE1"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_EC85200039024A35ACB676356E56CCDE"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:seta.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_F0F97738AA39426DA7AF4C1C17D12F72"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:savea.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_F2028E587553487B8BE1409B634213EA"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:lynn_l.png"
+            "Tag" = "8:"
+            "Folder" = "8:_D294028932704F6B873DB1A817E052A5"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_FC06323E58034190BD5998AB38173861"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\redist\\placeholder.txt"
+            "TargetName" = "8:save.png"
+            "Tag" = "8:"
+            "Folder" = "8:_C052A5BEE63E4280A6F73D7E117CDFD0"
             "Condition" = "8:"
             "Transitive" = "11:FALSE"
             "Vital" = "11:TRUE"
@@ -1788,14 +2595,12 @@
             "IsolateTo" = "8:"
             }
         }
-
         "FileType"
         {
         }
-
         "Folder"
         {
-            "{1525181F-901A-416C-8A58-119130FE478E}:_BC33309A2846FB6E89A4830B06A438E0"
+            "{1525181F-901A-416C-8A58-119130FE478E}:_4113B741D9B0441EB13B363A9D28CD4F"
             {
             "Name" = "8:#1916"
             "AlwaysCreate" = "11:FALSE"
@@ -1806,7 +2611,7 @@
                 {
                 }
             }
-            "{1525181F-901A-416C-8A58-119130FE478E}:_D78699990D30E93F6E9FD0390F6D7484"
+            "{1525181F-901A-416C-8A58-119130FE478E}:_EE72ECEFA0F04648A4D771537BCC0B7F"
             {
             "Name" = "8:#1919"
             "AlwaysCreate" = "11:FALSE"
@@ -1817,7 +2622,7 @@
                 {
                 }
             }
-            "{3C67513D-01DD-4637-8A68-80971EB9504F}:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "{3C67513D-01DD-4637-8A68-80971EB9504F}:_FA9A25086211416BA6A7C2976EEB4C02"
             {
             "DefaultLocation" = "8:[LocalAppDataFolder]Programs\\UnnamedBot"
             "Name" = "8:#1925"
@@ -1827,120 +2632,174 @@
             "Property" = "8:TARGETDIR"
                 "Folders"
                 {
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_C515F4270B0F61622CB11F6B4BEEE570"
-                    {
-                    "Name" = "8:FrameworkShaders"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_12A8E26E51952BCF6E44C3E1611C180A"
-                        "Folders"
+                        "{9EF0B969-E518-4E46-987F-47570745A589}:_45F85E2E1A362108D0BA3FF824B9F83A"
                         {
+                            "Name" = "8:FrameworkShaders"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_1336D60C199BAB23BD74BC31817CE612"
+                                "Folders"
+                                {
+                                }
                         }
-                    }
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_9DFB086F9A3A80008CA4DFE3FF49738E"
-                    {
-                    "Name" = "8:models"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_616119C12429DF24CEB6F7BC5B47308B"
-                        "Folders"
+                        "{9EF0B969-E518-4E46-987F-47570745A589}:_1C596ED0E066A703DD4E401291BF91AA"
                         {
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_2AE7BB7AF5F550776904D3BD516A05E4"
-                    {
-                    "Name" = "8:Haru"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_1DB6C715070713130EDB5256D5D03C55"
-                        "Folders"
-                        {
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_3B261D6475AA9843DEE967B072DF1D62"
-                    {
-                    "Name" = "8:Haru.2048"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_80A1DE763F6403428838162DF949A368"
-                        "Folders"
-                        {
+                            "Name" = "8:models"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_104E2E8C07CCAF6CBFF6DFF3F13BC74A"
+                                "Folders"
+                                {
+                                    "{9EF0B969-E518-4E46-987F-47570745A589}:_3ED97565CB514232D5F9BDD5873DA308"
+                                    {
+                                        "Name" = "8:Haru"
+                                        "AlwaysCreate" = "11:FALSE"
+                                        "Condition" = "8:"
+                                        "Transitive" = "11:FALSE"
+                                        "Property" = "8:_39B002E266D0406303FE1EC97F82A84B"
+                                            "Folders"
+                                            {
+                                                "{9EF0B969-E518-4E46-987F-47570745A589}:_C494DE63CB653A492533A8315233F3EF"
+                                                {
+                                                    "Name" = "8:Haru.2048"
+                                                    "AlwaysCreate" = "11:FALSE"
+                                                    "Condition" = "8:"
+                                                    "Transitive" = "11:FALSE"
+                                                    "Property" = "8:_9A1B3D7F6B8DB12EBC171941BE4C94D4"
+                                                        "Folders"
+                                                        {
+                                                        }
+                                                }
+                                                "{9EF0B969-E518-4E46-987F-47570745A589}:_43E06CAB984CFCA3014CA24D2A70F482"
+                                                {
+                                                    "Name" = "8:expressions"
+                                                    "AlwaysCreate" = "11:FALSE"
+                                                    "Condition" = "8:"
+                                                    "Transitive" = "11:FALSE"
+                                                    "Property" = "8:_B0B6D667123A609B1F962EDCDF6C13DB"
+                                                        "Folders"
+                                                        {
+                                                        }
+                                                }
+                                                "{9EF0B969-E518-4E46-987F-47570745A589}:_C50E6E50C3DF38DA2D9C6E4F3069738F"
+                                                {
+                                                    "Name" = "8:motions"
+                                                    "AlwaysCreate" = "11:FALSE"
+                                                    "Condition" = "8:"
+                                                    "Transitive" = "11:FALSE"
+                                                    "Property" = "8:_D93E630D21E330735B241B41B6E85648"
+                                                        "Folders"
+                                                        {
+                                                        }
+                                                }
+                                                "{9EF0B969-E518-4E46-987F-47570745A589}:_F42AE78BCB650E38DFFA6EB432644992"
+                                                {
+                                                    "Name" = "8:sounds"
+                                                    "AlwaysCreate" = "11:FALSE"
+                                                    "Condition" = "8:"
+                                                    "Transitive" = "11:FALSE"
+                                                    "Property" = "8:_96003C729923230757D07AFD79A067F4"
+                                                        "Folders"
+                                                        {
+                                                        }
+                                                }
+                                            }
+                                    }
+                                    "{9EF0B969-E518-4E46-987F-47570745A589}:_1637DABA41E677764E0A5EC5B1057D71"
+                                    {
+                                        "Name" = "8:wuwuwu"
+                                        "AlwaysCreate" = "11:FALSE"
+                                        "Condition" = "8:"
+                                        "Transitive" = "11:FALSE"
+                                        "Property" = "8:_CDF820F1177E0C6979D750752A8DFE35"
+                                            "Folders"
+                                            {
+                                                "{9EF0B969-E518-4E46-987F-47570745A589}:_FA72A51C30BF74173F77DB63BF0D6B16"
+                                                {
+                                                    "Name" = "8:wuwuwu.8192"
+                                                    "AlwaysCreate" = "11:FALSE"
+                                                    "Condition" = "8:"
+                                                    "Transitive" = "11:FALSE"
+                                                    "Property" = "8:_800F68578095D68F702C72B4F5B3D081"
+                                                        "Folders"
+                                                        {
+                                                        }
+                                                }
+                                            }
+                                    }
+                                }
                         }
-                    }
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_02DF0965B885943B9FFDADC7D286A087"
+                        "{9EF0B969-E518-4E46-987F-47570745A589}:_A64B29E1EE1926AF6B42424D2A27B98D"
+                        {
+                            "Name" = "8:redists"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_C6534DE13F70B808864E997D2AFAE9F9"
+                                "Folders"
+                                {
+                                }
+                        }
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_CC1F04C61B6D4525B063FADAF0E86FBD"
                     {
-                    "Name" = "8:expressions"
+                    "Name" = "8:images"
                     "AlwaysCreate" = "11:FALSE"
                     "Condition" = "8:"
                     "Transitive" = "11:FALSE"
-                    "Property" = "8:_E327254CF40F546AAC2002AE75A6C422"
+                    "Property" = "8:_55ADCD2E3EA44DD8819C41CD2D63C0A3"
                         "Folders"
                         {
-                        }
-                    }
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_5A90E9B37A2A084996720660F83F5D3F"
-                    {
-                    "Name" = "8:motions"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_464069EB72CF72E2910938CCAF8DE5F3"
-                        "Folders"
-                        {
-                        }
-                    }
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_18E1FA68D7525A2DA231606C56E594FE"
-                    {
-                    "Name" = "8:sounds"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_63E6B3F967CBA31AA0229CEA54F188DE"
-                        "Folders"
-                        {
-                        }
-                    }
-                        }
-                    }
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_CEB85A97F677DDCEB4E5422D88409405"
-                    {
-                    "Name" = "8:wuwuwu"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_1D3C7C31E7F5C90368AD37A32DAB0356"
-                        "Folders"
-                        {
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_8DABA988D9532BBE5C80FA444F1B3F24"
-                    {
-                    "Name" = "8:wuwuwu.8192"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_C774ACB1ED8CACF4D32A760895720716"
-                        "Folders"
-                        {
-                        }
-                    }
-                        }
-                    }
-                        }
-                    }
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_8CE6368F11B76912C23B27968A43103D"
-                    {
-                    "Name" = "8:redists"
-                    "AlwaysCreate" = "11:FALSE"
-                    "Condition" = "8:"
-                    "Transitive" = "11:FALSE"
-                    "Property" = "8:_AAFA82059FD3E3A878634B595F854616"
-                        "Folders"
-                        {
+                            "{9EF0B969-E518-4E46-987F-47570745A589}:_34BFDFE849DA4F8A890823F2624CF07D"
+                            {
+                            "Name" = "8:gen"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_05041758CEAF40659181937AB1CF64C6"
+                                "Folders"
+                                {
+                                }
+                            }
+                            "{9EF0B969-E518-4E46-987F-47570745A589}:_C052A5BEE63E4280A6F73D7E117CDFD0"
+                            {
+                            "Name" = "8:gui"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_809008E0393E4DC7A3B603A0B79172D9"
+                                "Folders"
+                                {
+                                }
+                            }
+                            "{9EF0B969-E518-4E46-987F-47570745A589}:_D294028932704F6B873DB1A817E052A5"
+                            {
+                            "Name" = "8:cha"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_3F93E41CAE51434C83FEB3927E9A8ADC"
+                                "Folders"
+                                {
+                                }
+                            }
+                            "{9EF0B969-E518-4E46-987F-47570745A589}:_E1E58D5C1FF2426982C887163FE50EE1"
+                            {
+                            "Name" = "8:blk"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_59AEAA22F8D94B998853644196FB694C"
+                                "Folders"
+                                {
+                                }
+                            }
                         }
                     }
                 }
             }
         }
-
         "LaunchCondition"
         {
         }
@@ -1956,23 +2815,23 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:UnnamedBot"
-        "ProductCode" = "8:{9F2B7C41-3E5A-4D18-9C77-5B1E0A2D6F31}"
+        "ProductCode" = "8:{04C94CF2-4C11-44FE-A02C-32C3110FB290}"
         "PackageCode" = "8:{22DEAC15-FE61-4946-A31C-12A84E56D292}"
-        "UpgradeCode" = "8:{4A7D1E93-6C02-4B85-A1F4-8E3D2C7B5A09}"
+        "UpgradeCode" = "8:{948ABB79-40D4-463B-822F-3E575F49ADCA}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
-        "RemovePreviousVersions" = "11:TRUE"
+        "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
         "ProductVersion" = "8:1.0.0"
-        "Manufacturer" = "8:UnnamedBot"
+        "Manufacturer" = "8:HP"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
-        "Title" = "8:UnnamedBot"
+        "Title" = "8:AEZSetup"
         "Subject" = "8:"
-        "ARPCONTACT" = "8:UnnamedBot"
+        "ARPCONTACT" = "8:HP"
         "Keywords" = "8:"
-        "ARPCOMMENTS" = "8:AI 桌宠中控"
+        "ARPCOMMENTS" = "8:"
         "ARPURLINFOABOUT" = "8:"
         "ARPPRODUCTICON" = "8:"
         "ARPIconIndex" = "3:0"
@@ -1983,7 +2842,6 @@
         "PostBuildEvent" = "8:"
         "RunPostBuildEvent" = "3:0"
         }
-
         "Registry"
         {
         }
@@ -1991,10 +2849,9 @@
         "Sequences"
         {
         }
-
         "Shortcut"
         {
-            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_8B00C0DC240897C8EF72F84EB7E65AD7"
+            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_A2BC153818A440E39D29F985ED08C337"
             {
             "Name" = "8:UnnamedBot"
             "Arguments" = "8:"
@@ -2002,13 +2859,13 @@
             "ShowCmd" = "3:1"
             "IconIndex" = "3:0"
             "Transitive" = "11:FALSE"
-            "Target" = "8:_51A64603578832AA9C0986EDD3115764"
-            "Folder" = "8:_D78699990D30E93F6E9FD0390F6D7484"
-            "WorkingFolder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Target" = "8:_0372DCD451EAA1F09450C01370E6220F"
+            "Folder" = "8:_EE72ECEFA0F04648A4D771537BCC0B7F"
+            "WorkingFolder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Icon" = "8:"
             "Feature" = "8:"
             }
-            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_159C34BC96F65B0397A9C4C6FAD82B53"
+            "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_FCD7EE3B5298451A870470A4A7CD9D88"
             {
             "Name" = "8:UnnamedBot"
             "Arguments" = "8:"
@@ -2016,14 +2873,13 @@
             "ShowCmd" = "3:1"
             "IconIndex" = "3:0"
             "Transitive" = "11:FALSE"
-            "Target" = "8:_51A64603578832AA9C0986EDD3115764"
-            "Folder" = "8:_BC33309A2846FB6E89A4830B06A438E0"
-            "WorkingFolder" = "8:_2DE8C5CE7F88A57D6761E0EDA90981A3"
+            "Target" = "8:_0372DCD451EAA1F09450C01370E6220F"
+            "Folder" = "8:_4113B741D9B0441EB13B363A9D28CD4F"
+            "WorkingFolder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
             "Icon" = "8:"
             "Feature" = "8:"
             }
         }
-
         "UserInterface"
         {
             "{2479F3F5-0309-486D-8047-8187E2CE5BA0}:_1D05C209FD6943119DCAD9F5C60468ED"
@@ -2464,15 +3320,32 @@
                 }
             }
         }
-
         "MergeModule"
         {
         }
-
-
         "ProjectOutput"
         {
-        }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A2A469982B70688F9E89EB0C4C1B4483"
+            {
+            "SourcePath" = "8:D:\\VSProject\\Unnamedbot\\UnnamedBotSetup\\README-安装说明.txt"
+            "TargetName" = "8:README-安装说明.txt"
+            "Tag" = "8:"
+            "Folder" = "8:_FA9A25086211416BA6A7C2976EEB4C02"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
 
+        }
     }
 }
