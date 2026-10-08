@@ -4,4 +4,5 @@
     <Platform Name="x86" />
   </Configurations>
   <Project Path="Unnamedbot/Unnamedbot.vcxproj" Id="7e64d87f-f6cf-421f-b19f-61d7f7f50b6d" />
+  <Project Path="UnnamedBotSetup/UnnamedBotSetup.vdproj" Type="Installer" />
 </Solution>
