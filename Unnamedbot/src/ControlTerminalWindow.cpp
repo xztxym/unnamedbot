@@ -294,6 +294,9 @@ namespace UnnamedBot {
         // ===== 卡片 02：采样参数 =====
         const ControlTerminalWindow::FieldDef kSamplingFields[] = {
             // 性能：老设备上把帧间隔 / 掩码间隔调大即可明显降低占用；低配模式一键切到省电档
+            // 系统弹窗：右下角托盘气泡。嫌吵可整体关掉，或只关掉「每条新消息都弹」
+            { "notification.enabled",            L"系统弹窗", L"NOTIFICATIONS", L"右下角气泡提示总开关", FieldKind::Bool, L"true", nullptr, false, 0 },
+            { "notification.notify_new_message", L"新消息弹窗", L"NEW MESSAGE POPUP", L"每条新消息都弹一条气泡", FieldKind::Bool, L"true", nullptr, false, 0 },
             { "performance.low_end",             L"低配模式", L"LOW END MODE", L"一键降低帧率与日志开销", FieldKind::Bool,   L"false", nullptr, false, 0 },
             { "performance.frame_interval_ms",   L"帧间隔",   L"FRAME INTERVAL", L"毫秒；100≈10FPS，越大越省", FieldKind::Int, L"100", nullptr, false, 160 },
             { "performance.hitmask_every_frames", L"命中检测间隔", L"HITMASK EVERY", L"每 N 帧读回一次命中掩码", FieldKind::Int, L"3", nullptr, false, 160 },

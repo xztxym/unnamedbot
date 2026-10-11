@@ -144,6 +144,12 @@ namespace UnnamedBot {
         // 日志级别（debug/info/warn/error）与控制台输出
         static const std::string KEY_LOG_LEVEL;
         static const std::string KEY_LOG_CONSOLE;
+
+        // ---- 系统弹窗（右下角托盘气泡）----
+        // 总开关；关掉后所有系统弹窗都不再出现（桌宠气泡与控制中枢不受影响）
+        static const std::string KEY_NOTIFY_ENABLED;
+        // 每条新消息都弹一条太吵，单独给一个开关
+        static const std::string KEY_NOTIFY_NEW_MESSAGE;
         static const std::string KEY_UI_THEME;  // "light", "dark", "system"
         static const std::string KEY_HOTKEY_TOGGLE_MESSAGEBOX;
         static const std::string KEY_HOTKEY_TOGGLE_TOPMOST;

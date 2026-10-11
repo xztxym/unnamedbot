@@ -1,5 +1,6 @@
 #include "../include/MCPTool.h"
 #include "../include/Live2DManager.h"
+#include "../include/TrayIcon.h"
 #include "../include/Logger.h"
 #include "../include/ConfigManager.h"
 #include "../include/Utils.h"
@@ -647,10 +648,22 @@ namespace UnnamedBot {
             // 使用Windows通知（系统托盘气球提示）
             // 这里简化，使用MessageBox作为替代
             // 实际应使用托盘通知
-            MessageBoxW(nullptr,
-                std::wstring(text.begin(), text.end()).c_str(),
-                std::wstring(title.begin(), title.end()).c_str(),
-                MB_OK | MB_ICONINFORMATION);
+            if (!ConfigManager::Instance().GetBool(ConfigManager::KEY_NOTIFY_ENABLED, true)) {
+                // 用户关掉了系统弹窗：明确告诉她，免得她以为发送成功而反复重试
+                result.success = true;
+                result.content = "系统弹窗已被用户关闭，这条通知没有弹出来。";
+                return result;
+            }
+
+            // 走右下角托盘气泡：非阻塞，也不再是以前那个 Modal MessageBox。
+            // 编码必须用 Utils::Utf8ToWide —— 原来的 std::wstring(text.begin(), text.end())
+            // 会把 UTF-8 按字节塞进 wchar_t，中文全是乱码。
+            TrayIcon::Instance().ShowNotification(
+                Utils::Utf8ToWide(title),
+                Utils::Utf8ToWide(text),
+                NIIF_INFO,
+                5000);
+
 
             result.content = "Notification sent: " + text;
             result.data["title"] = title;

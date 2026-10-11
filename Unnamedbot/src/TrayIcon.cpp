@@ -142,6 +142,12 @@ namespace UnnamedBot {
         DWORD infoFlags,
         DWORD timeout
     ) {
+        // 系统弹窗总开关（设置 → 通知）：关掉后所有托盘气泡都不再弹，
+        // 桌宠自己的气泡与控制中枢不受影响。
+        if (!ConfigManager::Instance().GetBool(ConfigManager::KEY_NOTIFY_ENABLED, true)) {
+            LOG_DEBUG("TrayIcon", "System notifications are disabled by config; skipped.");
+            return;
+        }
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 
         if (!initialized_) {

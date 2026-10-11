@@ -639,13 +639,18 @@ namespace UnnamedBot {
         // 设置消息处理器回调
         MessageHandler::Instance().OnNewMessage([](const ConversationMessage& msg) {
             LOG_DEBUG("AppCore", "New message: " + msg.content.substr(0, 50) + "...");
-            // 通知托盘有新消息
-            TrayIcon::Instance().ShowNotification(
-                L"New Message",
-                std::wstring(msg.content.begin(), msg.content.end()).c_str(),
-                NIIF_INFO,
-                3000
-            );
+            // 通知托盘有新消息。
+            // 以前这里是 std::wstring(content.begin(), content.end())，把 UTF-8 按字节
+            // 塞进 wchar_t，中文必然乱码 —— 右下角那个乱码弹窗就是它。
+            // 必须走 Utils::Utf8ToWide 做真正的编码转换。
+            if (ConfigManager::Instance().GetBool(ConfigManager::KEY_NOTIFY_NEW_MESSAGE, true)) {
+                TrayIcon::Instance().ShowNotification(
+                    L"桌宠",
+                    Utils::Utf8ToWide(msg.content),
+                    NIIF_INFO,
+                    3000
+                );
+            }
             });
 
         MessageHandler::Instance().OnTriggerReply([](const std::string& reply) {
