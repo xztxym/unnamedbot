@@ -37,6 +37,26 @@ namespace UnnamedBot {
         // 获取所有已加载模型ID列表
         std::vector<std::string> GetLoadedModelIds() const;
 
+        // ---- 让 AI 自主驱动自己：任意导入模型的能力清单与切换 ----
+        // 能力不写死在代码里，而是逐个读模型自带的 model3.json / cdi3.json，
+        // 所以用户往 models\ 里丢任何模型，AI 都能立刻知道它有哪些动作、表情、参数。
+        struct ModelCapability {
+            std::string id;
+            std::vector<std::string> motions;      // 动作组名（model3.json 的 FileReferences.Motions 键）
+            std::vector<std::string> expressions;  // 表情名
+            std::vector<std::string> parameters;   // 参数 id（模型带 cdi3.json 时才有）
+            std::vector<std::string> parameterNames;  // 与 parameters 一一对应的显示名（便于按语义挑）
+            bool loaded = false;
+            bool current = false;
+        };
+        std::vector<ModelCapability> ListModelCapabilities();
+
+        // 按 id 切换：没加载过就按扫描到的路径加载（运行中新放进来的模型也能直接用）
+        bool SwitchModelById(const std::string& modelId);
+
+        // 当前模型 id（没有模型时为空串）
+        std::string GetCurrentModelId() const;
+
         // 检查模型是否已加载
         bool IsModelLoaded(const std::string& modelId) const;
 

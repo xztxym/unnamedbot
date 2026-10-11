@@ -1,4 +1,5 @@
 #include "../include/MCPTool.h"
+#include "../include/Live2DManager.h"
 #include "../include/Logger.h"
 #include "../include/ConfigManager.h"
 #include "../include/Utils.h"
@@ -39,6 +40,239 @@ namespace UnnamedBot {
         LOG_DEBUG("MCPToolManager", "Registered tool: " + name);
     }
 
+    // ============================================================
+    // Live2D：让 AI 自主驱动自己
+    // ------------------------------------------------------------
+    // 动作组、表情、参数都从模型文件里现读，不写死任何名字 —— 用户把任意 L2D
+    // 模型丢进 models\ 目录，AI 就能用 live2d_models 看到它有什么，再用对应工具去用。
+    // 换模型时会卸载其余模型，避免内存越吃越多。
+    // ============================================================
+
+    namespace {
+        std::string DescribeCapabilities(const std::vector<Live2DManager::ModelCapability>& caps) {
+            if (caps.empty()) {
+                return "models 目录里没有找到可用的 Live2D 模型。";
+            }
+            std::ostringstream oss;
+            oss << "已导入 " << caps.size() << " 个模型：";
+            for (const auto& c : caps) {
+                oss << "\n- " << c.id;
+                if (c.current) oss << "（当前）";
+                if (c.motions.empty()) {
+                    oss << " · 无动作";
+                } else {
+                    oss << " · 动作: ";
+                    for (size_t i = 0; i < c.motions.size(); ++i) oss << (i ? ", " : "") << c.motions[i];
+                }
+                if (!c.expressions.empty()) {
+                    oss << " · 表情: ";
+                    for (size_t i = 0; i < c.expressions.size(); ++i) oss << (i ? ", " : "") << c.expressions[i];
+                }
+                if (!c.parameters.empty()) {
+                    oss << " · 参数 " << c.parameters.size() << " 个（live2d_set_parameter 可调，例如 ";
+                    for (size_t i = 0; i < c.parameters.size() && i < 4; ++i) {
+                        oss << (i ? ", " : "") << c.parameters[i];
+                        if (i < c.parameterNames.size() && !c.parameterNames[i].empty() &&
+                            c.parameterNames[i] != c.parameters[i]) {
+                            oss << "（" << c.parameterNames[i] << "）";
+                        }
+                    }
+                    oss << " …）";
+                }
+            }
+            return oss.str();
+        }
+
+        nlohmann::json CapsToJson(const std::vector<Live2DManager::ModelCapability>& caps) {
+            nlohmann::json arr = nlohmann::json::array();
+            for (const auto& c : caps) {
+                arr.push_back({
+                    { "id", c.id }, { "current", c.current }, { "loaded", c.loaded },
+                    { "motions", c.motions }, { "expressions", c.expressions },
+                    { "parameters", c.parameters },
+                    { "parameter_names", c.parameterNames },
+                });
+            }
+            return arr;
+        }
+    } // namespace
+
+    std::string Live2DListModelsTool::GetName() const { return "live2d_models"; }
+    std::string Live2DListModelsTool::GetDescription() const {
+        return "列出已导入的 Live2D 模型，以及每个模型自带的动作组、表情与参数名。改变自己的样子之前先用它看清楚有什么。";
+    }
+    nlohmann::json Live2DListModelsTool::GetParametersSchema() const { return nlohmann::json::object(); }
+    MCPToolResult Live2DListModelsTool::Execute(const nlohmann::json&) {
+        MCPToolResult result;
+        const auto caps = Live2DManager::Instance().ListModelCapabilities();
+        result.success = true;
+        result.content = DescribeCapabilities(caps);
+        result.data = { { "models", CapsToJson(caps) } };
+        return result;
+    }
+
+    std::string Live2DSwitchModelTool::GetName() const { return "live2d_switch_model"; }
+    std::string Live2DSwitchModelTool::GetDescription() const {
+        return "把自己换成另一个已导入的 Live2D 模型（id 用 live2d_models 查）。换模型会卸载其他模型以省内存。";
+    }
+    nlohmann::json Live2DSwitchModelTool::GetParametersSchema() const {
+        return { { "model_id", { { "type", "string" }, { "description", "模型 id，即 models 目录下的文件夹名" } } } };
+    }
+    MCPToolResult Live2DSwitchModelTool::Execute(const nlohmann::json& parameters) {
+        MCPToolResult result;
+        const std::string modelId = parameters.value("model_id", std::string());
+        if (modelId.empty()) {
+            result.success = false;
+            result.error = "缺少 model_id";
+            return result;
+        }
+        if (!Live2DManager::Instance().SwitchModelById(modelId)) {
+            result.success = false;
+            result.error = "切换失败：模型不存在或加载出错 " + modelId;
+            return result;
+        }
+        result.success = true;
+        result.content = "已经换成 " + modelId + "。\n" +
+            DescribeCapabilities(Live2DManager::Instance().ListModelCapabilities());
+        return result;
+    }
+
+    std::string Live2DPlayMotionTool::GetName() const { return "live2d_play_motion"; }
+    std::string Live2DPlayMotionTool::GetDescription() const {
+        return "播放当前模型的一个动作组（名字取自 live2d_models 列出的 motions）。";
+    }
+    nlohmann::json Live2DPlayMotionTool::GetParametersSchema() const {
+        return {
+            { "group", { { "type", "string" }, { "description", "动作组名" } } },
+            { "loop", { { "type", "boolean" }, { "description", "是否循环，默认 false" } } },
+        };
+    }
+    MCPToolResult Live2DPlayMotionTool::Execute(const nlohmann::json& parameters) {
+        MCPToolResult result;
+        const std::string group = parameters.value("group", std::string());
+        const bool loop = parameters.value("loop", false);
+        if (group.empty()) {
+            result.success = false;
+            result.error = "缺少 group";
+            return result;
+        }
+        if (!Live2DManager::Instance().PlayMotion(group, loop)) {
+            result.success = false;
+            result.error = "这个模型没有名为 " + group + " 的动作组（先用 live2d_models 看看有哪些）";
+            return result;
+        }
+        result.success = true;
+        result.content = "正在播放动作：" + group;
+        return result;
+    }
+
+    std::string Live2DSetExpressionTool::GetName() const { return "live2d_set_expression"; }
+    std::string Live2DSetExpressionTool::GetDescription() const {
+        return "换一个表情（名字取自 live2d_models 列出的 expressions）。";
+    }
+    nlohmann::json Live2DSetExpressionTool::GetParametersSchema() const {
+        return { { "name", { { "type", "string" }, { "description", "表情名" } } } };
+    }
+    MCPToolResult Live2DSetExpressionTool::Execute(const nlohmann::json& parameters) {
+        MCPToolResult result;
+        const std::string name = parameters.value("name", std::string());
+        if (name.empty()) {
+            result.success = false;
+            result.error = "缺少 name";
+            return result;
+        }
+        if (!Live2DManager::Instance().PlayExpression(name)) {
+            result.success = false;
+            result.error = "这个模型没有名为 " + name + " 的表情（先用 live2d_models 看看有哪些）";
+            return result;
+        }
+        result.success = true;
+        result.content = "表情已切换：" + name;
+        return result;
+    }
+
+    std::string Live2DSetTransformTool::GetName() const { return "live2d_set_transform"; }
+    std::string Live2DSetTransformTool::GetDescription() const {
+        return "调整自己的位置、大小与透明度（想凑近、想缩到角落、想淡出时用）。位置是画布坐标，0 居中，范围约 -1~1。";
+    }
+    nlohmann::json Live2DSetTransformTool::GetParametersSchema() const {
+        return {
+            { "x", { { "type", "number" }, { "description", "水平位置，0 居中，约 -1~1" } } },
+            { "y", { { "type", "number" }, { "description", "垂直位置，0 居中，约 -1~1" } } },
+            { "scale", { { "type", "number" }, { "description", "缩放，1 为原始大小" } } },
+            { "opacity", { { "type", "number" }, { "description", "不透明度 0~1" } } },
+        };
+    }
+    MCPToolResult Live2DSetTransformTool::Execute(const nlohmann::json& parameters) {
+        MCPToolResult result;
+        auto& l2d = Live2DManager::Instance();
+        if (parameters.contains("x") || parameters.contains("y")) {
+            float x = 0.0f;
+            float y = 0.0f;
+            l2d.GetModelPosition(x, y);
+            if (parameters.contains("x")) x = parameters["x"].get<float>();
+            if (parameters.contains("y")) y = parameters["y"].get<float>();
+            l2d.SetModelPosition(x, y);
+        }
+        if (parameters.contains("scale")) {
+            l2d.SetModelScale(parameters["scale"].get<float>());
+        }
+        if (parameters.contains("opacity")) {
+            l2d.SetModelOpacity(parameters["opacity"].get<float>());
+        }
+        result.success = true;
+        result.content = "位置与形态已调整。";
+        return result;
+    }
+
+    std::string Live2DSetParameterTool::GetName() const { return "live2d_set_parameter"; }
+    std::string Live2DSetParameterTool::GetDescription() const {
+        return "直接设置当前模型的某个参数值（最通用的一招，能做动作表情覆盖不到的事：歪头、眼神、嘴型等）。参数名用 live2d_models 列出的。";
+    }
+    nlohmann::json Live2DSetParameterTool::GetParametersSchema() const {
+        return {
+            { "id", { { "type", "string" }, { "description", "参数 id，例如 ParamAngleX" } } },
+            { "value", { { "type", "number" }, { "description", "参数值，多数参数范围 -30~30 或 0~1" } } },
+        };
+    }
+    MCPToolResult Live2DSetParameterTool::Execute(const nlohmann::json& parameters) {
+        MCPToolResult result;
+        const std::string id = parameters.value("id", std::string());
+        if (id.empty() || !parameters.contains("value")) {
+            result.success = false;
+            result.error = "需要 id 与 value";
+            return result;
+        }
+        auto model = Live2DManager::Instance().GetCurrentModel();
+        if (!model) {
+            result.success = false;
+            result.error = "当前没有模型";
+            return result;
+        }
+        const float value = parameters["value"].get<float>();
+        model->SetParameterValue(id, value);
+        result.success = true;
+        result.content = "参数 " + id + " 已设为 " + std::to_string(value);
+        return result;
+    }
+
+    std::string Live2DResetTool::GetName() const { return "live2d_reset"; }
+    std::string Live2DResetTool::GetDescription() const {
+        return "停止所有动作并把参数恢复默认（想变回平常的样子时用）。";
+    }
+    nlohmann::json Live2DResetTool::GetParametersSchema() const { return nlohmann::json::object(); }
+    MCPToolResult Live2DResetTool::Execute(const nlohmann::json&) {
+        MCPToolResult result;
+        Live2DManager::Instance().StopAllMotions();
+        auto model = Live2DManager::Instance().GetCurrentModel();
+        if (model) {
+            model->ResetParameters();
+        }
+        result.success = true;
+        result.content = "已经回到平常的样子。";
+        return result;
+    }
+
     void MCPToolManager::RegisterDefaultTools() {
         RegisterTool(std::make_shared<GetCurrentTimeTool>());
         RegisterTool(std::make_shared<GetFrontendProcessesTool>());
@@ -46,6 +280,14 @@ namespace UnnamedBot {
         RegisterTool(std::make_shared<GetScreenCaptureTool>());
         RegisterTool(std::make_shared<OpenUrlTool>());
         RegisterTool(std::make_shared<SendNotificationTool>());
+        // Live2D 自主控制：换模型、放动作、换表情、调形态与参数
+        RegisterTool(std::make_shared<Live2DListModelsTool>());
+        RegisterTool(std::make_shared<Live2DSwitchModelTool>());
+        RegisterTool(std::make_shared<Live2DPlayMotionTool>());
+        RegisterTool(std::make_shared<Live2DSetExpressionTool>());
+        RegisterTool(std::make_shared<Live2DSetTransformTool>());
+        RegisterTool(std::make_shared<Live2DSetParameterTool>());
+        RegisterTool(std::make_shared<Live2DResetTool>());
         LOG_INFO("MCPToolManager", "Registered default tools.");
     }
 

@@ -84,6 +84,65 @@ namespace UnnamedBot {
     // ============ 具体工具实现 ============
 
     // 1. 获取当前时间
+    // ---- Live2D：让 AI 自己决定「长什么样、在做什么」----
+    // 能力来自每个模型自带的 model3.json / cdi3.json，因此任意导入的模型都能被驱动。
+
+    class Live2DListModelsTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
+    class Live2DSwitchModelTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
+    class Live2DPlayMotionTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
+    class Live2DSetExpressionTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
+    class Live2DSetTransformTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
+    class Live2DSetParameterTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
+    class Live2DResetTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
     class GetCurrentTimeTool : public MCPToolBase {
     public:
         std::string GetName() const override { return "get_current_time"; }

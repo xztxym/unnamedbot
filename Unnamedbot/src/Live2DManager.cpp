@@ -534,6 +534,137 @@ namespace {
         }
     }
 
+    std::string Live2DManager::GetCurrentModelId() const {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        return currentModelId_;
+    }
+
+    std::vector<Live2DManager::ModelCapability> Live2DManager::ListModelCapabilities() {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        std::vector<ModelCapability> result;
+        const std::filesystem::path root = Utils::ResolveAppRelative(L"models");
+        std::error_code ec;
+        if (!std::filesystem::exists(root, ec)) {
+            LOG_WARN("Live2DManager", "Model directory not found while listing capabilities.");
+            return result;
+        }
+
+        for (const auto& entry : std::filesystem::directory_iterator(root, ec)) {
+            if (ec || !entry.is_directory()) {
+                continue;
+            }
+            const std::wstring dirName = entry.path().filename().wstring();
+            const std::filesystem::path modelJson = entry.path() / (dirName + L".model3.json");
+            if (!std::filesystem::exists(modelJson, ec)) {
+                continue;   // 不是模型目录
+            }
+
+            ModelCapability caps;
+            caps.id = Utils::PathToUtf8(dirName);
+            caps.loaded = IsModelLoaded(caps.id);
+            caps.current = (caps.id == currentModelId_);
+
+            // 读 model3.json：动作组与表情清单
+            try {
+                std::ifstream in(modelJson);
+                nlohmann::json doc;
+                in >> doc;
+                const nlohmann::json refs = doc.value("FileReferences", nlohmann::json::object());
+                if (refs.contains("Motions") && refs["Motions"].is_object()) {
+                    for (auto it = refs["Motions"].begin(); it != refs["Motions"].end(); ++it) {
+                        caps.motions.push_back(it.key());
+                    }
+                }
+                if (refs.contains("Expressions") && refs["Expressions"].is_array()) {
+                    for (const auto& e : refs["Expressions"]) {
+                        if (e.contains("Name")) {
+                            caps.expressions.push_back(e["Name"].get<std::string>());
+                        }
+                    }
+                }
+            }
+            catch (const std::exception& e) {
+                LOG_WARN("Live2DManager", std::string("Failed to parse model3.json: ") + e.what());
+            }
+
+            // 读 cdi3.json：参数 id 清单（有些模型没有这个文件）
+            try {
+                const std::filesystem::path cdi = entry.path() / (dirName + L".cdi3.json");
+                if (std::filesystem::exists(cdi, ec)) {
+                    std::ifstream in(cdi);
+                    nlohmann::json doc;
+                    in >> doc;
+                    if (doc.contains("Parameters") && doc["Parameters"].is_array()) {
+                        for (const auto& p : doc["Parameters"]) {
+                            if (p.contains("Id")) {
+                                caps.parameters.push_back(p["Id"].get<std::string>());
+                                caps.parameterNames.push_back(
+                                    p.contains("Name") ? p["Name"].get<std::string>() : std::string());
+                            }
+                        }
+                    }
+                }
+            }
+            catch (const std::exception& e) {
+                LOG_WARN("Live2DManager", std::string("Failed to parse cdi3.json: ") + e.what());
+            }
+
+            result.push_back(std::move(caps));
+        }
+
+        std::sort(result.begin(), result.end(),
+            [](const ModelCapability& a, const ModelCapability& b) { return a.id < b.id; });
+        return result;
+    }
+
+    bool Live2DManager::SwitchModelById(const std::string& modelId) {
+        if (modelId.empty()) {
+            return false;
+        }
+
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex_);
+            if (!IsModelLoaded(modelId)) {
+                const std::filesystem::path root = Utils::ResolveAppRelative(L"models");
+                const std::wstring wide(modelId.begin(), modelId.end());
+                const std::filesystem::path modelJson = root / wide / (wide + L".model3.json");
+                std::error_code ec;
+                if (!std::filesystem::exists(modelJson, ec)) {
+                    LOG_WARN("Live2DManager", "SwitchModelById: model not found: " + modelId);
+                    return false;
+                }
+                // 加载会自动把新模型切成当前模型
+                if (!LoadModel(modelId, modelJson.wstring())) {
+                    return false;
+                }
+            }
+        }
+
+        if (!SwitchModel(modelId)) {
+            return false;
+        }
+
+        // 只留当前模型：换模型不该把内存越吃越多（wuwuwu 这种大贴图尤其明显）
+        {
+            std::lock_guard<std::recursive_mutex> lock(mutex_);
+            std::vector<std::string> stale;
+            for (const auto& pair : models_) {
+                if (pair.first != modelId) {
+                    stale.push_back(pair.first);
+                }
+            }
+            for (const auto& id : stale) {
+                UnloadModel(id);
+            }
+            if (!stale.empty()) {
+                LOG_INFO("Live2DManager", "Unloaded " + std::to_string(stale.size()) +
+                    " inactive model(s) after switching.");
+            }
+        }
+        return true;
+    }
+
     void Live2DManager::ScanModelDirectory() {
         // 扫描模型目录，自动加载所有模型
         if (!std::filesystem::exists(modelDirectory_)) {

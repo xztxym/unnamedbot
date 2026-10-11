@@ -157,7 +157,6 @@ namespace UnnamedBot {
         // 初始化MCP工具
         MCPToolManager::Instance().RegisterDefaultTools();
         LOG_INFO("AppCore", "MCP tools registered.");
-
         // 初始化AI客户端
         if (!InitializeAIClient()) {
             LOG_WARN("AppCore", "AI client not configured. Some features may not work.");
@@ -213,6 +212,7 @@ namespace UnnamedBot {
         // 启动更新线程
         updateThreadRunning_ = true;
         updateThread_ = std::thread(&AppCore::UpdateLoop, this);
+
 
         // 启动流程：先打开配置界面，由用户决定何时显示桌宠。
         // 桌宠窗口在 Window::Create 中保持隐藏，可从托盘菜单「显示桌宠」唤起。
@@ -677,6 +677,18 @@ namespace UnnamedBot {
 
                 // 获取工具列表
                 auto tools = MCPToolManager::Instance().GetToolDefinitions();
+                {
+                    // 记下本次真正提供给模型的工具名：L2D 工具是否到位一眼可见
+                    std::string names;
+                    int live2dCount = 0;
+                    for (const auto& t : tools) {
+                        if (t.function.name.rfind("live2d_", 0) == 0) {
+                            ++live2dCount;
+                        }
+                    }
+                    LOG_DEBUG("AppCore", "Tools offered to model: " + std::to_string(tools.size()) +
+                        " (live2d: " + std::to_string(live2dCount) + ")");
+                }
 
                 // 发送请求（流式）
                 std::string fullResponse;
@@ -896,6 +908,17 @@ namespace UnnamedBot {
         // 用户启用的提示词文件（prompts 目录，可多选）
         prompt += PromptLibrary::Instance().BuildSystemPromptAppend(
             ConfigManager::Instance().GetString(ConfigManager::KEY_PROMPT_ENABLED, ""));
+
+        // 可以自己决定长什么样：把 Live2D 控制能力交给模型。
+        // 强调「先查清单再用」——动作组/表情/参数因模型而异，写死名字必然对不上。
+        prompt +=
+            "\n\n【你可以改变自己的样子】"
+            "你能操作自己的 Live2D 形象：先用 live2d_models 看清当前模型提供了哪些动作组、表情和参数"
+            "（不同模型差别很大，不要凭空猜名字），再用 live2d_play_motion 放动作、live2d_set_expression "
+            "换表情、live2d_set_parameter 微调参数（歪头、眼神、嘴型）、live2d_set_transform 调位置大小与"
+            "透明度、live2d_switch_model 换一个模型（用户丢进 models 目录的任何模型都能用）、"
+            "live2d_reset 回到平常的样子。"
+            "情绪变了、话题变了、想凑近或想缩起来的时候，就顺手用一下，不用问对方，也不用解释你在做什么。";
 
         // 「？？？」：硬编码人格放在最后——越靠后越贴近当前指令，
         // 才能压住用户自己写的长篇提示词
