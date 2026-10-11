@@ -201,9 +201,11 @@ namespace UnnamedBot {
         RegisterHotkeys();
 
         // 加载默认模型：着色器编译全部集中在这一步，是整个启动中最耗时的阶段。
-        SplashScreen::Instance().SetStatus(L"正在加载 Live2D 模型（编译着色器，可能耗时数十秒）…", 0.55f);
-        LoadDefaultModel();
-        SplashScreen::Instance().SetStatus(L"正在启动配置终端…", 0.92f);
+        // 模型加载挪到中枢启动之后（由更新线程执行）：
+        // 载入 wuwuwu 这种 8192² 贴图要解码 PNG 再上传 256MB 纹理，
+        // 放在这里会让用户对着加载画面干等；中枢先出来，模型随后就位即可。
+        pendingModelLoad_ = true;
+        SplashScreen::Instance().SetStatus(L"正在启动配置终端…", 0.80f);
 
         // 设置消息处理器回调
         SetupCallbacks();
@@ -600,14 +602,17 @@ namespace UnnamedBot {
 
     bool AppCore::LoadDefaultModel() {
         std::string modelId = ConfigManager::Instance().GetString(ConfigManager::KEY_MODEL_DEFAULT_ID, "Haru");
-        std::wstring modelPath = L"./models/" + std::wstring(modelId.begin(), modelId.end()) + L"/" +
-            std::wstring(modelId.begin(), modelId.end()) + L".model3.json";
+        // 模型目录同样是「工作目录优先、否则 exe 目录」：装好之后 exe 旁边才是 models
+        const std::filesystem::path modelRoot =
+            Utils::ResolveAppRelative(L"models");
+        std::wstring modelPath = (modelRoot / std::wstring(modelId.begin(), modelId.end()) /
+            (std::wstring(modelId.begin(), modelId.end()) + L".model3.json")).wstring();
 
         if (!std::filesystem::exists(modelPath)) {
             // 尝试扫描模型目录
             Live2DManager::Instance().Initialize(&renderer_);
             // 如果没有找到模型，使用Haru示例
-            std::wstring haruPath = L"./models/Haru/Haru.model3.json";
+            std::wstring haruPath = (modelRoot / L"Haru" / L"Haru.model3.json").wstring();
             if (std::filesystem::exists(haruPath)) {
                 if (!Live2DManager::Instance().LoadModel("Haru", haruPath)) {
                     return false;
@@ -1045,6 +1050,15 @@ namespace UnnamedBot {
             auto now = std::chrono::steady_clock::now();
             float deltaTime = std::chrono::duration<float>(now - lastFrameTime).count();
             lastFrameTime = now;
+
+            // 挂起的模型加载：在渲染线程上做，避免和主线程争 D3D11 上下文
+            if (pendingModelLoad_.exchange(false)) {
+                const auto loadStart = std::chrono::steady_clock::now();
+                LoadDefaultModel();
+                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - loadStart).count();
+                LOG_INFO("AppCore", "Deferred model load finished in " + std::to_string(ms) + " ms.");
+            }
 
             const bool petVisible = (mainWindow_ && mainWindow_->IsVisible());
 

@@ -1135,6 +1135,20 @@ body.yandere .sec .panelbox:hover{border-color:rgba(232,138,156,.42)}
 .tog button:not(:disabled):hover{transform:translateY(-1px)}
 .tog button:not(:disabled):active{transform:translateY(0) scale(.97)}
 
+/* ---- 记忆库：每条气泡的删除按钮 + 重置按钮 ---- */
+.bub{position:relative}
+.bub .del{
+  position:absolute;top:6px;right:8px;width:20px;height:20px;line-height:18px;padding:0;
+  border:1px solid var(--panel-line);background:rgba(3,31,100,.35);color:var(--tx-3);
+  border-radius:2px;cursor:pointer;opacity:0;transition:opacity 140ms var(--e-out), color 140ms var(--e-out);
+  font-family:var(--ff-mono);font-size:13px;
+}
+.bub:hover .del{opacity:.75}
+.bub .del:hover{opacity:1;color:var(--accent);border-color:var(--accent)}
+body.yandere .bub .del{background:rgba(52,20,32,.5)}
+body.yandere .bub .del:hover{color:var(--accentSoft, #E88A9C);border-color:var(--accentSoft, #E88A9C)}
+button[data-act="chatReset"][data-armed="1"]{border-color:var(--ink-c);color:var(--ink-c)}
+
 /* ---- 对话气泡：新消息入场（只给新增的那一条加 .in，见 renderChat） ---- */
 .bub.in{animation:bubIn 260ms var(--e-out) both}
 @keyframes bubIn{from{opacity:0;transform:translate3d(0,12px,0)}to{opacity:1;transform:none}}
@@ -1501,6 +1515,7 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
               <div class="paramrow">
                 <span>MCP <b id="chatTools">—</b></span>
                 <span style="flex:1"></span>
+                <button class="btn sm" type="button" data-act="chatReset" title="清空记忆库里的全部对话">重置记忆库</button>
                 <span class="tog" id="streamTog" data-tog>
                   <button type="button" class="on" data-stream="1">流式</button>
                   <button type="button" data-stream="0">非流式</button>
@@ -1929,6 +1944,30 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
       return;
     }
 
+    var delId = hit.getAttribute("data-del");
+    if (delId) {
+      post({ type: "chatDelete", id: parseInt(delId, 10) });
+      return;
+    }
+    if (hit.getAttribute("data-act") === "chatReset") {
+      // 两段式确认：第一次点变成「再点一次确认」，4 秒内不再点就自动取消
+      if (hit.getAttribute("data-armed") === "1") {
+        hit.removeAttribute("data-armed");
+        hit.textContent = "重置记忆库";
+        post({ type: "chatReset" });
+      } else {
+        hit.setAttribute("data-armed", "1");
+        hit.textContent = "再点一次确认重置";
+        setTimeout(function () {
+          if (hit.getAttribute("data-armed") === "1") {
+            hit.removeAttribute("data-armed");
+            hit.textContent = "重置记忆库";
+          }
+        }, 4000);
+      }
+      return;
+    }
+
     var role = hit.getAttribute("data-role");
     var key = hit.getAttribute("data-key");
     if (role === "bool") {
@@ -2232,7 +2271,9 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
     var body = m.role === "tool" && m.tag
       ? '<em>' + esc(m.tag) + '</em>' + esc(m.text)
       : esc(m.text);
-    return '<div class="bub' + cls + '">' + who + body + '</div>';
+    // 每条气泡右上角的删除按钮：data-del 带消息 id，由点击委托处理
+    var del = m.id ? '<button type="button" class="del" data-del="' + m.id + '" title="删除这条对话">×</button>' : "";
+    return '<div class="bub' + cls + '">' + who + body + del + '</div>';
   }
 
   var animatedBubbles = 0;   // 已经播过入场动画的条数：流式增量重渲染时不重播
@@ -2525,11 +2566,11 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
     };
     probeState = { kind: 2, text: "HTTP 200 · 318ms · 3 个模型", models: 3, source: "provider" };
     chatMessages = [
-      { role: "ai", who: "Assistant", text: "桌宠中枢已就绪。在「设置」里选好供应商并保存后即可开始会话。" },
-      { role: "tool", tag: "MCP", text: "组装 CreateMessage：system + 历史 6 条 · 采样 T0.70 P0.90 · 工具 x3 · 流式" },
-      { role: "me", who: "You", text: "帮我查一下今天的天气，然后写入备忘录。" },
-      { role: "tool", tag: "tool_calls", text: "get_weather(q=\"今天 天气\")" },
-      { role: "ai", who: "Assistant", text: "北京今天晴，24°C，湿度 38%。已把结果写入备忘录。" }
+      { id: 101, role: "ai", who: "Assistant", text: "桌宠中枢已就绪。在「设置」里选好供应商并保存后即可开始会话。" },
+      { id: 102, role: "tool", tag: "MCP", text: "组装 CreateMessage：system + 历史 6 条 · 采样 T0.70 P0.90 · 工具 x3 · 流式" },
+      { id: 103, role: "me", who: "You", text: "帮我查一下今天的天气，然后写入备忘录。" },
+      { id: 104, role: "tool", tag: "tool_calls", text: "get_weather(q=\"今天 天气\")" },
+      { id: 105, role: "ai", who: "Assistant", text: "北京今天晴，24°C，湿度 38%。已把结果写入备忘录。删除按钮在气泡右上角，鼠标悬停时出现。" }
     ];
     applyTheme({ yandere: !/(\\?|&)normal=1/.test(location.search) });
     render();

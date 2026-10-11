@@ -948,6 +948,8 @@ namespace UnnamedBot {
                 { "role", role },
                 { "who", role == "me" ? "You" : (role == "tool" ? "Tool" : "Assistant") },
                 { "text", message.content },
+                // 带上消息 id：中枢里可以据此删除单条对话
+                { "id", message.id },
             });
         }
 
@@ -1175,6 +1177,29 @@ namespace UnnamedBot {
 
         if (type == "chatNew" || type == "chatResume") {
             PushChatHistory();
+            return;
+        }
+
+        if (type == "chatDelete") {
+            // 删除记忆库里的一条对话：删库 + 清缓存，随后把新的历史推回页面
+            const int64_t messageId = message.value("id", static_cast<int64_t>(0));
+            if (messageId > 0) {
+                MessageHandler::Instance().DeleteMessage(messageId);
+                LOG_INFO("ControlTerminal", "Deleted message " + std::to_string(messageId) + " from hub UI.");
+                SendChatHistory();
+                SetStatus(L"已删除这条对话", 1);
+                SendStatusOnly();
+            }
+            return;
+        }
+
+        if (type == "chatReset") {
+            // 重置记忆库：清空全部对话（会话本身保留）
+            MessageHandler::Instance().ClearAllMessages();
+            LOG_INFO("ControlTerminal", "Memory bank reset from hub UI.");
+            SendChatHistory();
+            SetStatus(L"记忆库已重置", 1);
+            SendStatusOnly();
             return;
         }
 

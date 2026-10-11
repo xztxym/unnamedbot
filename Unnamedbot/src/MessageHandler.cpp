@@ -244,6 +244,17 @@ namespace UnnamedBot {
         return true;
     }
 
+    bool MessageHandler::ClearAllMessages() {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        Database::Instance().Execute("DELETE FROM messages;", {});
+        for (auto& pair : sessions_) {
+            pair.second->messages.clear();
+        }
+        LOG_INFO("MessageHandler", "Memory bank reset: all messages cleared.");
+        return true;
+    }
+
     bool MessageHandler::ClearSessionMessages(int64_t sessionId) {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 

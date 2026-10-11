@@ -519,26 +519,11 @@ namespace {
         float scale = ConfigManager::Instance().GetDouble(ConfigManager::KEY_MODEL_DEFAULT_SCALE, 1.0);
         float opacity = ConfigManager::Instance().GetDouble(ConfigManager::KEY_MODEL_DEFAULT_OPACITY, 1.0);
 
-        // 如果模型未加载，尝试加载
+        // 这里**不加载**：首次加载要编译 Live2D 着色器（本机实测二十多秒），
+        // 放在 Initialize 里会让中枢窗口迟迟出不来。参数的恢复照旧，
+        // 真正的加载交给 AppCore 在中枢起来之后于渲染线程上执行。
         if (!IsModelLoaded(modelId)) {
-            // 扫描模型目录查找该模型
-            std::wstring modelPath = modelDirectory_ + L"/" + std::wstring(modelId.begin(), modelId.end()) + L"/" +
-                std::wstring(modelId.begin(), modelId.end()) + L".model3.json";
-            if (std::filesystem::exists(modelPath)) {
-                LoadModel(modelId, modelPath);
-            }
-            else {
-                // 尝试加载默认模型（如果存在）
-                LOG_WARN("Live2DManager", "Model not found: " + modelId + ", trying to load Haru.");
-                std::wstring haruPath = modelDirectory_ + L"/Haru/Haru.model3.json";
-                if (std::filesystem::exists(haruPath)) {
-                    LoadModel("Haru", haruPath);
-                }
-                else {
-                    LOG_ERROR("Live2DManager", "No default model found.");
-                    return;
-                }
-            }
+            LOG_INFO("Live2DManager", "Model load deferred to post-startup: " + modelId);
         }
 
         if (currentModel_) {
@@ -566,13 +551,15 @@ namespace {
                         // 只加载配置里选定的那个模型。以前是把目录下所有模型都载进来，
                         // 于是 Haru 与 wuwuwu 同时常驻 —— 后者是 8192x8192 贴图，
                         // 光这一项就白吃两百多 MB 内存/显存，老设备上很致命。
+                        // 这里**不再加载**：首次编译 Live2D 着色器要十几秒，
+                        // 放在 Initialize 里做等于让用户对着加载画面干等。
+                        // 真正的加载由 AppCore 在中枢窗口起来之后、于渲染线程上执行
+                        // （见 AppCore::pendingModelLoad_ 与 LoadDefaultModel）。
                         const std::string wanted = ConfigManager::Instance().GetString(
                             ConfigManager::KEY_MODEL_DEFAULT_ID, "");
-                        if (!wanted.empty() && modelName != wanted) {
-                            LOG_DEBUG("Live2DManager", "Skipping non-active model: " + modelName);
-                            continue;
+                        if (wanted.empty() || modelName == wanted) {
+                            LOG_INFO("Live2DManager", "Model deferred (will load after startup): " + modelName);
                         }
-                        LoadModel(modelName, modelPath);
                     }
                 }
             }

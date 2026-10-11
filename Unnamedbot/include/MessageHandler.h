@@ -103,6 +103,10 @@ namespace UnnamedBot {
         // 清空会话消息
         bool ClearSessionMessages(int64_t sessionId);
 
+        // 重置记忆库：清空全部会话的消息（会话本身保留），供中枢「重置记忆库」使用。
+        // （单条删除用的是本就存在的 DeleteMessage，见下方「删除单条消息」。）
+        bool ClearAllMessages();
+
         // ============ 消息管理 ============
 
         // 添加消息到当前会话

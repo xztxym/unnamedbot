@@ -192,6 +192,10 @@ namespace UnnamedBot {
         // 截屏分析进行中：一次没跑完就跳过这一轮，不叠请求
         std::atomic<bool> screenshotInFlight_ = false;
 
+        // 模型加载挂起标记：Initialize 里只置位，真正的加载放到更新线程的第一帧，
+        // 这样配置中枢窗口不必等模型（8192² 贴图解码+上传很慢）。
+        std::atomic<bool> pendingModelLoad_ = false;
+
         std::chrono::steady_clock::time_point nextProcessCheck_{};
         std::chrono::steady_clock::time_point nextWeatherCheck_{};
         std::chrono::steady_clock::time_point nextScreenshotCheck_{};
