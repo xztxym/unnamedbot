@@ -54,6 +54,13 @@ namespace UnnamedBot {
     const std::string ConfigManager::KEY_ATTACHMENT_TOTAL_QUOTA_MB = "attachment.total_quota_mb";
     const std::string ConfigManager::KEY_ATTACHMENT_RETENTION_DAYS = "attachment.retention_days";
 
+const std::string ConfigManager::KEY_PERF_FRAME_INTERVAL_MS = "performance.frame_interval_ms";
+const std::string ConfigManager::KEY_PERF_HITMASK_EVERY = "performance.hitmask_every_frames";
+const std::string ConfigManager::KEY_PERF_SAVE_INTERVAL = "performance.save_interval_seconds";
+const std::string ConfigManager::KEY_PERF_LOW_END = "performance.low_end";
+const std::string ConfigManager::KEY_LOG_LEVEL = "logging.level";
+const std::string ConfigManager::KEY_LOG_CONSOLE = "logging.console";
+
     const std::string ConfigManager::KEY_LOGS_RETENTION_DAYS = "logs.retention_days";
 
     const std::string ConfigManager::KEY_UI_THEME = "ui.theme";
@@ -314,6 +321,13 @@ namespace UnnamedBot {
             {KEY_ATTACHMENT_TOTAL_QUOTA_MB, "500"},
             {KEY_ATTACHMENT_RETENTION_DAYS, "30"},
             {KEY_LOGS_RETENTION_DAYS, "30"},
+            // —— 性能：老设备上把帧间隔与掩码读回间隔调大即可显著降低占用 ——
+            {KEY_PERF_FRAME_INTERVAL_MS, "100"},      // 毫秒；100 = 10FPS
+            {KEY_PERF_HITMASK_EVERY, "3"},            // 每 N 帧读回一次命中掩码
+            {KEY_PERF_SAVE_INTERVAL, "30"},           // 秒；状态落库间隔（原为 5 秒）
+            {KEY_PERF_LOW_END, "false"},              // 低配模式开关
+            {KEY_LOG_LEVEL, "info"},                  // 默认 info：debug 在隐藏态会每 100ms 刷一行
+            {KEY_LOG_CONSOLE, "false"},               // 控制台输出默认关闭
             {KEY_UI_THEME, "system"},
             {KEY_HOTKEY_TOGGLE_MESSAGEBOX, "Ctrl+Alt+M"},
             {KEY_HOTKEY_TOGGLE_TOPMOST, "Ctrl+Alt+T"},

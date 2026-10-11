@@ -131,6 +131,19 @@ namespace UnnamedBot {
         static const std::string KEY_ATTACHMENT_TOTAL_QUOTA_MB;
         static const std::string KEY_ATTACHMENT_RETENTION_DAYS;
         static const std::string KEY_LOGS_RETENTION_DAYS;
+
+        // ---- 性能相关（面向较老设备）----
+        // 帧间隔：默认 100ms(10FPS)；老机器 / 低配模式调大即可显著降 CPU 与 GPU 占用
+        static const std::string KEY_PERF_FRAME_INTERVAL_MS;
+        // 命中掩码每 N 帧读回一次：GPU→CPU 同步读回是每帧最贵的一步
+        static const std::string KEY_PERF_HITMASK_EVERY;
+        // 状态落库间隔：默认 30 秒（原为 5 秒，老机器磁盘写入明显）
+        static const std::string KEY_PERF_SAVE_INTERVAL;
+        // 低配模式：一键把上面几项调到省电档，并关闭控制台日志
+        static const std::string KEY_PERF_LOW_END;
+        // 日志级别（debug/info/warn/error）与控制台输出
+        static const std::string KEY_LOG_LEVEL;
+        static const std::string KEY_LOG_CONSOLE;
         static const std::string KEY_UI_THEME;  // "light", "dark", "system"
         static const std::string KEY_HOTKEY_TOGGLE_MESSAGEBOX;
         static const std::string KEY_HOTKEY_TOGGLE_TOPMOST;

@@ -563,7 +563,15 @@ namespace {
                     std::wstring modelPath = entry.path() / (entry.path().filename().wstring() + L".model3.json");
                     if (std::filesystem::exists(modelPath)) {
                         LOG_INFO("Live2DManager", "Found model: " + modelName + " at " + Utils::PathToUtf8(modelPath));
-                        // 加载模型（但不自动切换）
+                        // 只加载配置里选定的那个模型。以前是把目录下所有模型都载进来，
+                        // 于是 Haru 与 wuwuwu 同时常驻 —— 后者是 8192x8192 贴图，
+                        // 光这一项就白吃两百多 MB 内存/显存，老设备上很致命。
+                        const std::string wanted = ConfigManager::Instance().GetString(
+                            ConfigManager::KEY_MODEL_DEFAULT_ID, "");
+                        if (!wanted.empty() && modelName != wanted) {
+                            LOG_DEBUG("Live2DManager", "Skipping non-active model: " + modelName);
+                            continue;
+                        }
                         LoadModel(modelName, modelPath);
                     }
                 }

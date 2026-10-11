@@ -198,7 +198,9 @@ namespace UnnamedBot {
         bool ipCheckedOnce_ = false;   // active.ip_check_on_start：启动时查一次即可
 
         // 状态保存间隔（秒）
-        static const int SAVE_INTERVAL_SECONDS = 5;
+        // 状态落库间隔（秒）。原来是 5 秒，对老机器的磁盘是持续的小写入；
+        // 现在 30 秒一次，并可由 performance.save_interval_seconds 覆盖。
+        static const int SAVE_INTERVAL_SECONDS = 30;
 
         // 窗口类名
         static const wchar_t* WINDOW_CLASS_NAME;

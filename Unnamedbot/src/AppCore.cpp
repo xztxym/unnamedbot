@@ -64,8 +64,20 @@ namespace UnnamedBot {
         // 日志与数据库都按「工作目录优先、否则 exe 目录」解析：
         // 装好之后从快捷方式启动时工作目录不可控，否则 data/logs 会散落到随机位置。
         Logger::Instance().Initialize(Utils::ResolveAppRelative(L"logs").wstring().c_str(), 30);
-        Logger::Instance().SetMinLevel(LogLevel::Debug);
-        Logger::Instance().SetConsoleOutput(true);
+        // 发布版默认 info 级 + 不输出控制台：原来是 debug + 控制台，
+        // 隐藏状态下 UpdateManager 每 100ms 打一行「Check interval not reached」，
+        // 一分钟就是 860 行写盘 —— 老机器上这是实打实的磁盘与 CPU 开销。
+        {
+            const std::string level = Utils::ToLower(
+                ConfigManager::Instance().GetString(ConfigManager::KEY_LOG_LEVEL, "info"));
+            LogLevel parsed = LogLevel::Info;
+            if (level == "debug") parsed = LogLevel::Debug;
+            else if (level == "warn" || level == "warning") parsed = LogLevel::Warn;
+            else if (level == "error" || level == "off" || level == "none") parsed = (level == "error" ? LogLevel::Error : LogLevel::Error);
+            Logger::Instance().SetMinLevel(parsed);
+            Logger::Instance().SetConsoleOutput(
+                ConfigManager::Instance().GetBool(ConfigManager::KEY_LOG_CONSOLE, false));
+        }
         LOG_INFO("AppCore", "Logger initialized.");
 
         // 贴图解码依赖 WIC（COM 组件），因此必须先初始化 COM。
@@ -1003,10 +1015,27 @@ namespace UnnamedBot {
     void AppCore::UpdateLoop() {
         LOG_DEBUG("AppCore", "Update thread started.");
 
-        // 设置定时器间隔
-        const int UPDATE_INTERVAL_MS = 100; // 100ms
-        const int SAVE_INTERVAL_MS = SAVE_INTERVAL_SECONDS * 1000;
-        const int TRIGGER_CHECK_INTERVAL_MS = 1000; // 1 秒：主动触发的计时分辨率（原来是 5 秒）
+        // 帧间隔、命中掩码节奏、落库间隔都做成配置项：
+        // 老设备把帧间隔调大即可线性降低 CPU/GPU 占用，低配模式再降一档。
+        const bool lowEnd = ConfigManager::Instance().GetBool(ConfigManager::KEY_PERF_LOW_END, false);
+        int frameIntervalMs = ConfigManager::Instance().GetInt(
+            ConfigManager::KEY_PERF_FRAME_INTERVAL_MS, lowEnd ? 150 : 100);
+        if (lowEnd) {
+            frameIntervalMs = (std::max)(frameIntervalMs, 150);
+        }
+        frameIntervalMs = (std::clamp)(frameIntervalMs, 33, 1000);   // 30FPS 上限、1FPS 下限
+        const int hitMaskEvery = (std::max)(1, ConfigManager::Instance().GetInt(
+            ConfigManager::KEY_PERF_HITMASK_EVERY, lowEnd ? 6 : 3));
+        const int saveIntervalSeconds = (std::max)(5, ConfigManager::Instance().GetInt(
+            ConfigManager::KEY_PERF_SAVE_INTERVAL, lowEnd ? 60 : 30));
+        const int SAVE_INTERVAL_MS = saveIntervalSeconds * 1000;
+        const int TRIGGER_CHECK_INTERVAL_MS = 1000; // 1 秒：主动触发的计时分辨率
+        // 桌宠隐藏时不再逐帧推进模型/渲染，改为低频巡检
+        const int kHiddenSleepMs = 500;
+        int frameIndex = 0;
+        LOG_INFO("AppCore", "Performance: frame=" + std::to_string(frameIntervalMs) + "ms, hitmaskEvery=" +
+            std::to_string(hitMaskEvery) + ", saveEvery=" + std::to_string(saveIntervalSeconds) +
+            "s, lowEnd=" + (lowEnd ? "on" : "off"));
 
         auto lastSaveTime = std::chrono::steady_clock::now();
         auto lastTriggerCheck = std::chrono::steady_clock::now();
@@ -1017,8 +1046,13 @@ namespace UnnamedBot {
             float deltaTime = std::chrono::duration<float>(now - lastFrameTime).count();
             lastFrameTime = now;
 
-            // 更新Live2D模型
-            Live2DManager::Instance().Update(deltaTime);
+            const bool petVisible = (mainWindow_ && mainWindow_->IsVisible());
+
+            // 桌宠隐藏时不推进模型与物理：这是隐藏态最省的一步。
+            // deltaTime 仍然夹一下，避免重新显示时物理一步跳太远。
+            if (petVisible) {
+                Live2DManager::Instance().Update((std::min)(deltaTime, 0.25f));
+            }
 
             // 更新任务调度器
             TaskScheduler::Instance().Update();
@@ -1039,7 +1073,7 @@ namespace UnnamedBot {
             }
 
             // 渲染（桌宠隐藏时不必绘制，避免无谓占用 GPU）
-            if (mainWindow_ && mainWindow_->IsVisible()) {
+            if (petVisible) {
                 renderer_.BeginFrame();
                 if (IsQuickModeActive()) {
                     // 快速模式：完全不进 Live2D，只在窗口中心画一个圆点。
@@ -1063,14 +1097,19 @@ namespace UnnamedBot {
                 else {
                     Live2DManager::Instance().Render(&renderer_);
                 }
-                // 命中掩码必须在画完、Present 之前读回：
-                // 它直接决定了下一轮 WM_NCHITTEST 的「人物哪里能点」。
-                renderer_.CaptureHitMask();
+                // 命中掩码必须在画完、Present 之前读回：它决定下一轮
+                // WM_NCHITTEST 的「人物哪里能点」。但这是一次 GPU→CPU 的同步读回，
+                // 是每帧最贵的一步，而它只在模型/动作变化时才变 —— 按配置每 N 帧读一次。
+                if (hitMaskEvery <= 1 || (frameIndex % hitMaskEvery) == 0) {
+                    renderer_.CaptureHitMask();
+                }
                 renderer_.EndFrame();
             }
 
-            // 帧率控制
-            std::this_thread::sleep_for(std::chrono::milliseconds(UPDATE_INTERVAL_MS));
+            ++frameIndex;
+
+            // 帧率控制：可见时按配置的帧间隔，隐藏时低频巡检
+            std::this_thread::sleep_for(std::chrono::milliseconds(petVisible ? frameIntervalMs : kHiddenSleepMs));
         }
 
         LOG_DEBUG("AppCore", "Update thread stopped.");

@@ -293,6 +293,11 @@ namespace UnnamedBot {
 
         // ===== 卡片 02：采样参数 =====
         const ControlTerminalWindow::FieldDef kSamplingFields[] = {
+            // 性能：老设备上把帧间隔 / 掩码间隔调大即可明显降低占用；低配模式一键切到省电档
+            { "performance.low_end",             L"低配模式", L"LOW END MODE", L"一键降低帧率与日志开销", FieldKind::Bool,   L"false", nullptr, false, 0 },
+            { "performance.frame_interval_ms",   L"帧间隔",   L"FRAME INTERVAL", L"毫秒；100≈10FPS，越大越省", FieldKind::Int, L"100", nullptr, false, 160 },
+            { "performance.hitmask_every_frames", L"命中检测间隔", L"HITMASK EVERY", L"每 N 帧读回一次命中掩码", FieldKind::Int, L"3", nullptr, false, 160 },
+            { "performance.save_interval_seconds", L"落库间隔", L"SAVE INTERVAL", L"秒；状态写库的间隔", FieldKind::Int, L"30", nullptr, false, 160 },
             { "sampling.temperature",       L"温度",     L"TEMPERATURE",      L"0 – 2",   FieldKind::Double, L"1.0", nullptr, false, 150 },
             { "sampling.top_p",             L"核采样",   L"TOP P",            L"0 – 1",   FieldKind::Double, L"1.0", nullptr, false, 150 },
             { "sampling.frequency_penalty", L"频率惩罚", L"FREQ PENALTY",     L"-2 – 2",  FieldKind::Double, L"0.0", nullptr, false, 150 },
