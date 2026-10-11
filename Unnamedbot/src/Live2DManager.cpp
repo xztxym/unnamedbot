@@ -534,6 +534,19 @@ namespace {
         }
     }
 
+    void Live2DManager::RequestModelSwitch(const std::string& modelId) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        pendingSwitchId_ = modelId;
+        LOG_INFO("Live2DManager", "Model switch queued for render thread: " + modelId);
+    }
+
+    std::string Live2DManager::TakePendingSwitch() {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        std::string id;
+        id.swap(pendingSwitchId_);
+        return id;
+    }
+
     std::string Live2DManager::GetCurrentModelId() const {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
         return currentModelId_;

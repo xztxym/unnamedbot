@@ -127,14 +127,24 @@ namespace UnnamedBot {
             result.error = "缺少 model_id";
             return result;
         }
-        if (!Live2DManager::Instance().SwitchModelById(modelId)) {
-            result.success = false;
-            result.error = "切换失败：模型不存在或加载出错 " + modelId;
+        if (Live2DManager::Instance().IsModelLoaded(modelId)) {
+            // 已经在内存里的模型，切换本身很便宜，直接做
+            if (!Live2DManager::Instance().SwitchModelById(modelId)) {
+                result.success = false;
+                result.error = "切换失败：" + modelId;
+                return result;
+            }
+            result.success = true;
+            result.content = "已经换成 " + modelId + "。\n" +
+                DescribeCapabilities(Live2DManager::Instance().ListModelCapabilities());
             return result;
         }
+
+        // 没加载过：首次加载要编译 Live2D 着色器（几十秒），不能在这里等，
+        // 更不能占着渲染线程 —— 交给渲染线程在下一帧去做。
+        Live2DManager::Instance().RequestModelSwitch(modelId);
         result.success = true;
-        result.content = "已经换成 " + modelId + "。\n" +
-            DescribeCapabilities(Live2DManager::Instance().ListModelCapabilities());
+        result.content = "正在把模型换成 " + modelId + "（新模型要准备一会儿，马上就好）。";
         return result;
     }
 

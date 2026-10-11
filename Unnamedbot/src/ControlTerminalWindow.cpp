@@ -446,6 +446,10 @@ namespace UnnamedBot {
     }
 
     void ControlTerminalWindow::Show(bool show) {
+        if (controller_) {
+            // 与 Hide() 里的 put_IsVisible(FALSE) 配对
+            controller_->put_IsVisible(show ? TRUE : FALSE);
+        }
         if (!hwnd_) return;
         if (!show) {
             Hide();
@@ -476,6 +480,11 @@ namespace UnnamedBot {
         if (!hwnd_) return;
         ShowWindow(hwnd_, SW_HIDE);
         visible_ = false;
+        // 中枢关着的时候没必要让 WebView2 继续渲染：暂停它的可见性，
+        // Chromium 会停下来（CPU 与内存都降下来）。下次打开再恢复。
+        if (controller_) {
+            controller_->put_IsVisible(FALSE);
+        }
     }
 
     void ControlTerminalWindow::Toggle() {

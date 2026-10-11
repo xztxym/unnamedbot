@@ -54,6 +54,12 @@ namespace UnnamedBot {
         // 按 id 切换：没加载过就按扫描到的路径加载（运行中新放进来的模型也能直接用）
         bool SwitchModelById(const std::string& modelId);
 
+        // 供 AI 工具使用：换一个还没加载过的模型需要几十秒（首次编译着色器），
+        // 而工具跑在 AI 线程上，直接加载会把渲染线程连同画面一起卡住。
+        // 所以这里只登记意图，由渲染线程在下一帧取走执行（TakePendingSwitch）。
+        void RequestModelSwitch(const std::string& modelId);
+        std::string TakePendingSwitch();
+
         // 当前模型 id（没有模型时为空串）
         std::string GetCurrentModelId() const;
 
@@ -130,6 +136,7 @@ namespace UnnamedBot {
         std::unordered_map<std::string, std::shared_ptr<Model>> models_;
         std::shared_ptr<Model> currentModel_ = nullptr;
         std::string currentModelId_;
+        std::string pendingSwitchId_;   // AI 请求的换模型意图，等渲染线程执行
 
         // 渲染设备（Initialize 时从 Renderer 取得），加载模型贴图时需要
         ID3D11Device* device_ = nullptr;

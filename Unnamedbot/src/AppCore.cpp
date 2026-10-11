@@ -1079,8 +1079,19 @@ namespace UnnamedBot {
             float deltaTime = std::chrono::duration<float>(now - lastFrameTime).count();
             lastFrameTime = now;
 
-            // 挂起的模型加载：在渲染线程上做，避免和主线程争 D3D11 上下文
-            if (pendingModelLoad_.exchange(false)) {
+            // 提前算一次可见性：挂起的模型加载要等桌宠真正显示出来再说
+            const bool petVisibleEarly = (mainWindow_ && mainWindow_->IsVisible());
+
+            // AI 请求的换模型：工具跑在 AI 线程上，这里回到渲染线程执行
+            if (const std::string wanted = Live2DManager::Instance().TakePendingSwitch(); !wanted.empty()) {
+                Live2DManager::Instance().SwitchModelById(wanted);
+            }
+
+            // 挂起的模型加载：在渲染线程上做，避免和主线程争 D3D11 上下文。
+            // 并且要等桌宠第一次真正显示出来再加载 —— 首次加载要编译 Live2D 着色器
+            // （本机实测 27~56 秒、占满一个核），用户还没要看见它时不该先烧这个 CPU。
+            if (pendingModelLoad_ && petVisibleEarly) {
+                pendingModelLoad_ = false;
                 const auto loadStart = std::chrono::steady_clock::now();
                 LoadDefaultModel();
                 const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
