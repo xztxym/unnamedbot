@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>主页方案 A–D</title>
+<style>
+  :root{
+    --pink:#FD77D9; --cyan:#8fe6ff; --foam:#eaf8ff;
+    --tx:#f2f8ff; --dim:rgba(226,240,255,.62); --hair:rgba(200,230,255,.22);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#05070d;color:var(--tx);
+    font-family:"Microsoft YaHei UI","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .page{padding:20px 22px 30px}
+  h1{font-size:15px;letter-spacing:.2em;color:#9fb6d8;font-weight:600;margin:0 0 14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .item{border:1px solid rgba(140,190,255,.14);border-radius:10px;overflow:hidden;background:#03060d}
+  .slot{position:relative;width:600px;height:390px;overflow:hidden;margin:0 auto}
+  .shot{position:absolute;left:0;top:0;width:1200px;height:780px;transform:scale(.5);transform-origin:0 0;overflow:hidden}
+  .shot video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(1.05) contrast(1.02)}
+  .tag{padding:8px 12px;font-size:12.5px;color:#a9c2e2;border-top:1px solid rgba(140,190,255,.12);
+    display:flex;justify-content:space-between;align-items:center}
+  .tag b{color:#eaf4ff;font-weight:600;letter-spacing:.04em}
+  .tag span{font-size:11px;letter-spacing:.14em;color:#6f8bb3}
+
+  /* 通用覆盖层 */
+  .ui{position:absolute;inset:0;pointer-events:none}
+  .scrim-b{background:linear-gradient(180deg,rgba(2,8,24,0) 30%,rgba(2,8,24,.72) 100%)}
+  .scrim-l{background:linear-gradient(90deg,rgba(2,8,24,.78) 0%,rgba(2,8,24,.42) 26%,rgba(2,8,24,0) 52%)}
+  .scrim-r{background:linear-gradient(270deg,rgba(2,8,24,.8) 0%,rgba(2,8,24,.35) 30%,rgba(2,8,24,0) 55%)}
+
+  /* ---------- 方案 A：沉浸全幅 ---------- */
+  .cA .rail{position:absolute;left:0;top:0;bottom:0;width:58px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:26px;border-right:1px solid rgba(210,235,255,.1)}
+  .cA .rail b{writing-mode:vertical-rl;font-size:10px;letter-spacing:.34em;color:rgba(232,245,255,.55);font-weight:600}
+  .cA .rail i{width:5px;height:5px;border-radius:50%;background:rgba(232,245,255,.3);display:block}
+  .cA .rail i.on{background:var(--pink);box-shadow:0 0 10px var(--pink)}
+  .cA .brand{position:absolute;left:86px;top:26px;font-size:11px;letter-spacing:.26em;color:rgba(232,245,255,.72)}
+  .cA .brand s{text-decoration:none;color:rgba(232,245,255,.4);margin-left:10px;letter-spacing:.2em}
+  .cA .menu{position:absolute;right:52px;bottom:78px;text-align:right}
+  .cA .menu u{display:block;text-decoration:none;font-size:62px;font-weight:800;line-height:1.16;
+    letter-spacing:.02em;color:rgba(240,249,255,.5);text-shadow:0 2px 24px rgba(0,20,60,.55);transition:.2s}
+  .cA .menu u.on{color:#fff;text-shadow:0 0 34px rgba(120,220,255,.55)}
+  .cA .menu u em{font-style:normal;font-size:12px;letter-spacing:.3em;color:rgba(160,215,255,.55);margin-left:14px;vertical-align:middle}
+  .cA .stat{position:absolute;left:86px;bottom:30px;font-size:10px;letter-spacing:.2em;color:rgba(232,244,255,.82);text-shadow:0 1px 10px rgba(0,12,40,.8)}
+  .cA .stat b{color:#bfe9ff;font-weight:600}
+  .cA .memo{position:absolute;right:52px;top:30px;text-align:right;font-size:10.5px;line-height:1.9;
+    letter-spacing:.16em;color:rgba(232,244,255,.8);text-shadow:0 1px 10px rgba(0,12,40,.85)}
+  .cA .memo b{display:block;font-size:15px;letter-spacing:.1em;color:#fff;margin-bottom:6px}
+
+  /* ---------- 方案 B：巨型字幕左列 ---------- */
+  .cB .menu{position:absolute;left:96px;top:50%;transform:translateY(-50%);width:600px}
+  .cB .menu u{position:relative;display:grid;grid-template-columns:30px auto 1fr;align-items:baseline;
+    column-gap:20px;text-decoration:none;padding:12px 0 10px;
+    border-bottom:1px solid rgba(200,230,255,.12)}
+  .cB .menu u s{text-decoration:none;font-size:10px;letter-spacing:.14em;color:rgba(160,215,255,.45)}
+  .cB .menu u b{font-size:72px;font-weight:900;line-height:1;letter-spacing:-.01em;
+    color:rgba(242,250,255,.40);text-shadow:0 6px 40px rgba(0,16,48,.55)}
+  .cB .menu u.on b{color:#fff;text-shadow:0 0 44px rgba(110,215,255,.6)}
+  .cB .menu u.on::before{content:"";position:absolute;left:-26px;top:26px;width:3px;height:46px;background:var(--pink)}
+  .cB .menu u i{font-style:normal;justify-self:end;font-size:11px;letter-spacing:.3em;color:rgba(160,215,255,.42)}
+  .cB .menu u.on i{color:var(--pink)}
+  .cB .brand{position:absolute;right:34px;top:28px;text-align:right;font-size:10px;letter-spacing:.3em;color:rgba(232,245,255,.6)}
+  .cB .brand b{display:block;font-size:13px;letter-spacing:.14em;color:#eaf6ff;margin-bottom:5px}
+  .cB .stat{position:absolute;right:34px;bottom:28px;text-align:right;font-size:10px;line-height:2;letter-spacing:.18em;color:rgba(226,240,255,.58)}
+  .cB .stat b{color:#bfe9ff;font-weight:600}
+  .cB .dots{position:absolute;left:26px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px}
+  .cB .dots i{width:6px;height:6px;border:1px solid rgba(232,245,255,.5);border-radius:50%}
+  .cB .dots i.on{background:var(--pink);border-color:var(--pink)}
+
+  /* ---------- 方案 C：玻璃悬浮面板 ---------- */
+  .cC .menu{position:absolute;right:36px;top:50%;transform:translateY(-50%);width:296px;
+    padding:24px 22px 20px;border-radius:14px;border:1px solid rgba(190,225,255,.2);
+    background:rgba(4,18,48,.34);backdrop-filter:blur(14px) saturate(1.1);
+    box-shadow:0 24px 70px rgba(0,10,32,.5)}
+  .cC .menu .hd{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.26em;
+    color:rgba(180,215,250,.66);padding-bottom:14px;border-bottom:1px solid rgba(190,225,255,.16);margin-bottom:12px}
+  .cC .menu u{display:flex;justify-content:space-between;align-items:center;text-decoration:none;
+    padding:11px 2px;font-size:27px;font-weight:700;letter-spacing:.02em;color:rgba(242,250,255,.62)}
+  .cC .menu u.on{color:#fff}
+  .cC .menu u.on em{color:var(--pink)}
+  .cC .menu u em{font-style:normal;font-size:10px;letter-spacing:.24em;color:rgba(160,215,255,.5)}
+  .cC .brand{position:absolute;left:78px;top:40px;font-size:10.5px;letter-spacing:.28em;color:rgba(236,247,255,.85);text-shadow:0 1px 12px rgba(0,10,34,.9)}
+  .cC .big{position:absolute;left:78px;bottom:46px;max-width:460px;text-shadow:0 2px 18px rgba(0,10,34,.9)}
+  .cC .big s{display:block;text-decoration:none;font-size:9px;letter-spacing:.3em;color:rgba(170,210,250,.6);margin-bottom:10px}
+  .cC .big b{font-size:40px;font-weight:800;letter-spacing:-.01em;color:#fff;line-height:1.15}
+  .cC .rail{position:absolute;left:0;top:0;bottom:0;width:52px;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;gap:22px}
+  .cC .rail i{width:5px;height:5px;border-radius:50%;background:rgba(232,245,255,.32)}
+  .cC .rail i.on{background:var(--pink)}
+
+  /* ---------- 方案 D：HUD 极简 ---------- */
+  .cD .frame{position:absolute;inset:20px;border:1px solid rgba(210,238,255,.16)}
+  .cD .menu{position:absolute;left:88px;top:50%;transform:translateY(-50%)}
+  .cD .menu u{display:block;text-decoration:none;font-size:74px;font-weight:300;line-height:1.22;
+    letter-spacing:.12em;color:rgba(240,250,255,.44)}
+  .cD .menu u.on{color:#fff;font-weight:700;letter-spacing:.08em}
+  .cD .menu u.on::before{content:"";display:inline-block;width:26px;height:2px;background:var(--pink);
+    vertical-align:middle;margin-right:20px;transform:translateY(-8px)}
+  .cD .menu u sup{font-size:11px;letter-spacing:.24em;color:rgba(160,215,255,.55);margin-left:16px;vertical-align:super;font-weight:400}
+  .cD .brand{position:absolute;left:88px;top:46px;font-size:10px;letter-spacing:.34em;color:rgba(232,245,255,.6)}
+  .cD .brand b{color:#eaf6ff;letter-spacing:.18em;font-size:12px;margin-right:12px}
+  .cD .corner{position:absolute;right:64px;font-size:9.5px;line-height:2.1;letter-spacing:.22em;
+    color:rgba(226,240,255,.55);text-align:right}
+  .cD .c1{top:46px}
+  .cD .c2{bottom:48px}
+  .cD .corner b{color:#bfe9ff;font-weight:600;letter-spacing:.16em}
+  .cD .rail{position:absolute;left:0;top:0;bottom:0;width:66px}
+  .cD .rail b{position:absolute;left:20px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;
+    font-size:9.5px;letter-spacing:.4em;color:rgba(226,240,255,.42);font-weight:600}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>主页重设计 · 侧栏透明 + 全幅主动画 + 大字号选项</h1>
+  <div class="grid">
+
+    <div class="item">
+      <div class="slot"><div class="shot cA">
+        <video src="Unnamedbot/webui/media/fv_movie2.mp4" muted loop autoplay playsinline></video>
+        <div class="ui scrim-b"></div>
+        <div class="rail"><b>UNNAMEDBOT</b><i class="on"></i><i></i><i></i><i></i></div>
+        <div class="brand">桌宠中枢<s>AGENT PET HUB</s></div>
+        <div class="memo"><b>Memento Mori</b>Remember, You Will Die.<br>Time never waits.</div>
+        <div class="menu">
+          <u class="on">开始<em>START</em></u>
+          <u>设置<em>SETTINGS</em></u>
+          <u>API 接入<em>ENDPOINT</em></u>
+          <u>退出<em>QUIT</em></u>
+        </div>
+        <div class="stat">SESSION <b>mistral-large-latest</b> ／ 上下文 30 轮</div>
+      </div></div>
+      <div class="tag"><b>方案 A · 沉浸全幅</b><span>右侧巨字 · 侧栏只剩竖排字</span></div>
+    </div>
+
+    <div class="item">
+      <div class="slot"><div class="shot cB">
+        <video src="Unnamedbot/webui/media/fv_movie2.mp4" muted loop autoplay playsinline></video>
+        <div class="ui scrim-l"></div>
+        <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+        <div class="menu">
+          <u class="on"><s>01</s><b>开始</b><i>START</i></u>
+          <u><s>02</s><b>设置</b><i>SETTINGS</i></u>
+          <u><s>03</s><b>接口</b><i>ENDPOINT</i></u>
+          <u><s>04</s><b>退出</b><i>QUIT</i></u>
+        </div>
+        <div class="brand"><b>桌宠中枢</b>AGENT PET HUB</div>
+        <div class="stat">SESSION <b>mistral-large-latest</b><br>上下文 30 轮 · 工具 全部</div>
+      </div></div>
+      <div class="tag"><b>方案 B · 巨型字幕</b><span>左侧 86px 巨字 · 编号引导</span></div>
+    </div>
+
+    <div class="item">
+      <div class="slot"><div class="shot cC">
+        <video src="Unnamedbot/webui/media/fv_movie2.mp4" muted loop autoplay playsinline></video>
+        <div class="ui scrim-r"></div>
+        <div class="ui" style="background:linear-gradient(90deg,rgba(2,8,24,.55) 0%,rgba(2,8,24,.18) 28%,rgba(2,8,24,0) 50%)"></div>
+        <div class="rail"><i class="on"></i><i></i><i></i><i></i></div>
+        <div class="brand">桌宠中枢 · AGENT PET HUB</div>
+        <div class="big"><s>SESSION / MODEL</s><b>mistral-large-latest</b></div>
+        <div class="menu">
+          <div class="hd"><span>主菜单</span><span>MENU</span></div>
+          <u class="on">开始<em>START</em></u>
+          <u>设置<em>SETTINGS</em></u>
+          <u>API 接入<em>ENDPOINT</em></u>
+          <u>退出<em>QUIT</em></u>
+        </div>
+      </div></div>
+      <div class="tag"><b>方案 C · 玻璃悬浮</b><span>磨砂面板承载大字号菜单</span></div>
+    </div>
+
+    <div class="item">
+      <div class="slot"><div class="shot cD">
+        <video src="Unnamedbot/webui/media/fv_movie2.mp4" muted loop autoplay playsinline></video>
+        <div class="ui scrim-l"></div>
+        <div class="frame"></div>
+        <div class="rail"><b>UNNAMEDBOT</b></div>
+        <div class="brand"><b>桌宠中枢</b>AGENT PET HUB</div>
+        <div class="menu">
+          <u class="on">开始<sup>START</sup></u>
+          <u>设置<sup>SETTINGS</sup></u>
+          <u>接口<sup>ENDPOINT</sup></u>
+          <u>退出<sup>QUIT</sup></u>
+        </div>
+        <div class="corner c1">API <b>未测试</b><br>MODEL <b>gpt-4o</b></div>
+        <div class="corner c2">CONTEXT <b>30 轮</b><br>TOOLS <b>全部</b></div>
+      </div></div>
+      <div class="tag"><b>方案 D · HUD 极简</b><span>细线框 · 轻字重 74px · 四角信息</span></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

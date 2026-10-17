@@ -21,16 +21,16 @@
 #endif
 #endif
 
-#ifdef UNSAFE_BUFFERS_BUILD
-// TODO(task.ms/57661138): Remove C-library calls to fix the errors.
-#pragma allow_unsafe_libc_calls
-#endif  // UNSAFE_BUFFERS_BUILD
-
 #include <objbase.h>
+
 #include <wrl/implements.h>
 
+#include <algorithm>
+#include <limits>
+#include <string>
+
 #include "WebView2.h"
-#define CORE_WEBVIEW_TARGET_PRODUCT_VERSION L"145.0.3800.47"
+#define CORE_WEBVIEW_TARGET_PRODUCT_VERSION L"154.0.4258.31"
 
 #define COREWEBVIEW2ENVIRONMENTOPTIONS_STRING_PROPERTY(p)     \
  public:                                                      \
@@ -68,49 +68,52 @@
  protected:                                                      \
   BOOL m_##p = defPVal ? TRUE : FALSE;
 
-#define DEFINE_AUTO_COMEM_STRING()                                      \
- protected:                                                             \
-  class AutoCoMemString {                                               \
-   public:                                                              \
-    AutoCoMemString() {}                                                \
-    ~AutoCoMemString() { Release(); }                                   \
-    void Release() {                                                    \
-      if (m_string) {                                                   \
-        deallocate_fn(m_string);                                        \
-        m_string = nullptr;                                             \
-      }                                                                 \
-    }                                                                   \
-                                                                        \
-    LPCWSTR Set(LPCWSTR str) {                                          \
-      Release();                                                        \
-      if (str) {                                                        \
-        m_string = MakeCoMemString(str);                                \
-      }                                                                 \
-      return m_string;                                                  \
-    }                                                                   \
-    LPCWSTR Get() { return m_string; }                                  \
-    LPWSTR Copy() {                                                     \
-      if (m_string)                                                     \
-        return MakeCoMemString(m_string);                               \
-      return nullptr;                                                   \
-    }                                                                   \
-                                                                        \
-   protected:                                                           \
-    LPWSTR MakeCoMemString(LPCWSTR source) {                            \
-      const size_t length = wcslen(source);                             \
-      const size_t bytes = (length + 1) * sizeof(*source);              \
-                                                                        \
-      if (bytes <= length) {                                            \
-        return nullptr;                                                 \
-      }                                                                 \
-                                                                        \
-      wchar_t* result = reinterpret_cast<wchar_t*>(allocate_fn(bytes)); \
-                                                                        \
-      if (result)                                                       \
-        memcpy(result, source, bytes);                                  \
-      return result;                                                    \
-    }                                                                   \
-    LPWSTR m_string = nullptr;                                          \
+#define DEFINE_AUTO_COMEM_STRING()                                            \
+ protected:                                                                   \
+  class AutoCoMemString {                                                     \
+   public:                                                                    \
+    AutoCoMemString() {}                                                      \
+    ~AutoCoMemString() {                                                      \
+      Release();                                                              \
+    }                                                                         \
+    void Release() {                                                          \
+      if (m_string) {                                                         \
+        deallocate_fn(m_string);                                              \
+        m_string = nullptr;                                                   \
+      }                                                                       \
+    }                                                                         \
+                                                                              \
+    LPCWSTR Set(LPCWSTR str) {                                                \
+      Release();                                                              \
+      if (str) {                                                              \
+        m_string = MakeCoMemString(str);                                      \
+      }                                                                       \
+      return m_string;                                                        \
+    }                                                                         \
+    LPCWSTR Get() {                                                           \
+      return m_string;                                                        \
+    }                                                                         \
+    LPWSTR Copy() {                                                           \
+      if (m_string)                                                           \
+        return MakeCoMemString(m_string);                                     \
+      return nullptr;                                                         \
+    }                                                                         \
+                                                                              \
+   protected:                                                                 \
+    LPWSTR MakeCoMemString(LPCWSTR source) {                                  \
+      const size_t length = wcslen(source);                                   \
+      if (length >= (std::numeric_limits<size_t>::max)() / sizeof(*source)) { \
+        return nullptr;                                                       \
+      }                                                                       \
+                                                                              \
+      const size_t bytes = (length + 1) * sizeof(*source);                    \
+      wchar_t* result = reinterpret_cast<wchar_t*>(allocate_fn(bytes));       \
+                                                                              \
+      if (result)                                                             \
+        std::char_traits<wchar_t>::copy(result, source, length + 1);          \
+      return result;                                                          \
+    }                                                                         \
+    LPWSTR m_string = nullptr;                                                \
   };
 
 template <typename allocate_fn_t,
@@ -155,7 +158,8 @@ class CoreWebView2CustomSchemeRegistrationBase
       if (!(*allowedOrigins)) {
         return HRESULT_FROM_WIN32(GetLastError());
       }
-      ZeroMemory(*allowedOrigins, m_allowedOriginsCount * sizeof(LPWSTR));
+      std::fill_n((*allowedOrigins), m_allowedOriginsCount,
+                  static_cast<LPWSTR>(nullptr));
       for (UINT32 i = 0; i < m_allowedOriginsCount; i++) {
         UNSAFE_BUFFERS((*allowedOrigins)[i] = m_allowedOrigins[i].Copy();
                        if (!(*allowedOrigins)[i]) {

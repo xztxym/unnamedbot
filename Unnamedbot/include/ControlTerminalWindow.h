@@ -45,6 +45,14 @@ namespace UnnamedBot {
         // 配置保存成功后的回调（AppCore 用它重新加载并应用配置）
         void OnSaved(std::function<void()> callback);
 
+        // WebView2 不可用（运行时崩溃 / 未安装 / 页面迟迟不加载）时的回调。
+        // AppCore 用它做降级：直接把桌宠窗口放出来，别让用户对着空白配置窗口发呆。
+        // 只会触发一次，且在 UI 线程上。
+        void OnWebViewFailed(std::function<void()> callback);
+
+        // 是否已判定 WebView2 不可用（AppCore 用它检测「回调注册前就已失败」的同步路径）
+        bool IsWebViewFailed() const { return webViewFailed_; }
+
         // 任意线程可调：把当前会话记录重新推给「对话」屏。
         // AI 请求跑在工作线程上，而 WebView2 只能在 UI 线程碰，所以内部只 PostMessage。
         void PushChatHistory();
@@ -94,10 +102,18 @@ namespace UnnamedBot {
 
         // ---- WebView2 宿主 ----
         void CreateWebView();
+        // 用户数据目录：第 0 次用上次成功过的那类目录，重试时换另一类/带序号的干净目录，
+        // 绕开被上次崩溃残留的进程/文件锁住的 profile。usedProgramDir 回传是否用了程序目录。
+        std::wstring WebViewUserDataDir(int attempt, bool* usedProgramDir = nullptr) const;
         void ConfigureWebViewSettings();
         void ResizeWebView();
         void DestroyWebView();
         void NavigateToUi();
+        // WebView2 任一环节失败时统一走这里：还允许重试就先换目录重试，否则记日志并
+        // （只一次）通知 AppCore 降级。
+        void NotifyWebViewFailed(const char* reason);
+        // 环境/控制器创建失败后的处理：清理半成品对象，能重试就排一个重试定时器。
+        void ScheduleWebViewRetry(const std::string& reason);
 
         // ---- 配置读写（与原实现一致） ----
         void LoadFromConfig();
@@ -188,6 +204,10 @@ namespace UnnamedBot {
         ULONGLONG restoreArmedAt_ = 0;
 
         std::function<void()> onSaved_;
+        std::function<void()> onWebViewFailed_;
+        bool webViewFailed_ = false;   // WebView2 已判定不可用（降级回调只发一次）
+        int webViewAttempt_ = 0;       // 当前是第几次尝试（重试时用来换用户数据目录）
+        bool webViewProfileIsProgram_ = false;  // 本次用的是程序目录下的 profile
 
         static const wchar_t* WINDOW_CLASS_NAME;
     };

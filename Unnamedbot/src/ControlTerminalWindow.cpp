@@ -8,6 +8,7 @@
 #include "../include/Logger.h"
 #include "../include/MessageHandler.h"
 #include "../include/PromptLibrary.h"
+#include "../include/TaskScheduler.h"
 #include "../include/ResourceIds.h"
 #include "../include/Utils.h"
 
@@ -24,7 +25,12 @@
 #include <cstring>
 #include <ctime>
 #include <cwchar>
+#include <filesystem>
+#include <string>
+#include <system_error>
 #include <thread>
+#include <utility>
+#include <vector>
 #include <objbase.h>
 
 namespace UnnamedBot {
@@ -393,6 +399,35 @@ namespace UnnamedBot {
 
         const int kSectionCount = static_cast<int>(sizeof(kSections) / sizeof(kSections[0]));
 
+        // WebView2 看门狗：控制器创建成功后页面仍可能永远不加载（渲染进程崩掉是常见形态，
+        // 此时 NavigationCompleted 根本不会来）。到点还没就绪就按「不可用」处理。
+        const UINT_PTR kWebViewWatchdogTimer = 0x5721;
+        const UINT kWebViewWatchdogMs = 8000;
+
+        // 启动失败重试：WebView2 浏览器进程偶发「启动即崩」（换一个干净的用户数据
+        // 目录往往就好了），所以失败后换目录再建，全部失败才降级成只看桌宠。
+        const UINT_PTR kWebViewRetryTimer = 0x5722;
+        const UINT kWebViewRetryMs = 600;
+        const int kMaxWebViewAttempts = 3;
+
+        // 记住哪种用户数据目录在这台机器上能用（"appdata" / "program"），
+        // 下次启动直接用它，省掉一次约 4 秒的失败重试。
+        const char* const kWebViewProfileKey = "webview2.profile_location";
+
+        // 标准位置：%LOCALAPPDATA%\Unnamedbot\WebView2
+        std::wstring AppDataWebViewProfileDir() {
+            std::wstring dir;
+            wchar_t buffer[MAX_PATH] = {};
+            const DWORD length = GetEnvironmentVariableW(L"LOCALAPPDATA", buffer, MAX_PATH);
+            if (length > 0 && length < MAX_PATH) dir.assign(buffer, length);
+            if (dir.empty()) {
+                LOG_WARN("ControlTerminal", "LOCALAPPDATA 不可用，WebView2 用户目录回退到当前目录。");
+                dir = L".";
+            }
+            dir += L"\\Unnamedbot\\WebView2";
+            return dir;
+        }
+
         // 字段类型 → 页面控件类型
         const char* KindName(FieldKind kind) {
             switch (kind) {
@@ -450,6 +485,23 @@ namespace UnnamedBot {
 
     void ControlTerminalWindow::OnSaved(std::function<void()> callback) {
         onSaved_ = std::move(callback);
+    }
+
+    void ControlTerminalWindow::OnWebViewFailed(std::function<void()> callback) {
+        onWebViewFailed_ = std::move(callback);
+    }
+
+    void ControlTerminalWindow::NotifyWebViewFailed(const char* reason) {
+        // 只通知一次：环境失败、控制器失败、看门狗可能先后都触发，降级只该做一次。
+        if (webViewFailed_) return;
+        webViewFailed_ = true;
+        if (hwnd_) {
+            KillTimer(hwnd_, kWebViewWatchdogTimer);
+            KillTimer(hwnd_, kWebViewRetryTimer);
+        }
+        LOG_ERROR("ControlTerminal", std::string("WebView2 不可用（") + (reason ? reason : "unknown") +
+                                     "），配置界面无法显示，将降级为直接显示桌宠。");
+        if (onWebViewFailed_) onWebViewFailed_();
     }
 
     void ControlTerminalWindow::Show(bool show) {
@@ -607,6 +659,21 @@ namespace UnnamedBot {
             FinishProbe();
             return 0;
 
+        // 看门狗到点：页面始终没就绪 → 按不可用处理，交给 AppCore 降级
+        case WM_TIMER:
+            if (wParam == kWebViewWatchdogTimer) {
+                KillTimer(hwnd, kWebViewWatchdogTimer);
+                if (!webviewReady_) NotifyWebViewFailed("watchdog timeout: page never became ready");
+                return 0;
+            }
+            // 重试定时器：上一次环境/控制器创建失败，延时换新目录再建一次
+            if (wParam == kWebViewRetryTimer) {
+                KillTimer(hwnd, kWebViewRetryTimer);
+                CreateWebView();
+                return 0;
+            }
+            break;
+
         case WM_DESTROY:
             DestroyWebView();
             hwnd_ = nullptr;
@@ -622,21 +689,75 @@ namespace UnnamedBot {
     // WebView2 宿主
     // ============================================================
 
+    std::wstring ControlTerminalWindow::WebViewUserDataDir(int attempt, bool* usedProgramDir) const {
+        if (usedProgramDir) *usedProgramDir = false;
+
+        // 程序目录下的 profile 作为第二候选：有些机器上 WebView2 在 LOCALAPPDATA 里
+        // 起不来（浏览器进程启动即崩），换到程序目录就好了。
+        std::error_code ec;
+        const std::filesystem::path programDir = Utils::ResolveAppRelative(L"webview2-profile");
+        std::filesystem::create_directories(programDir, ec);
+        const bool programUsable = !ec;
+        if (!programUsable) {
+            LOG_WARN("ControlTerminal", "程序目录不可写，WebView2 只用用户目录：" + ec.message());
+            ec.clear();
+        }
+
+        const bool preferProgram =
+            ConfigManager::Instance().GetString(kWebViewProfileKey, "appdata") == "program";
+
+        const std::wstring appDataDir = AppDataWebViewProfileDir();
+        std::vector<std::pair<std::wstring, bool>> candidates;
+        if (programUsable && preferProgram) candidates.emplace_back(programDir.wstring(), true);
+        candidates.emplace_back(appDataDir, false);
+        if (programUsable && !preferProgram) candidates.emplace_back(programDir.wstring(), true);
+
+        if (attempt >= 0 && static_cast<size_t>(attempt) < candidates.size()) {
+            const auto& chosen = candidates[static_cast<size_t>(attempt)];
+            if (usedProgramDir) *usedProgramDir = chosen.second;
+            return chosen.first;
+        }
+        // 候选目录都试过还没成功：退回带序号的用户目录，避开崩溃残留的进程/锁文件。
+        // 注意 windows.h 的 max 宏会吃掉 std::max，这里直接手写。
+        const int suffix = attempt > 2 ? attempt : 2;
+        return appDataDir + L"_retry" + std::to_wstring(suffix);
+    }
+
+    void ControlTerminalWindow::ScheduleWebViewRetry(const std::string& reason) {
+        if (webViewFailed_) return;
+        if (hwnd_) KillTimer(hwnd_, kWebViewWatchdogTimer);
+
+        // 清掉这次失败留下的半成品，CreateWebView 的入口守卫才不会直接返回。
+        if (webview_) {
+            if (messageToken_.value != 0) webview_->remove_WebMessageReceived(messageToken_);
+            if (navigationToken_.value != 0) webview_->remove_NavigationCompleted(navigationToken_);
+        }
+        messageToken_ = {};
+        navigationToken_ = {};
+        if (controller_) controller_->Close();
+        controller_.Reset();
+        webview_.Reset();
+        environment_.Reset();
+        webviewReady_ = false;
+
+        if (hwnd_ && webViewAttempt_ + 1 < kMaxWebViewAttempts) {
+            ++webViewAttempt_;
+            bool nextIsProgram = false;
+            const std::wstring nextDir = WebViewUserDataDir(webViewAttempt_, &nextIsProgram);
+            LOG_WARN("ControlTerminal", reason + "（第 " + std::to_string(webViewAttempt_) +
+                                          " 次失败），改用用户数据目录 " + Utils::WideToUtf8(nextDir) + " 重试。");
+            SetTimer(hwnd_, kWebViewRetryTimer, kWebViewRetryMs, nullptr);
+            return;
+        }
+        NotifyWebViewFailed(reason.c_str());
+    }
+
     void ControlTerminalWindow::CreateWebView() {
         if (!hwnd_ || environment_ || controller_) return;
 
-        // 用户数据目录放在 LOCALAPPDATA，不污染程序目录，也不受工作目录影响。
-        std::wstring userDataDir;
-        {
-            wchar_t buffer[MAX_PATH] = {};
-            const DWORD length = GetEnvironmentVariableW(L"LOCALAPPDATA", buffer, MAX_PATH);
-            if (length > 0 && length < MAX_PATH) userDataDir.assign(buffer, length);
-        }
-        if (userDataDir.empty()) {
-            LOG_WARN("ControlTerminal", "LOCALAPPDATA 不可用，WebView2 用户目录回退到当前目录。");
-            userDataDir = L".";
-        }
-        userDataDir += L"\\Unnamedbot\\WebView2";
+        // 用户数据目录优先放在 LOCALAPPDATA（不污染程序目录）；个别机器上 WebView2 在
+        // 那里起不来，第二次尝试改用程序目录下的 profile（见 WebViewUserDataDir）。
+        const std::wstring userDataDir = WebViewUserDataDir(webViewAttempt_, &webViewProfileIsProgram_);
 
         const HRESULT hrEnv = CreateCoreWebView2EnvironmentWithOptions(
             nullptr,
@@ -645,7 +766,10 @@ namespace UnnamedBot {
             Microsoft::WRL::Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>(
                 [this](HRESULT result, ICoreWebView2Environment* createdEnvironment) -> HRESULT {
                     if (FAILED(result) || createdEnvironment == nullptr) {
-                        LOG_ERROR("ControlTerminal", "WebView2 环境创建失败，配置界面无法显示。");
+                        wchar_t buf[96] = {};
+                        swprintf_s(buf, L"HRESULT=0x%08X env=%p", static_cast<unsigned>(result), static_cast<void*>(createdEnvironment));
+                        std::string why = "环境创建失败 " + Utils::WideToUtf8(buf);
+                        ScheduleWebViewRetry(why);
                         return S_OK;
                     }
                     environment_ = createdEnvironment;
@@ -655,10 +779,20 @@ namespace UnnamedBot {
                         Microsoft::WRL::Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
                             [this](HRESULT result2, ICoreWebView2Controller* createdController) -> HRESULT {
                                 if (FAILED(result2) || createdController == nullptr) {
-                                    LOG_ERROR("ControlTerminal", "WebView2 控制器创建失败。");
+                                    wchar_t buf[96] = {};
+                                    swprintf_s(buf, L"HRESULT=0x%08X ctrl=%p hwnd=%p", static_cast<unsigned>(result2), static_cast<void*>(createdController), static_cast<void*>(hwnd_));
+                                    std::string why = "控制器创建失败 " + Utils::WideToUtf8(buf);
+                                    ScheduleWebViewRetry(why);
                                     return S_OK;
                                 }
                                 controller_ = createdController;
+
+                                // 记下这台机器上能用的目录类型，下次启动直接命中，省一轮 4 秒失败。
+                                const char* usedKind = webViewProfileIsProgram_ ? "program" : "appdata";
+                                if (ConfigManager::Instance().GetString(kWebViewProfileKey, "appdata") != usedKind) {
+                                    ConfigManager::Instance().SetString(kWebViewProfileKey, usedKind);
+                                    LOG_INFO("ControlTerminal", std::string("WebView2 profile location pinned to: ") + usedKind);
+                                }
 
                                 // 窗口底色与应用一致，避免初始化瞬间闪白。
                                 ComPtr<ICoreWebView2Controller2> controller2;
@@ -678,18 +812,38 @@ namespace UnnamedBot {
                             }).Get());
 
                     if (FAILED(hrController)) {
-                        LOG_ERROR("ControlTerminal", "WebView2 控制器创建调用失败。");
+                        NotifyWebViewFailed("控制器创建调用失败");
                     }
                     return S_OK;
                 }).Get());
 
         if (FAILED(hrEnv)) {
-            LOG_ERROR("ControlTerminal", "WebView2 环境创建调用失败（可能未安装 WebView2 Runtime）。");
+            NotifyWebViewFailed("环境创建调用失败（可能未安装 WebView2 Runtime）");
+        }
+
+        // 控制器就连上了，页面也可能永远加载不出来（渲染进程崩溃时不发 NavigationCompleted），
+        // 所以再挂一个看门狗，到点仍不就绪同样按不可用处理。
+        if (!webViewFailed_ && hwnd_) {
+            SetTimer(hwnd_, kWebViewWatchdogTimer, kWebViewWatchdogMs, nullptr);
         }
     }
 
     void ControlTerminalWindow::ConfigureWebViewSettings() {
         if (!webview_) return;
+
+        // 主页开场素材（P3R 风格视频与徽标）走虚拟域名，避免把数 MB 的 mp4 塞进 C++ 字面量。
+        // 素材目录 = 可执行文件旁的 webui\（构建时由 PostBuild 从 Unnamedbot\webui 复制）。
+        ComPtr<ICoreWebView2_3> webview3;
+        if (SUCCEEDED(webview_.As(&webview3)) && webview3) {
+            const std::filesystem::path assetDir = Utils::ResolveAppRelative(L"webui");
+            std::error_code ec;
+            std::filesystem::create_directories(assetDir, ec);
+            const HRESULT hrMap = webview3->SetVirtualHostNameToFolderMapping(
+                L"p3r.local", assetDir.c_str(), COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_ALLOW);
+            if (FAILED(hrMap)) {
+                LOG_WARN("ControlTerminal", "Web UI 素材目录映射失败，主页开场将退回纯 CSS 背景。");
+            }
+        }
 
         ComPtr<ICoreWebView2Settings> settings;
         if (SUCCEEDED(webview_->get_Settings(&settings)) && settings) {
@@ -721,9 +875,10 @@ namespace UnnamedBot {
                     BOOL success = FALSE;
                     if (args) args->get_IsSuccess(&success);
                     if (!success) {
-                        LOG_ERROR("ControlTerminal", "配置界面导航失败。");
+                        NotifyWebViewFailed("配置界面导航失败");
                         return S_OK;
                     }
+                    if (hwnd_) KillTimer(hwnd_, kWebViewWatchdogTimer);
                     webviewReady_ = true;
                     // 页面就绪后补发一次完整状态（首次进入也从顶部开始）
                     SendState(true);
@@ -738,7 +893,7 @@ namespace UnnamedBot {
         const std::wstring html = Utils::Utf8ToWide(ConfigWebUiHtml());
         const HRESULT hr = webview_->NavigateToString(html.c_str());
         if (FAILED(hr)) {
-            LOG_ERROR("ControlTerminal", "配置界面装载失败。");
+            NotifyWebViewFailed("配置界面装载失败");
         }
     }
 
@@ -750,6 +905,10 @@ namespace UnnamedBot {
     }
 
     void ControlTerminalWindow::DestroyWebView() {
+        if (hwnd_) {
+            KillTimer(hwnd_, kWebViewWatchdogTimer);
+            KillTimer(hwnd_, kWebViewRetryTimer);
+        }
         if (webview_) {
             if (messageToken_.value != 0) webview_->remove_WebMessageReceived(messageToken_);
             if (navigationToken_.value != 0) webview_->remove_NavigationCompleted(navigationToken_);
@@ -877,6 +1036,26 @@ namespace UnnamedBot {
         return list.dump();
     }
 
+    namespace {
+        // 「今日」块要显示的下一条日程：取启用任务里 nextRun 最近的一条，格式 HH:MM 名称
+        std::string TodayScheduleText() {
+            std::vector<std::shared_ptr<ScheduledTask>> tasks = TaskScheduler::Instance().GetEnabledTasks();
+            std::shared_ptr<ScheduledTask> best;
+            for (const auto& task : tasks) {
+                if (!task || task->nextRun <= 0) continue;
+                if (!best || task->nextRun < best->nextRun) best = task;
+            }
+            if (!best) return std::string();
+            std::time_t when = static_cast<std::time_t>(best->nextRun);
+            std::tm local{};
+            localtime_s(&local, &when);
+            char buffer[128];
+            std::snprintf(buffer, sizeof(buffer), "%02d:%02d %s",
+                          local.tm_hour, local.tm_min, best->name.c_str());
+            return std::string(buffer);
+        }
+    }
+
     std::string ControlTerminalWindow::BuildStateJson(bool resetScroll) const {
         // 主题随状态一起下发：页面把配色/字体写成 CSS 变量，于是「？？？」启用时
         // 整个配置界面（含按钮、描边、等宽标签）会跟着换成病娇配色。
@@ -894,6 +1073,10 @@ namespace UnnamedBot {
             { "errors", nlohmann::json::parse(BuildErrorsJson()) },
             { "status", { { "text", Utils::WideToUtf8(statusText_) }, { "kind", statusKind_ } } },
             { "resetScroll", resetScroll },
+            { "today", {
+                { "weather", ConfigManager::Instance().GetString("runtime.weather_text", "") },
+                { "schedule", TodayScheduleText() },
+            } },
             { "probe", [this] {
                 std::lock_guard<std::mutex> lock(probeMutex_);
                 return nlohmann::json{

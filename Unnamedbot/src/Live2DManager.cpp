@@ -248,10 +248,36 @@ namespace {
             return false;
         }
 
-        // 释放当前模型资源
+        // 重复切到「就是当前这个」模型时必须直接返回：下面那段「先释放再切回」
+        // 会把刚建好的渲染器和贴图一起销毁（Model::Release），之后 Render() 取到
+        // 空渲染器就直接 return，模型再也不会上屏。启动路径恰好会切两次
+        // （LoadModel 里的自动切换 + SwitchModelById 的显式切换），
+        // 结果就是桌宠窗口在、模型却一片空白。
+        if (currentModel_ && currentModelId_ == modelId) {
+            const float sameScale = ConfigManager::Instance().GetDouble(ConfigManager::KEY_MODEL_DEFAULT_SCALE, 1.0);
+            const float sameOpacity = ConfigManager::Instance().GetDouble(ConfigManager::KEY_MODEL_DEFAULT_OPACITY, 1.0);
+            it->second->SetScale(sameScale);
+            it->second->SetOpacity(sameOpacity);
+            it->second->SetPosition(
+                ConfigManager::Instance().GetDouble("model.position_x", 0.0),
+                ConfigManager::Instance().GetDouble("model.position_y", 0.0));
+            LOG_INFO("Live2DManager", "Model already current, skipped reload: " + modelId);
+            return true;
+        }
+
+        // 释放当前模型资源，并把它从缓存里摘掉：Model::Release 之后它已经没有
+        // 渲染器/贴图了，留在 models_ 里会被下一次切换当成「已加载」直接切过去，
+        // 得到的又是一个画不出东西的空模型。
         if (currentModel_) {
-            ReleaseModelResources(currentModelId_);
+            const std::string previousId = currentModelId_;
             currentModel_ = nullptr;
+            UnloadModel(previousId);
+
+            it = models_.find(modelId);
+            if (it == models_.end()) {
+                LOG_ERROR("Live2DManager", "Model unloading failed: " + modelId);
+                return false;
+            }
         }
 
         // 切换到新模型

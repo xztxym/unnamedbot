@@ -151,6 +151,9 @@ namespace UnnamedBot {
         // 窗口过程（非静态）
         LRESULT HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
+        // WebView2 配置界面不可用时的降级：直接显示桌宠窗口（隐藏空白配置窗口）。
+        void FallbackShowPet();
+
         // 应用状态
         std::atomic<bool> isRunning_ = false;
         std::atomic<bool> isShuttingDown_ = false;
@@ -195,6 +198,15 @@ namespace UnnamedBot {
         // 模型加载挂起标记：Initialize 里只置位，真正的加载放到更新线程的第一帧，
         // 这样配置中枢窗口不必等模型（8192² 贴图解码+上传很慢）。
         std::atomic<bool> pendingModelLoad_ = false;
+
+        // WebView2 降级：配置界面不可用 → 需要把桌宠放出来（见 FallbackShowPet）。
+        // 失败可能发生在 Initialize 尚未走完时（同步环境失败），所以先记标志，
+        // Initialize 末尾统一补做，避免托盘/模型还没就绪就调 ShowPet。
+        std::atomic<bool> fallbackPetPending_ = false;
+        // 降级只做一次：环境创建失败、控制器失败、看门狗超时会依次上报，
+        // 不能每报一次就把桌宠窗口重摆一遍。
+        std::atomic<bool> fallbackPetShown_ = false;
+        bool initializationDone_ = false;
 
         std::chrono::steady_clock::time_point nextProcessCheck_{};
         std::chrono::steady_clock::time_point nextWeatherCheck_{};

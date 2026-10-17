@@ -27,16 +27,30 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
+    <!-- vcpkg 的 classic 集成靠该属性决定链 lib\*.lib 还是 debug\lib\*.lib；
+         不显式给出时（命令行构建不会导入 vcpkg.props）会退化成链 Release 版依赖库。 -->
+    <VcpkgConfiguration>Debug</VcpkgConfiguration>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
+    <VcpkgConfiguration>Release</VcpkgConfiguration>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
+    <VcpkgConfiguration>Debug</VcpkgConfiguration>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v145</PlatformToolset>
+    <VcpkgConfiguration>Release</VcpkgConfiguration>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -84,7 +98,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -109,7 +123,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -132,7 +146,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -157,7 +171,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- WebView2：自实现 HTML 前端的宿主。用静态加载器，无需额外部署 DLL；

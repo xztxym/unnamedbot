@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "visual-check",
+  "status": "fail",
+  "visualReview": "pending",
+  "artifact": {
+    "path": "E:\\unnamed\\docs\\unnamedbot-function-flow.html",
+    "sha256": "13521d4ec5ed92cc5b0eaf8f2fe5e91da93596302ec02c0fa155dc42da0a8210",
+    "bytes": 651097
+  },
+  "state": {
+    "detail": "read",
+    "motion": "still"
+  },
+  "chrome": {
+    "status": "available",
+    "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  "containment": {
+    "status": "fail",
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 900,
+        "theme": "light",
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "scrollWidth": 1440,
+        "scrollHeight": 2133,
+        "overflowX": false,
+        "overflowY": true,
+        "ok": false,
+        "resolvedTheme": "light"
+      },
+      {
+        "width": 1600,
+        "height": 1000,
+        "theme": "light",
+        "innerWidth": 1600,
+        "innerHeight": 1000,
+        "scrollWidth": 1600,
+        "scrollHeight": 2219,
+        "overflowX": false,
+        "overflowY": true,
+        "ok": false,
+        "resolvedTheme": "light"
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "theme": "light",
+        "innerWidth": 1920,
+        "innerHeight": 1080,
+        "scrollWidth": 1920,
+        "scrollHeight": 2219,
+        "overflowX": false,
+        "overflowY": true,
+        "ok": false,
+        "resolvedTheme": "light"
+      },
+      {
+        "width": 2048,
+        "height": 1320,
+        "theme": "light",
+        "innerWidth": 2048,
+        "innerHeight": 1320,
+        "scrollWidth": 2048,
+        "scrollHeight": 2246,
+        "overflowX": false,
+        "overflowY": true,
+        "ok": false,
+        "resolvedTheme": "light"
+      }
+    ]
+  },
+  "captures": {
+    "status": "pass",
+    "screenshots": [
+      {
+        "width": 1440,
+        "height": 900,
+        "theme": "light",
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "scrollWidth": 1440,
+        "scrollHeight": 2133,
+        "overflowX": false,
+        "overflowY": true,
+        "ok": false,
+        "resolvedTheme": "light",
+        "file": "unnamedbot-function-flow.visual-check.1440x900.light.png"
+      },
+      {
+        "width": 1440,
+        "height": 900,
+        "theme": "dark",
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "scrollWidth": 1440,
+        "scrollHeight": 2133,
+        "overflowX": false,
+        "overflowY": true,
+        "ok": false,
+        "resolvedTheme": "dark",
+        "file": "unnamedbot-function-flow.visual-check.1440x900.dark.png"
+      },
+      {
+        "width": 2048,
+        "height": 1320,
+        "theme": "light",
+        "innerWidth": 2048,
+        "innerHeight": 1320,
+        "scrollWidth": 2048,
+        "scrollHeight": 2246,
+        "overflowX": false,
+        "overflowY": true,
+        "ok": false,
+        "resolvedTheme": "light",
+        "file": "unnamedbot-function-flow.visual-check.2048x1320.light.png"
+      },
+      {
+        "width": 2048,
+        "height": 1320,
+        "theme": "dark",
+        "innerWidth": 2048,
+        "innerHeight": 1320,
+        "scrollWidth": 2048,
+        "scrollHeight": 2246,
+        "overflowX": false,
+        "overflowY": true,
+        "ok": false,
+        "resolvedTheme": "dark",
+        "file": "unnamedbot-function-flow.visual-check.2048x1320.dark.png"
+      }
+    ],
+    "contactSheet": "unnamedbot-function-flow.visual-check.html"
+  },
+  "sidecars": {
+    "receipt": "unnamedbot-function-flow.visual-check.json",
+    "contactSheet": "unnamedbot-function-flow.visual-check.html"
+  }
+}

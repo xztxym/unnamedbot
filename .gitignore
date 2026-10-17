@@ -361,3 +361,15 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# ---- 本机运行时 / 临时产物（2026-10 追加）----
+_wv*/
+Unnamedbot/x64/*/webview2-profile/
+Unnamedbot/x64/*/data/WebView2/
+.dsh-acl-recovery/
+_*.png
+_*.ps1
+_*.py
+_*.raw
+_*.html
+P3RE官网开场动画.zip
+docs.7z

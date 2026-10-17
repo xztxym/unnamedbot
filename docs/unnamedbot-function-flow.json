@@ -1,0 +1,347 @@
+{
+  "schema_version": 1,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "UnnamedBot 功能流程图（设计与接线现状）",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "startup",
+        "label": "启动与常驻",
+        "focus": ["boot", "loop", "store"],
+        "note": "日志、数据库、配置、安全、窗口、渲染、Live2D 等 14 个模块顺序装配，随后进入消息循环与更新线程。"
+      },
+      {
+        "id": "dialog",
+        "label": "对话主链路",
+        "focus": ["input", "handler", "ai", "gateway", "toolset", "reply"],
+        "note": "设计中的主链路：交互入口到流式回复，装配上下文、推理、调用工具、呈现结果。"
+      },
+      {
+        "id": "tool-loop",
+        "label": "工具回环",
+        "focus": ["ai", "gateway", "toolset"],
+        "note": "模型返回 function_call，工具执行后结果回灌，触发第二轮请求生成最终答复。"
+      },
+      {
+        "id": "proactive",
+        "label": "主动触发",
+        "focus": ["watch", "handler", "ai", "store"],
+        "note": "轮询进程、天气、IP 与截图，命中变化后以用户消息身份注入会话，是唯一接通的 AI 入口。"
+      },
+      {
+        "id": "render",
+        "label": "渲染管线",
+        "focus": ["loop", "update", "draw"],
+        "note": "更新线程逐帧驱动 Live2D 更新与 D3D11 透明置顶窗口绘制。"
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "runtime", "label": "应用核心与渲染管线" },
+    { "id": "ui", "label": "用户交互" },
+    { "id": "dialog", "label": "对话与 AI" },
+    { "id": "store", "label": "存储与安全" },
+    { "id": "tools", "label": "MCP 工具" },
+    { "id": "trigger", "label": "主动触发" }
+  ],
+  "phases": [
+    { "id": "boot_phase", "label": "启动装配", "fromCol": 0, "toCol": 0 },
+    { "id": "sense_phase", "label": "输入与感知", "fromCol": 1, "toCol": 1 },
+    { "id": "reason_phase", "label": "推理与决策", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "present_phase", "label": "执行与呈现", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "frame_loop", "label": "逐帧循环", "lane": "runtime", "fromCol": 4, "toCol": 5, "variant": "emphasis" },
+    { "id": "session_ctx", "label": "会话上下文", "lane": "dialog", "fromCol": 2, "toCol": 3 },
+    { "id": "confirm_gate", "label": "确认门", "lane": "tools", "fromCol": 4, "toCol": 5, "variant": "security" }
+  ],
+  "mainPath": ["boot", "input", "handler", "ai", "gateway", "toolset"],
+  "nodes": [
+    {
+      "id": "boot",
+      "lane": "runtime",
+      "col": 0,
+      "type": "backend",
+      "label": "启动装配",
+      "sublabel": "14 个模块",
+      "tag": "顺序装配",
+      "width": 92
+    },
+    {
+      "id": "loop",
+      "lane": "runtime",
+      "col": 1,
+      "type": "backend",
+      "label": "常驻双循环",
+      "sublabel": "消息与更新线程",
+      "tag": "100 ms",
+      "width": 112
+    },
+    {
+      "id": "update",
+      "lane": "runtime",
+      "col": 4,
+      "type": "frontend",
+      "label": "Live2D 更新",
+      "sublabel": "眨眼·呼吸·动作",
+      "tag": "逐帧",
+      "width": 96
+    },
+    {
+      "id": "draw",
+      "lane": "runtime",
+      "col": 5,
+      "type": "frontend",
+      "label": "D3D11 渲染",
+      "sublabel": "透明置顶窗口",
+      "tag": "交换链",
+      "width": 96
+    },
+    {
+      "id": "input",
+      "lane": "ui",
+      "col": 1,
+      "type": "frontend",
+      "label": "交互入口",
+      "sublabel": "点击·热键·托盘",
+      "tag": "通道未接管",
+      "width": 112
+    },
+    {
+      "id": "reply",
+      "lane": "ui",
+      "col": 5,
+      "type": "frontend",
+      "label": "回复呈现",
+      "sublabel": "托盘气泡",
+      "tag": "消息框待接线",
+      "width": 96
+    },
+    {
+      "id": "handler",
+      "lane": "dialog",
+      "col": 2,
+      "type": "backend",
+      "label": "MessageHandler",
+      "sublabel": "会话与上下文",
+      "tag": "裁剪/提示词",
+      "width": 100
+    },
+    {
+      "id": "ai",
+      "lane": "dialog",
+      "col": 3,
+      "type": "cloud",
+      "label": "AIClient 流式",
+      "sublabel": "OpenAI 兼容",
+      "tag": "function_call",
+      "width": 100
+    },
+    {
+      "id": "store",
+      "lane": "store",
+      "col": 1,
+      "type": "database",
+      "label": "SQLite 存储",
+      "sublabel": "配置·会话·附件",
+      "tag": "WAL + 外键",
+      "width": 118
+    },
+    {
+      "id": "gateway",
+      "lane": "tools",
+      "col": 4,
+      "type": "messagebus",
+      "label": "MCPToolManager",
+      "sublabel": "路由 · 确认门",
+      "tag": "需确认",
+      "width": 96
+    },
+    {
+      "id": "toolset",
+      "lane": "tools",
+      "col": 5,
+      "type": "external",
+      "label": "6 个内置工具",
+      "sublabel": "时间·进程·天气",
+      "tag": "URL/通知/截图",
+      "width": 96
+    },
+    {
+      "id": "watch",
+      "lane": "trigger",
+      "col": 2,
+      "type": "messagebus",
+      "label": "触发轮询",
+      "sublabel": "进程·天气·IP",
+      "tag": "冷却 480 s",
+      "width": 118
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_boot_input",
+      "from": "boot",
+      "to": "input",
+      "label": "窗口就绪",
+      "variant": "emphasis",
+      "role": "main",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "drop",
+      "labelSegment": 1,
+      "labelDy": 11
+    },
+    {
+      "id": "e_boot_loop",
+      "from": "boot",
+      "to": "loop",
+      "variant": "default",
+      "role": "branch"
+    },
+    {
+      "id": "e_loop_update",
+      "from": "loop",
+      "to": "update",
+      "label": "每帧",
+      "variant": "dashed",
+      "role": "async"
+    },
+    {
+      "id": "e_update_draw",
+      "from": "update",
+      "to": "draw",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "e_input_handler",
+      "from": "input",
+      "to": "handler",
+      "label": "用户消息",
+      "variant": "emphasis",
+      "role": "main",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "drop",
+      "labelSegment": 1,
+      "labelDy": 11
+    },
+    {
+      "id": "e_handler_ai",
+      "from": "handler",
+      "to": "ai",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "e_ai_gateway",
+      "from": "ai",
+      "to": "gateway",
+      "label": "工具调用",
+      "variant": "default",
+      "role": "main",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "drop",
+      "labelSegment": 1
+    },
+    {
+      "id": "e_gateway_toolset",
+      "from": "gateway",
+      "to": "toolset",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "e_toolset_ai",
+      "from": "toolset",
+      "to": "ai",
+      "label": "工具结果回灌",
+      "variant": "dashed",
+      "role": "return",
+      "fromSide": "top",
+      "toSide": "right",
+      "via": [[625, 367], [480, 367]]
+    },
+    {
+      "id": "e_ai_reply",
+      "from": "ai",
+      "to": "reply",
+      "label": "流式文本",
+      "variant": "emphasis",
+      "role": "return",
+      "fromSide": "top",
+      "toSide": "left",
+      "via": [[430, 243], [577, 243]]
+    },
+    {
+      "id": "e_handler_store",
+      "from": "handler",
+      "to": "store",
+      "label": "落库",
+      "variant": "dashed",
+      "role": "branch",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "drop",
+      "labelSegment": 1,
+      "labelDy": 11
+    },
+    {
+      "id": "e_watch_handler",
+      "from": "watch",
+      "to": "handler",
+      "label": "触发事件",
+      "variant": "dashed",
+      "role": "branch",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "route": "straight",
+      "labelAt": [300, 560]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "对话与工具链",
+      "items": [
+        "MessageHandler 拼装系统提示与前后缀提示词，按 4096 Token / 30 轮裁剪历史",
+        "AIClient 请求 baseUrl + /chat/completions，SSE 整体缓冲后解析而非逐字推送",
+        "返回 function_call 后由 MCPToolManager 执行，结果回灌发起第二轮非流式请求",
+        "确认门：open_url 与 send_notification 需用户确认；主链路未接通，消息框与热键未接 MessageHandler"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "主动触发引擎",
+      "items": [
+        "更新线程每 5 秒走一次触发检查，全局冷却 480 秒",
+        "前台进程约 50 秒、天气与 IP 约 5 分钟、截图约 15 分钟各查一次",
+        "命中变化即构造 TriggerEvent，以用户消息身份写入会话，是目前唯一接通的 AI 入口",
+        "天气走高德 restapi，IP 归属走 ip-api.com；截图工具返回的 base64 是占位串"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "存储与安全",
+      "items": [
+        "配置不落文件：全部存在 SQLite config 表，首跑写入 37 个默认键",
+        "六张表：config / sessions / messages / model_state / attachments / tasks",
+        "model_state 表从未读写；DPAPI 只实现 Decrypt，API Key 实际明文入库",
+        "附件管理器完整但无人调用，扩展名白名单为空，类型校验只告警不拦截"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "现状与阻塞",
+      "items": [
+        "已成形：模块装配顺序、SQLite 与日志、托盘图标、D3D11 与 Live2D 渲染骨架",
+        "Live2D 链路缺件：未编译链接 Framework 源码，未绑定纹理与渲染常量",
+        "多处 std::mutex 同线程重入：HandleTriggerEvent、Live2DManager::Initialize 等",
+        "AppCore.h 未同步成员声明、Utils.cpp 被截断，源码树无法编译；托盘与热键回调无人处理"
+      ]
+    }
+  ]
+}

@@ -64,20 +64,6 @@ namespace UnnamedBot {
         // 日志与数据库都按「工作目录优先、否则 exe 目录」解析：
         // 装好之后从快捷方式启动时工作目录不可控，否则 data/logs 会散落到随机位置。
         Logger::Instance().Initialize(Utils::ResolveAppRelative(L"logs").wstring().c_str(), 30);
-        // 发布版默认 info 级 + 不输出控制台：原来是 debug + 控制台，
-        // 隐藏状态下 UpdateManager 每 100ms 打一行「Check interval not reached」，
-        // 一分钟就是 860 行写盘 —— 老机器上这是实打实的磁盘与 CPU 开销。
-        {
-            const std::string level = Utils::ToLower(
-                ConfigManager::Instance().GetString(ConfigManager::KEY_LOG_LEVEL, "info"));
-            LogLevel parsed = LogLevel::Info;
-            if (level == "debug") parsed = LogLevel::Debug;
-            else if (level == "warn" || level == "warning") parsed = LogLevel::Warn;
-            else if (level == "error" || level == "off" || level == "none") parsed = (level == "error" ? LogLevel::Error : LogLevel::Error);
-            Logger::Instance().SetMinLevel(parsed);
-            Logger::Instance().SetConsoleOutput(
-                ConfigManager::Instance().GetBool(ConfigManager::KEY_LOG_CONSOLE, false));
-        }
         LOG_INFO("AppCore", "Logger initialized.");
 
         // 贴图解码依赖 WIC（COM 组件），因此必须先初始化 COM。
@@ -103,6 +89,25 @@ namespace UnnamedBot {
         // 初始化配置管理器
         ConfigManager::Instance().Initialize();
         LOG_INFO("AppCore", "Config manager initialized.");
+
+        // 日志级别与控制台输出存在 app.db 里，必须等数据库和配置管理器都就绪后再读。
+        // 之前这段紧跟 Logger::Initialize 之后，会先于数据库初始化去查 config 表，
+        // 于是启动日志里稳定出现两条「[Database] Database not initialized.」，
+        // 级别配置也永远读不到（只能吃默认值）。
+        {
+            const std::string level = Utils::ToLower(
+                ConfigManager::Instance().GetString(ConfigManager::KEY_LOG_LEVEL, "info"));
+            LogLevel parsed = LogLevel::Info;
+            if (level == "debug") parsed = LogLevel::Debug;
+            else if (level == "warn" || level == "warning") parsed = LogLevel::Warn;
+            else if (level == "error" || level == "off" || level == "none") parsed = (level == "error" ? LogLevel::Error : LogLevel::Error);
+            Logger::Instance().SetMinLevel(parsed);
+            // 发布版默认 info 级 + 不输出控制台：原来是 debug + 控制台，
+            // 隐藏状态下 UpdateManager 每 100ms 打一行「Check interval not reached」，
+            // 一分钟就是 860 行写盘 —— 老机器上这是实打实的磁盘与 CPU 开销。
+            Logger::Instance().SetConsoleOutput(
+                ConfigManager::Instance().GetBool(ConfigManager::KEY_LOG_CONSOLE, false));
+        }
 
         // 初始化安全工具
         SecurityUtils::Instance().Initialize();
@@ -190,6 +195,18 @@ namespace UnnamedBot {
             }
         });
 
+        // WebView2 配置界面不可用时的降级：本机 msedgewebview2.exe 一被拉起就崩，
+        // 界面永远空白、用户也无从点「保存」。此时别让用户干等，直接把桌宠放出来。
+        ControlTerminalWindow::Instance().OnWebViewFailed([this]() {
+            fallbackPetPending_ = true;
+            if (initializationDone_) FallbackShowPet();
+        });
+        // 若失败发生在回调注册之前（同步的环境创建失败，比如完全没装 Runtime），
+        // 上面那个 lambda 永远收不到通知，这里主动补一笔。
+        if (ControlTerminalWindow::Instance().IsWebViewFailed()) {
+            fallbackPetPending_ = true;
+        }
+
         // 初始化系统托盘
         if (!InitializeTrayIcon()) {
             LOG_WARN("AppCore", "Failed to initialize tray icon.");
@@ -225,8 +242,65 @@ namespace UnnamedBot {
         // 同步托盘状态：此时桌宠尚未显示，菜单项应呈现为「显示桌宠」
         TrayIcon::Instance().ShowPet(false);
 
+        // 初始化全部结束；WebView2 若已判定失败，这里补做降级（托盘/模型已就绪）。
+        initializationDone_ = true;
+        if (fallbackPetPending_) FallbackShowPet();
+
         LOG_INFO("AppCore", "Application initialized successfully.");
         return true;
+    }
+
+    // WebView2 配置界面不可用时的降级路径。
+    //
+    // 原来的启动流程是「配置界面里按保存 → 才显示桌宠」，一旦本机的
+    // msedgewebview2.exe 起不来（Runtime 崩溃 / 未安装 / 被安全软件拦截），
+    // 配置窗口永远是一片空白，用户既点不到保存也看不到桌宠，软件等于打不开。
+    // 这里把「界面不可用」当成一种正常分支：收起空白窗口，直接把桌宠放到桌面上，
+    // 托盘与热键照常工作，设置仍可手改配置文件。
+    //
+    // 可能被三条路径调用（都在 UI 线程）：
+    //   1. 环境创建 / 控制器创建同步失败 → OnWebViewFailed 回调（Initialize 未完成时只记录，末尾补做）
+    //   2. 看门狗超时（控制器有了但页面永远不 ready）→ 同一个回调
+    //   3. Initialize 末尾的补做
+    void AppCore::FallbackShowPet() {
+        // 幂等：多条失败路径只会真正执行一次
+        if (fallbackPetShown_.exchange(true)) {
+            return;
+        }
+        fallbackPetPending_ = false;
+
+        LOG_WARN("AppCore", "WebView2 config UI is unavailable; falling back to pet-only mode.");
+
+        // 1) 收起空白的配置窗口：它没有内容可看，留在屏幕上只会让用户以为程序卡死
+        ControlTerminalWindow::Instance().Show(false);
+
+        // 2) 显示桌宠窗口。位置沿用上次保存的坐标，第一次启动时用默认值
+        if (mainWindow_) {
+            mainWindow_->SetPosition(
+                ConfigManager::Instance().GetInt("window.position_x", 100),
+                ConfigManager::Instance().GetInt("window.position_y", 100));
+            if (!mainWindow_->IsVisible()) {
+                mainWindow_->Show(true);
+            }
+            mainWindow_->RestoreState();
+        } else {
+            LOG_ERROR("AppCore", "Fallback: main window is missing; cannot show pet.");
+            return;
+        }
+
+        // 3) 模型是延迟加载的：窗口一旦可见，更新线程下一帧就会载入模型并开始渲染
+        pendingModelLoad_ = true;
+
+        // 4) 托盘菜单的「显示/隐藏桌宠」状态跟着改（托盘可能压根没建起来，ShowPet 本身是安全的）
+        TrayIcon::Instance().ShowPet(true);
+
+        // 5) 把原因告诉用户：气泡 + 托盘通知 + 日志，别让人莫名其妙
+        const std::wstring text =
+            L"配置界面不可用（WebView2 异常），已直接显示桌宠。";
+        SpeechBubble::Instance().ShowAnchored(text);
+        TrayIcon::Instance().ShowNotification(L"桌宠中枢", text, NIIF_WARNING, 6000);
+
+        LOG_INFO("AppCore", "Fallback: pet-only mode enabled, pet window shown.");
     }
 
     namespace {
@@ -1276,6 +1350,14 @@ namespace UnnamedBot {
 
         if (result.success && !result.data.empty()) {
             LOG_INFO("AppCore", "Weather updated for " + city);
+            // 主页「今日」块用的天气文案（运行时缓存，不进设置界面）
+            {
+                std::string text = result.content;
+                std::string clean;
+                for (char ch : text) { if (ch != '\n' && ch != '\r') clean.push_back(ch); }
+                if (clean.size() > 48) clean = clean.substr(0, 48) + "…";
+                ConfigManager::Instance().SetString("runtime.weather_text", clean);
+            }
 
             TriggerEvent event;
             event.type = TriggerEventType::WeatherUpdate;

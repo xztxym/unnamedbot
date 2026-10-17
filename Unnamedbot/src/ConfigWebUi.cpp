@@ -86,22 +86,25 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* ============ 1. 外壳 ============ */
 .wrap{position:fixed;inset:0;display:flex}
-.rail{width:var(--rail);flex:none;background:rgba(3,31,100,.55);border-right:1px solid var(--panel-line);
-  display:flex;flex-direction:column;padding:var(--s4) var(--s2);gap:2px;z-index:50;
-  backdrop-filter:blur(6px)}
-.rail .rt{font-family:var(--ff-dis);font-size:var(--fs-meta);letter-spacing:.24em;text-transform:uppercase;
-  color:var(--tx-3);padding:var(--s2) var(--s2) var(--s4);border-bottom:1px solid var(--panel-line);margin-bottom:var(--s3)}
-.rail button{display:flex;align-items:center;gap:var(--s2);min-height:40px;padding:0 var(--s2);
-  font-size:var(--fs-ui);color:var(--tx-2);text-align:left;white-space:nowrap;
-  transition:color var(--t-hover) linear,background var(--t-hover) linear}
-.rail button .n{font-family:var(--ff-mono);font-size:var(--fs-meta);color:var(--tx-3)}
-.rail button:hover{color:var(--tx-hi);background:rgba(255,255,255,.1)}
-.rail button[aria-current="true"]{color:var(--navy);background:var(--pink);font-weight:700}
-.rail button[aria-current="true"] .n{color:rgba(3,31,100,.75)}
-.rail .rfoot{margin-top:auto;padding:var(--s3) var(--s2) 0;border-top:1px solid var(--panel-line);
-  font-family:var(--ff-mono);font-size:var(--fs-meta);line-height:1.9;color:var(--tx-3)}
+/* 侧边栏：只留一条窄导航，不加编号、不加色块，选中项用左侧细线 + 轻微提亮表示 */
+.rail{width:var(--rail);flex:none;
+  background:linear-gradient(90deg,rgba(2,14,40,.52) 0%,rgba(2,14,40,.24) 72%,rgba(2,14,40,.12) 100%);
+  border-right:1px solid rgba(170,215,255,.12);
+  display:flex;flex-direction:column;padding:var(--s6) var(--s3) var(--s4);gap:2px;z-index:50;
+  backdrop-filter:blur(14px) saturate(1.15)}
+.rail .rt{font-family:var(--ff-dis);font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--tx-3);opacity:.62;padding:0 var(--s2) var(--s6)}
+.rail button{display:flex;align-items:center;min-height:38px;padding:0 var(--s2);border-left:2px solid transparent;
+  font-size:var(--fs-ui);color:var(--tx-2);text-align:left;white-space:nowrap;background:none;
+  transition:color 160ms linear,background 160ms linear,border-color 160ms linear}
+.rail button .n{display:none}
+.rail button:hover{color:var(--tx-hi);background:rgba(255,255,255,.05)}
+.rail button[aria-current="true"]{color:var(--tx-hi);background:rgba(255,255,255,.08);
+  border-left-color:var(--pink);font-weight:700}
+.rail .rfoot{margin-top:auto;font-family:var(--ff-mono);font-size:10px;letter-spacing:.14em;
+  color:var(--tx-3);opacity:.5;padding:0 var(--s2)}
 
-.screens{position:relative;flex:1;min-width:0;overflow:hidden}
+.screens{position:relative;flex:1;min-width:0;overflow:hidden;z-index:1;background:transparent}
 .view{position:absolute;inset:0;display:flex;flex-direction:column;
   opacity:0;visibility:hidden;pointer-events:none;overflow:hidden}
 /* 焦点态：屏幕既要不吃点击，也要能被 elementFromPoint 判定为"不可交互" */
@@ -883,6 +886,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 }
 .view.on{transition:opacity 240ms var(--e-out), transform 360ms var(--e-out), filter 300ms var(--e-out), visibility 0s linear}
 .view.enter-fwd{opacity:0;transform:translate3d(58px,0,0) scale(.992)}
+/* 需要配水幕/涟漪转场的页面：只做软淡入，位移交给转场层 */
+.view.enter-soft{opacity:0;transform:none;filter:none;transition:opacity 980ms cubic-bezier(.33,.1,.28,1)}
+.view.enter-soft.on{opacity:1}
 .view.enter-back{opacity:0;transform:translate3d(-58px,0,0) scale(.992)}
 .view.leave-fwd{opacity:0;transform:translate3d(-44px,0,0) scale(.992);filter:blur(2px);pointer-events:none}
 .view.leave-back{opacity:0;transform:translate3d(44px,0,0) scale(.992);filter:blur(2px);pointer-events:none}
@@ -894,25 +900,154 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   .view.on .pagewrap, .view.on .stagewrap, .view.on .lampbar{animation:none !important}
 }
 
-/* ---- 前进转场：6 片半透明切片自上落下（设计稿的切片，只收了一档不透明度） ---- */
-.slices{position:fixed;inset:0;z-index:70;pointer-events:none;display:none}
-.slices.on{display:block}
-.slices i{position:absolute;top:-110%;bottom:110%;width:calc(100% / 6);display:block;
-  background:linear-gradient(180deg, rgba(6,26,80,.82), rgba(2,10,36,.92));backdrop-filter:blur(1px)}
-body.yandere .slices i{background:linear-gradient(180deg, rgba(58,14,28,.82), rgba(24,6,14,.92))}
-.slices.on i{animation:sliceIn 300ms linear forwards}
-.slices i:nth-child(1){left:0}
-.slices i:nth-child(2){left:calc(100% / 6)}
-.slices i:nth-child(3){left:calc(200% / 6)}
-.slices i:nth-child(4){left:50%}
-.slices i:nth-child(5){left:calc(400% / 6)}
-.slices i:nth-child(6){left:calc(500% / 6)}
-@keyframes sliceIn{
-  0%{top:-110%;bottom:110%}
-  42%{top:0;bottom:0}
-  58%{top:0;bottom:0}
-  100%{top:110%;bottom:-110%}
+/* ---- 01 主页 · P3R 开场：满屏视频 + 水波 + Memento Mori ----
+   进入主页时不是叠一层色块，而是让开场视频自己从「水花炸开」那一段开始播：
+   white → 水散开 → 沉入水下，就是参考站进入主页的那一下。 */
+/* 全幅：开场动画铺满整个窗口（含侧边栏下方），侧边栏是半透明玻璃，动画从底下透出来 */
+.homehero{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:linear-gradient(165deg,#0b4fb8 0%,#062a75 46%,#01102f 100%)}
+/* 主页不要蓝场底色，让全幅动画透上来（其它页仍然是 .field 的不透明底） */
+#v-home .field{display:none}
+.homehero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  opacity:0;transition:opacity 520ms var(--e-out)}
+.homehero video.on{opacity:1}
+/* 压暗层：动态画面上菜单与文字还要读得清；水花刚炸开那一下它要退开，画面才亮 */
+.homehero .scrim{position:absolute;inset:0;transition:opacity 700ms var(--e-out);
+  background:
+    linear-gradient(90deg,rgba(2,9,32,.9) 0%,rgba(2,9,32,.52) 40%,rgba(2,9,32,.1) 66%,rgba(2,9,32,.36) 100%),
+    linear-gradient(180deg,rgba(2,9,32,.42) 0%,rgba(2,9,32,0) 24%,rgba(2,9,32,.6) 100%)}
+#v-home.intro .homehero .scrim{opacity:.34}
+/* Memento Mori 在左侧（与右侧菜单对调），与下面的「今日」块共用同一个左边距 */
+.homehero .memento{position:absolute;left:calc(var(--rail) + 52px);top:16%;text-align:left;color:#fff;opacity:0;
+  text-shadow:0 2px 26px rgba(1,16,48,.6)}
+.homehero .memento h1{font-family:var(--ff-art);font-size:clamp(28px,3.2vw,48px);line-height:1;
+  letter-spacing:.01em;margin-bottom:var(--s3)}
+.homehero .memento p{font-size:var(--fs-ui);line-height:1.85;color:rgba(255,255,255,.9);letter-spacing:.05em}
+/* 每次进入主页重放一次：淡入 → 停一会 → 淡出，把位置让给「今日」块 */
+.homehero .memento.show{animation:mementoCycle 3.8s var(--e-out) 220ms forwards}
+@keyframes mementoCycle{
+  0%{opacity:0;transform:translateY(8px)}
+  8%{opacity:1;transform:none}
+  62%{opacity:1;transform:none}
+  86%{opacity:0;transform:none}
+  100%{opacity:0;transform:none}
 }
+/* --- 今日：Memento 消失后填上同一块空位（时间 / 日期 / 天气 / 日程） --- */
+.today{position:absolute;left:52px;top:112px;z-index:4;min-width:280px;
+  opacity:0;transform:translateY(6px);transition:opacity 520ms var(--e-out),transform 520ms var(--e-out)}
+.today.show{opacity:1;transform:none}
+/* 左栏底衬：让时间/天气在浅色人物画面上也压得住，同时把版面收成一块 */
+.today::before{content:"";position:absolute;left:-30px;top:-24px;right:-140px;bottom:-20px;z-index:-1;
+  background:linear-gradient(100deg,rgba(2,12,36,.66) 0%,rgba(2,12,36,.4) 42%,rgba(2,12,36,.12) 74%,rgba(2,12,36,0) 100%);
+  border-left:1px solid rgba(150,205,250,.22)}
+.today .tclock{font-family:var(--ff-art);font-size:clamp(44px,5.4vw,68px);line-height:.96;
+  letter-spacing:.01em;color:#fff;text-shadow:0 6px 30px rgba(1,16,48,.72)}
+.today .tclock em{font-style:normal;font-size:.32em;letter-spacing:.22em;vertical-align:super;
+  color:rgba(190,232,255,.8);margin-left:10px}
+.today .tdate{font-family:var(--ff-dis);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
+  color:rgba(200,232,255,.78);margin-top:10px}
+/* C 版排版：天气/日程从今日块里拆出来，压到左下双栏当第三条基线 */
+.tstats{position:absolute;left:52px;bottom:106px;z-index:4;display:flex;gap:58px;
+  opacity:0;transform:translateY(8px);
+  transition:opacity 520ms var(--e-out) 120ms,transform 520ms var(--e-out) 120ms}
+.tstats .tcol i{display:block;font-style:normal;font-family:var(--ff-dis);font-size:9.5px;letter-spacing:.22em;
+  color:rgba(170,214,248,.72);margin-bottom:7px}
+.tstats .tcol b{display:block;font-weight:400;font-size:13px;line-height:1.5;color:var(--tx-2);max-width:170px}
+#v-home.today-on .tstats{opacity:1;transform:none}
+.today .tsep{height:1px;background:linear-gradient(90deg,rgba(160,215,255,.45),rgba(160,215,255,0));
+  margin:16px 0 14px;width:230px}
+.today .trow{display:flex;align-items:baseline;gap:14px;padding:5px 0;font-size:13px;
+  color:rgba(232,246,255,.94);letter-spacing:.05em}
+.today .trow i{font-style:normal;font-family:var(--ff-dis);font-size:9.5px;letter-spacing:.2em;
+  color:rgba(170,214,248,.8);width:76px;flex:none}
+.today .trow b{font-weight:400;color:#fff}
+.today .trow b.dim{color:rgba(200,228,255,.55)}
+/* 水波：五层波峰叠在主页底部，缓慢起伏（参考稿的 wave-1..5） */
+.homehero .waves{position:absolute;left:0;right:0;bottom:0;height:20vh;min-height:110px}
+.homehero .waves svg{position:absolute;left:0;bottom:0;width:100%;height:150px;display:block}
+.homehero .waves svg:nth-child(1){bottom:30px;opacity:.32;fill:#7fd0fb;animation:waveBob 6.4s ease-in-out infinite}
+.homehero .waves svg:nth-child(2){bottom:20px;opacity:.4;fill:#54b9f7;animation:waveBob 5.2s ease-in-out infinite reverse}
+.homehero .waves svg:nth-child(3){bottom:12px;opacity:.55;fill:#2f9bf0;animation:waveBob 4.4s ease-in-out infinite}
+.homehero .waves svg:nth-child(4){bottom:5px;opacity:.72;fill:#1178dd;animation:waveBob 3.6s ease-in-out infinite reverse}
+.homehero .waves svg:nth-child(5){bottom:0;opacity:.9;fill:#0a5cc0;animation:waveBob 3s ease-in-out infinite}
+@keyframes waveBob{50%{transform:translateY(-9px)}}
+/* 主页排版：菜单挪到右边（与开场文字对调），文字齐右；左侧留给 Session 面板 */
+#v-home .col{left:auto;right:7.2%;top:56%;width:560px;
+  transform:translateY(-50%) scale(.86);transform-origin:100% 50%}
+#v-home .col .opt{justify-content:flex-end}
+#v-home .col .opt .pair{padding-left:0;padding-right:var(--s2);transform-origin:100% 50%}
+#v-home .col .opt .plates{left:-26px;right:-16px}
+#v-home .water{display:none}
+#v-home .ghost{display:none}
+#v-home .dsline{display:none}
+/* 主页不显示底部操作条：鼠标为主，去掉之后版面更整 */
+#v-home .botbar{display:none}
+#v-home .homestat{position:absolute;top:88px;bottom:auto;right:60px;left:auto;width:238px;text-align:right}
+#v-home .homestat::before{content:"";position:absolute;inset:-16px -22px;z-index:-1;
+  background:linear-gradient(270deg,rgba(2,12,36,.58) 0%,rgba(2,12,36,.28) 58%,rgba(2,12,36,0) 100%)}
+#v-home .homestat .cap{justify-content:flex-end;margin-bottom:2px}
+#v-home .homestat .big{font-size:19px;margin-bottom:4px;letter-spacing:0}
+#v-home .homestat .kv{padding:3px 0;font-size:11.5px}
+#v-home .homestat .kv:nth-child(3),#v-home .homestat .kv:nth-child(4){display:none}
+/* 进场：水花还在时先不露菜单，等画面沉进水下再浮上来；侧边栏也一起暂让 */
+#v-home .topbar, #v-home .botbar, #v-home .col, #v-home .homestat{
+  transition:opacity 760ms cubic-bezier(.22,.61,.36,1),transform 760ms cubic-bezier(.22,.61,.36,1)}
+/* 菜单逐条浮上来：水面落定后一条条冒，不要整块弹出来 */
+#v-home .col .opt{transition:opacity 1180ms cubic-bezier(.16,.68,.28,1),transform 1180ms cubic-bezier(.16,.68,.28,1)}
+#v-home.intro .col .opt{opacity:0;transform:translateY(18px)}
+#v-home .col .opt:nth-child(1){transition-delay:0ms}
+#v-home .col .opt:nth-child(2){transition-delay:180ms}
+#v-home .col .opt:nth-child(3){transition-delay:360ms}
+#v-home .col .opt:nth-child(4){transition-delay:540ms}
+#v-home.intro .topbar, #v-home.intro .botbar, #v-home.intro .col, #v-home.intro .homestat{opacity:0}
+#v-home.intro .today{opacity:0}
+
+/* ---- 页间转场（只用于非主页；主页由开场视频自己做转场）。全部 0.6s 以内 ---- */
+.fx{position:fixed;inset:0;z-index:400;pointer-events:none;overflow:hidden;display:none}
+.fx.on{display:block}
+.fx>*{position:absolute}
+.fx.b .wl{left:0;right:0;bottom:0;height:0;background:linear-gradient(180deg,#9fe4ff 0%,#2f86e0 22%,#0a4fb4 62%,#031a52 100%)}
+.fx.b.on .wl{animation:fxRise .72s cubic-bezier(.42,0,.3,1) forwards}
+.fx.b .wl::before{content:"";position:absolute;left:-4%;right:-4%;top:-18px;height:20px;background:radial-gradient(60% 100% at 30% 100%,transparent 62%,#b6ecff 64%,#b6ecff 74%,transparent 76%) repeat-x;background-size:150px 22px}
+@keyframes fxRise{0%{height:0}52%{height:104%}100%{height:104%;opacity:0}}
+.fx.c .dv{inset:0;background:radial-gradient(120% 100% at 50% 26%,rgba(10,60,132,.28),rgba(1,8,28,.94))}
+.fx.c.on .dv{animation:fxDive .68s var(--e-out) forwards}
+.fx.c .bp{border-radius:50%;border:1px solid rgba(226,246,255,.85);background:rgba(170,226,255,.14);bottom:-16px}
+.fx.c.on .bp{animation:fxBub .68s linear forwards}
+@keyframes fxDive{0%{opacity:0}26%{opacity:1}66%{opacity:1}100%{opacity:0}}
+@keyframes fxBub{0%{transform:translateY(0) scale(.7);opacity:0}20%{opacity:.9}100%{transform:translateY(-180px) scale(1.1);opacity:0}}
+.fx.d .rp{left:50%;top:50%;width:78px;height:78px;margin:-39px 0 0 -39px;border-radius:50%;z-index:2;
+  border:2px solid rgba(196,240,255,.92);opacity:0}
+.fx.d .rp.r2{border-color:rgba(150,214,255,.7);width:66px;height:66px;margin:-33px 0 0 -33px}
+.fx.d .rp.r3{border-color:rgba(120,196,255,.5);width:54px;height:54px;margin:-27px 0 0 -27px}
+
+.fx.d .fd{inset:0;z-index:1;background:radial-gradient(circle at 50% 50%,#0f6ee0 0%,#0a4fb4 42%,#02102f 76%);clip-path:circle(0% at 50% 50%)}
+.fx.d.on .rp.r1{animation:fxRing 1.05s cubic-bezier(.2,.62,.24,1) forwards}
+.fx.d.on .rp.r2{animation:fxRing 1.05s cubic-bezier(.2,.62,.24,1) .12s forwards}
+.fx.d.on .rp.r3{animation:fxRing 1.05s cubic-bezier(.2,.62,.24,1) .24s forwards}
+.fx.d.on .fd{animation:fxFlood 1.2s cubic-bezier(.32,.06,.28,1) .34s forwards}
+@keyframes fxRing{0%{opacity:0;transform:scale(.18)}10%{opacity:1}62%{opacity:.34;transform:scale(8.4)}100%{opacity:0;transform:scale(12.5)}}
+@keyframes fxFlood{0%{clip-path:circle(0% at 50% 50%);opacity:1}38%{clip-path:circle(118% at 50% 50%);opacity:1}74%{clip-path:circle(118% at 50% 50%);opacity:1}100%{clip-path:circle(118% at 50% 50%);opacity:0}}
+
+
+
+.fx.e .sh{left:-45%;right:-45%;top:-24%;bottom:-24%;transform:translateX(-125%) skewX(-14deg);
+  background:linear-gradient(90deg,rgba(127,208,251,0) 0%,rgba(159,228,255,.92) 16%,#2f86e0 48%,#0a4fb4 74%,#02102f 100%);
+  box-shadow:0 0 90px 18px rgba(120,200,255,.28)}
+.fx.e .sh::before{content:"";position:absolute;left:-70px;top:0;bottom:0;width:70px;
+  background:linear-gradient(90deg,rgba(127,208,251,0),rgba(196,240,255,.55))}
+
+.fx.e .sh::after{content:"";position:absolute;right:-26px;top:0;bottom:0;width:52px;background:linear-gradient(90deg,rgba(234,248,255,.92),transparent)}
+.fx.e.on .sh{animation:fxShear 1.05s cubic-bezier(.45,.05,.35,.95) forwards}
+@keyframes fxShear{0%{transform:translateX(-125%) skewX(-14deg)}34%{transform:translateX(0%) skewX(-14deg)}60%{transform:translateX(0%) skewX(-14deg)}100%{transform:translateX(125%) skewX(-14deg)}}
+
+
+/* 进入主页前强制回到冷蓝调（？？？模式下也一样），进场结束再交还给宿主主题 */
+body.force-blue{--pink:#FD77D9;--blue:#0B4FB8;--blue-deep:#02102F;--blue-light:#2F86E0;
+  --navy:#04122F;--ink-a:#7FD0FB;--ink-b:#BDEBFF;--ink-c:#EAF6FF;
+  --tx-hi:#F2F8FF;--tx-2:#CDE3FA;--tx-3:#8FAFD6;--panel:rgba(4,26,64,.72)}
+body.force-blue .field{background:radial-gradient(115% 85% at 14% 82%, var(--blue-light) 0%, transparent 54%),radial-gradient(78% 58% at 82% 6%, rgba(111,211,255,.30) 0%, transparent 62%),linear-gradient(162deg, var(--blue) 0%, var(--blue-deep) 100%)}
+body.force-blue .opt .cjk{font-style:normal;letter-spacing:.04em}
 
 /* ---- ？？？：整页换成酒红 + 楷体斜体（只替换令牌，不动结构） ---- */
 /* 与宿主 UiTheme::MakeYandereTheme 一一对应。
@@ -1253,15 +1388,47 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
 <body>
 
 <div class="wrap">
+  <!-- 全屏开场动画：铺满整个窗口（侧边栏是半透明玻璃，动画从底下透出来） -->
+  <div class="fx" id="fx" aria-hidden="true">
+    <div class="wl"></div>
+    <div class="dv"></div>
+    <div class="bp" style="left:16%;width:10px;height:10px"></div>
+    <div class="bp" style="left:31%;width:16px;height:16px"></div>
+    <div class="bp" style="left:47%;width:8px;height:8px"></div>
+    <div class="bp" style="left:63%;width:20px;height:20px"></div>
+    <div class="bp" style="left:79%;width:12px;height:12px"></div>
+    <div class="rp r1"></div><div class="rp r2"></div><div class="rp r3"></div><div class="fd"></div>
+    <div class="sh"></div>
+  </div>
+      <!-- P3R 开场：满屏视频 + 水波 + Memento Mori + 徽标。素材走 p3r.local 虚拟域名（可执行文件旁的 webui\） -->
+      <div class="homehero" id="homeHero" aria-hidden="true">
+        <video id="heroV1" muted playsinline preload="auto">
+          <source src="https://p3r.local/media/fv_movie1.mp4" type="video/mp4">
+        </video>
+        <video id="heroV2" muted playsinline loop preload="auto">
+          <source src="https://p3r.local/media/fv_movie2.mp4" type="video/mp4">
+        </video>
+        <div class="scrim"></div>
+        <div class="memento" id="heroMemento">
+          <h1>Memento Mori</h1>
+          <p>Remember, You Will Die.<br>Time never waits.<br>It delivers all equally to the same end.</p>
+        </div>
+        <div class="waves" id="heroWaves">
+          <svg viewBox="0 0 1920 200" preserveAspectRatio="none"><path d="m-7.50007,199.99954c38.55,-11.81836 102,-26.83949 201.75,-34.22991c197.79,-14.66264 316,17.15238 588,13.63445c276.68,-3.57702 309.45,-38.48846 504,-30.11318c156.66,6.74828 193.87,31.90957 432,44.88613a1630.73,642.41844 0 0 0 194.25,5.82251"/></svg>
+          <svg viewBox="0 0 1920 200" preserveAspectRatio="none"><path d="m-35.50008,200.00014c0.49608,-9.02135 7.48802,-21.8591 43.99211,-31.91707c122.38232,-33.73116 419.85324,7.1527 836.78616,17.2925c605.93053,14.73096 1057.17729,-45.35225 1123.2029,-13.29332c12.36459,6.0015 10.29603,14.78551 -21.38766,27.91789"/></svg>
+          <svg viewBox="0 0 1920 200" preserveAspectRatio="none"><path d="m-203.79,205a767.9,279.54683 0 0 1 93.79,-17.83799c225.82,-35.95994 372.73,-11.6493 616,-18.20203c283.74,-7.64485 266.4,-45.67982 508,-44.04892c175.09,1.18313 249.84,21.59125 457,44.41296c155.4,17.10991 382.91,35.33015 680.28,35.67599"/></svg>
+          <svg viewBox="0 0 1920 200" preserveAspectRatio="none"><path d="m3.76331,200.00031c95.32,-14.29011 237.41,-30.81313 414.57,-33.27552c224.86,-3.12331 258.37,19.84827 485,24.55504c394.63,8.19725 593.08,-55.2213 846,-28.22682c89,9.49385 143.5,25.7805 174,36.9473"/></svg>
+          <svg viewBox="0 0 1920 200" preserveAspectRatio="none"><path d="m2330.66662,171.85704a1795.24399,613.94229 0 0 1 -257.16205,7.97169c-345.05372,2.1814 -454.83439,-31.41219 -729.63296,-36.83891c-275.49239,-5.4382 -346.1616,24.73787 -508.43779,34.9828c-27.42838,1.72981 -83.35945,4.24034 -194.718,1.85611c-301.71218,-6.45619 -401.58908,-36.77768 -600.78336,-39.17722c-91.45031,-1.10218 -223.95927,3.44432 -387.83573,31.20553l0,30.64296l2678.12225,0l0.44763,-30.64296z"/></svg>
+        </div>
+      </div>
   <nav class="rail" aria-label="主导航">
-    <div class="rt">HUB</div>
-    <button type="button" data-go="home" aria-current="true"><span class="n">01</span>主菜单</button>
-    <button type="button" data-go="api"><span class="n">02</span>API 接入</button>
-    <button type="button" data-go="settings"><span class="n">03</span>设置</button>
-    <button type="button" data-go="chat"><span class="n">04</span>对话</button>
-    <button type="button" data-overlay="exit"><span class="n">05</span>退出</button>
-    <div class="rfoot">UNNAMEDBOT<br>AGENT HUB<br><span style="color:#FD77D9" id="railBuild">BUILD</span><br>
-      <span style="color:#77FEFC">Esc 返回<br>随时可退</span></div>
+    <div class="rt">UNNAMEDBOT</div>
+    <button type="button" data-go="home" aria-current="true">主菜单</button>
+    <button type="button" data-go="api">API 接入</button>
+    <button type="button" data-go="settings">设置</button>
+    <button type="button" data-go="chat">对话</button>
+    <button type="button" data-overlay="exit">退出</button>
+    <div class="rfoot" id="railBuild">AGENT HUB</div>
   </nav>
 
   <div class="screens" id="screens">
@@ -1273,6 +1440,24 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
         <div class="ghost" id="ghostNum">01</div>
       </div>
 
+
+      <!-- 今日：等开场的 Memento Mori 淡出后，在同一块空位填上时间 / 日期 / 天气 / 日程 -->
+      <div class="today" id="heroToday">
+        <div class="tclock"><span id="todayClock">--:--</span><em id="todayAmpm">上午</em></div>
+        <div class="tdate" id="todayDate">—</div>
+      </div>
+
+      <div class="tstats">
+        <div class="tcol">
+          <i>WEATHER</i>
+          <b id="todayWeather" class="dim">天气获取中…</b>
+        </div>
+        <div class="tcol">
+          <i>SCHEDULE</i>
+          <b id="todaySchedule" class="dim">今日暂无安排</b>
+        </div>
+      </div>
+
       <header class="topbar">
         <span class="wordmark"></span>
         <span class="wm">桌宠中枢</span><span class="we">Agent Pet Hub</span>
@@ -1281,30 +1466,17 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
       </header>
 
       <div class="stagewrap">
-        <div class="water" aria-hidden="true">
-          <span class="lbl">STILL WATER · 待机</span>
-          <span class="ring r1"></span><span class="ring r2"></span>
-        </div>
-
         <div class="col" id="col">
           <div class="opt" data-go-view="chat" data-ds="启动桌宠核心，进入对话工作台"
-               style="top:10px;transform:translate(-26px,0) rotate(-5deg);z-index:1">
+               style="top:0;transform:translate(-26px,0) rotate(-5deg);z-index:1">
             <span class="pair">
               <span class="plates"><span class="pink"></span><span class="white"></span></span>
               <span class="lab"><span class="cjk">开始</span><span class="en">Start</span></span>
               <span class="red" aria-hidden="true"><span class="lab"><span class="cjk">开始</span><span class="en">Start</span></span></span>
             </span><span class="hit"></span>
           </div>
-          <div class="opt" data-act="refreshPet" data-ds="重读配置、重载模型，把桌宠刷新一遍"
-               style="top:102px;transform:translate(0,0) rotate(-3deg);z-index:0">
-            <span class="pair">
-              <span class="plates"><span class="pink"></span><span class="white"></span></span>
-              <span class="lab"><span class="cjk">刷新</span><span class="en">Refresh</span></span>
-              <span class="red" aria-hidden="true"><span class="lab"><span class="cjk">刷新</span><span class="en">Refresh</span></span></span>
-            </span><span class="hit"></span>
-          </div>
           <div class="opt" data-go-view="settings" data-ds="采样、上下文、人设与工具绑定"
-               style="top:194px;transform:translate(-16px,0) rotate(-4deg);z-index:1">
+               style="top:112px;transform:translate(-16px,0) rotate(-4deg);z-index:1">
             <span class="pair">
               <span class="plates"><span class="pink"></span><span class="white"></span></span>
               <span class="lab"><span class="cjk">设置</span><span class="en">Settings</span></span>
@@ -1312,7 +1484,7 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
             </span><span class="hit"></span>
           </div>
           <div class="opt" data-go-view="api" data-ds="服务商、密钥与默认模型"
-               style="top:286px;transform:translate(-6px,0) rotate(-3deg);z-index:1">
+               style="top:224px;transform:translate(-6px,0) rotate(-3deg);z-index:1">
             <span class="pair">
               <span class="plates"><span class="pink"></span><span class="white"></span></span>
               <span class="lab"><span class="cjk">API 接入</span><span class="en">Endpoint</span></span>
@@ -1320,7 +1492,7 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
             </span><span class="hit"></span>
           </div>
           <div class="opt" data-overlay="exit" data-ds="保存后退出桌宠中枢"
-               style="top:378px;transform:translate(-20px,0) rotate(-5deg);z-index:0">
+               style="top:336px;transform:translate(-20px,0) rotate(-5deg);z-index:0">
             <span class="pair">
               <span class="plates"><span class="pink"></span><span class="white"></span></span>
               <span class="lab"><span class="cjk">退出</span><span class="en">Quit</span></span>
@@ -1563,8 +1735,6 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
   </div>
 </div>
 
-<!-- 前进转场切片 -->
-<div class="slices" id="slices"><i></i><i></i><i></i><i></i><i></i><i></i></div>
 
 <script>
 (function () {
@@ -1613,6 +1783,7 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
   // 方向由前进/返回决定；前进另外叠一层半透明切片扫过（设计稿的转场）。
   // 单屏内部的入场用 CSS 的 screenIn（.view.on .pagewrap）自动跑，不用 JS 管。
   var TRANSITION_MS = 380;
+  var FX_COVER_MS = 400;      // 水幕盖满屏幕的时刻：换页要等这一下
   var leaveTimers = {};
 
   function show(screen, isBack, skipHistory) {
@@ -1629,9 +1800,11 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
     var old = previous ? $("v-" + previous) : null;
     var view = $("v-" + screen);
 
-    // 出场：先摘掉 .on（这会把 opacity 拉到 0），再挂方向类把位移补上；
-    // visibility 的翻转被 transition-delay 压到过渡结束之后，所以旧屏不会瞬间消失。
-    if (old && old !== view) {
+    var fxKind = (screen === "home") ? null : FX_OF[screen];
+
+    // 出场：有转场层时旧屏原地不动，等水幕盖满（FX_COVER_MS）再一次性换掉，
+    //       否则会变成「先切页面、后播动画」。
+    if (old && old !== view && !fxKind) {
       old.classList.remove("on", "enter-fwd", "enter-back");
       old.classList.add("leave-" + dir);
       if (leaveTimers[previous]) clearTimeout(leaveTimers[previous]);
@@ -1641,37 +1814,154 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
     }
 
     if (view) {
-      view.classList.remove("leave-fwd", "leave-back");
-      view.classList.remove("enter-fwd", "enter-back");
-      view.classList.add("enter-" + dir);       // 起点：偏移 + 透明
-      void view.offsetWidth;                    // 强制重排，保证从起点开始过渡
-      requestAnimationFrame(function () {
-        view.classList.add("on");               // 终点：归位 + 不透明
-        view.classList.remove("enter-" + dir);
-      });
+      view.classList.remove("leave-fwd", "leave-back", "enter-fwd", "enter-back", "enter-soft");
+      if (fxKind) {
+        // 转场层负责遮住换页那一瞬：新屏先压在下面不显示，水幕盖满后再淡入
+        view.classList.add("enter-soft");
+        void view.offsetWidth;
+        if (leaveTimers.__fx) clearTimeout(leaveTimers.__fx);
+        leaveTimers.__fx = setTimeout(function () {
+          if (old && old !== view) old.classList.remove("on", "enter-fwd", "enter-back", "leave-fwd", "leave-back");
+          view.classList.add("on");
+          view.classList.remove("enter-soft");
+        }, FX_COVER_MS);
+      } else {
+        view.classList.add("enter-" + dir);       // 起点：偏移 + 透明
+        void view.offsetWidth;                    // 强制重排，保证从起点开始过渡
+        requestAnimationFrame(function () {
+          view.classList.add("on");               // 终点：归位 + 不透明
+          view.classList.remove("enter-" + dir);
+        });
+      }
     }
 
     setRail(screen);
     $("ghostNum").textContent = (RAIL_OF[screen] !== undefined ? ("0" + (RAIL_OF[screen] + 1)) : "01");
 
-    if (!isBack) playSlices();
+    if (screen === "home") { playIntro(); } else { playFx(fxKind); }
     if (screen === "home") updateHome();
     if (screen === "chat") { renderChat(); scrollLog(); }
     if (screen === "settings" || screen === "api") render();
     post({ type: "screen", screen: screen });
   }
 
-  // 前进：6 片半透明切片自上落下；返回：不加这层（一步到位，只留位移淡入）
-  var sliceTimer = null;
-  function playSlices() {
-    var box = $("slices");
-    if (!box) return;
-    box.classList.remove("on");
-    void box.offsetWidth;              // 强制重排，动画才会重播
-    box.classList.add("on");
-    if (sliceTimer) clearTimeout(sliceTimer);
-    sliceTimer = setTimeout(function () { box.classList.remove("on"); }, 320);
+  // ============================================================
+  // 主页开场：视频本身就是转场，不叠色块
+  //   进入主页时把 movie1 定到「水花炸开」那一帧（0.45s）起播 —— 画面一下子
+  //   被炸开的水填满，水散开、落下去，露出水下的画面；等水基本沉静（~1.2s）
+  //   再把菜单和状态浮上来。movie1 放完切 movie2（水下镜头）无限循环。
+  //   素材拿不到时只是没有视频，底下蓝色渐变与水波仍然成立，界面照样可点。
+  // ============================================================
+  var INTRO_MS = 1520;              // 水花炸开到菜单浮出
+var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来的时刻
+  var introTimer = null, mementoTimer = null, todayTimer = null, blueTimer = null, fxTimer = null;
+  var heroWired = false, heroStarted = false, todayInfo = {};
+
+  function heroSeek(v, t) {
+    if (!v) return;
+    try { if (Math.abs(v.currentTime - t) > 0.03) v.currentTime = t; } catch (e) {}
   }
+
+  function playIntro() {
+    var home = $("v-home");
+    if (!home) return;
+    var v1 = $("heroV1"), v2 = $("heroV2"), mem = $("heroMemento");
+
+    // 1) 视频：回到水花那一段重新起播
+    if (v1) {
+      if (v2) { v2.pause(); v2.classList.remove("on"); }
+      v1.classList.remove("on");
+      heroSeek(v1, 1.0);          // 直接从水花炸开那一帧起播，不闪白
+      v1.classList.add("on");
+      var p1 = v1.play();
+      if (p1 && p1.catch) p1.catch(function () {});
+    }
+    if (!heroWired && v1) {
+      heroWired = true;
+      v1.addEventListener("ended", function () {
+        v1.classList.remove("on");
+        if (v2) {
+          v2.classList.add("on");
+          var p2 = v2.play();
+          if (p2 && p2.catch) p2.catch(function () {});
+        }
+      });
+    }
+
+    // 2) 先藏界面，水沉下去再浮出
+    home.classList.remove("intro");
+    void home.offsetWidth;          // 强制重排，过渡才会重播
+    home.classList.add("intro");
+    if (introTimer) clearTimeout(introTimer);
+    introTimer = setTimeout(function () { home.classList.remove("intro"); }, INTRO_MS);
+
+    // 3) Memento Mori 每次进主页重放一遍：淡入 → 停留 → 淡出
+    if (mem) {
+      mem.classList.remove("show");
+      void mem.offsetWidth;
+      if (mementoTimer) clearTimeout(mementoTimer);
+      mementoTimer = setTimeout(function () { mem.classList.add("show"); }, 640);
+    }
+
+    // 4) 今日块：Memento 淡出后填上同一块空位（时间 / 天气 / 日程）
+    var today = $("heroToday");
+    if (today) {
+      today.classList.remove("show");
+      home.classList.remove("today-on");
+      if (todayTimer) clearTimeout(todayTimer);
+      todayTimer = setTimeout(function () {
+        updateToday();
+        today.classList.add("show");
+        home.classList.add("today-on");     // 左下天气/日程双栏一起浮出
+      }, TODAY_MS);
+    }
+
+    // 5) 进场强制冷蓝调（？？？模式下也一样），水花落定后再交还给宿主主题
+    document.body.classList.add("force-blue");
+    if (blueTimer) clearTimeout(blueTimer);
+    blueTimer = setTimeout(function () { document.body.classList.remove("force-blue"); },
+      INTRO_MS + 720);
+  }
+
+  // ============================================================
+  // 页间转场：统一用 E 方案「斜切水幕」（主页仍走开场动画）
+  // 一道斜切水幕从左扫到右，扫到中间时把旧页盖掉，全程 ~1.05s
+  // ============================================================
+  
+  
+  var FX_OF = { api: "e", settings: "e", chat: "e", loading: "e" };   // 统一用「斜切水幕」，主页走开场动画
+
+  function playFx(kind) {
+    var fx = $("fx");
+    if (!fx || !kind) return;
+    fx.className = "fx";
+    void fx.offsetWidth;
+    fx.classList.add("on", kind);
+    if (fxTimer) clearTimeout(fxTimer);
+    fxTimer = setTimeout(function () { fx.className = "fx"; }, 1240);
+  }
+
+  // ============================================================
+  // 今日：时间每秒刷新，天气/日程由宿主随 state 下发（没有就显示占位）
+  // ============================================================
+  var WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
+  function updateToday() {
+    var now = new Date();
+    var h = now.getHours(), m = now.getMinutes();
+    var clock = $("todayClock"), ampm = $("todayAmpm"), date = $("todayDate");
+    if (clock) clock.textContent = pad2(h) + ":" + pad2(m);
+    if (ampm) ampm.textContent = h < 6 ? "深夜" : h < 12 ? "上午" : h < 18 ? "下午" : "晚上";
+    if (date) {
+      date.textContent = (now.getMonth() + 1) + "月" + now.getDate() + "日 · " + WEEK[now.getDay()];
+    }
+    var w = $("todayWeather"), s = $("todaySchedule");
+    if (w && todayInfo.weather) { w.textContent = todayInfo.weather; w.className = ""; }
+    if (s && todayInfo.schedule) { s.textContent = todayInfo.schedule; s.className = ""; }
+  }
+  setInterval(updateToday, 1000);
+  updateToday();
 
   function goBack() {
     var prev = history.length ? history[history.length - 1] : "home";
@@ -2434,6 +2724,8 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
     if (msg.presets) presets = msg.presets;
     if (msg.probe) probeState = msg.probe;
     errors = msg.errors || {};
+    if (msg.today) todayInfo = msg.today;
+    updateToday();
     applyTheme(msg.theme);
     setStatus(msg.status);
     render();
@@ -2452,6 +2744,8 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
         case "state":
           applyState(msg);
           show(msg.screen || current, false, true);
+          // 首屏就是主页时 show() 会因为「已经是当前屏」直接返回，开场得自己起一次
+          if (!heroStarted && (msg.screen || current) === "home") { heroStarted = true; playIntro(); }
           break;
         case "presetOptions":
           presets[msg.key] = msg.options || [];
@@ -2600,3 +2894,4 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
     }
 
 } // namespace UnnamedBot
+
