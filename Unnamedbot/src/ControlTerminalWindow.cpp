@@ -324,6 +324,13 @@ namespace UnnamedBot {
             { "active.interval_process",    L"进程巡检",     L"PROCESS",     L"秒 · -1 关闭", FieldKind::Int,  L"60",   nullptr, false, 150 },
             { "active.interval_weather",    L"天气刷新",     L"WEATHER",     L"秒 · -1 关闭", FieldKind::Int,  L"300",  nullptr, false, 150 },
             { "active.interval_screenshot", L"截屏巡检",     L"SCREENSHOT",  L"秒 · -1 关闭", FieldKind::Int,  L"1800", nullptr, false, 150 },
+            // 小范围操控与回复吸附：紧跟在截屏巡检之后
+            { "tool.mouse_enabled",    L"鼠标拖动", L"MOUSE NUDGE",  L"允许她小范围挪动鼠标", FieldKind::Bool, L"true", nullptr, false, 0 },
+            { "tool.mouse_max_pixels", L"鼠标幅度", L"MOUSE RANGE",  L"像素 · 单次最大位移", FieldKind::Int,  L"120",  nullptr, false, 120 },
+            { "tool.window_enabled",   L"窗口移动", L"WINDOW MOVE",  L"允许她小范围挪动窗口", FieldKind::Bool, L"true", nullptr, false, 0 },
+            { "tool.window_max_pixels",L"窗口幅度", L"WINDOW RANGE", L"像素 · 单次最大位移", FieldKind::Int,  L"80",   nullptr, false, 120 },
+            { "tool.keyboard_enabled", L"键盘输入", L"KEY INPUT",    L"允许她打字符（功能键除外）", FieldKind::Bool, L"true", nullptr, false, 0 },
+            { "ui.reply_anchor",       L"回复吸附", L"REPLY ANCHOR", L"气泡贴到哪儿", FieldKind::Preset, L"window", L"吸附窗口=window|吸附鼠标=cursor", false, 160 },
             { "active.cooldown_seconds",    L"全局冷却",     L"COOLDOWN",    L"秒",           FieldKind::Int,  L"480",  nullptr, false, 150 },
             { "active.ip_check_on_start",   L"启动时查 IP",  L"IP ON START", L"联网检测",     FieldKind::Bool, L"true", nullptr, false, 0 },
             { "amap.api_key",               L"高德密钥",     L"AMAP KEY",    L"天气服务",     FieldKind::Text, L"",     nullptr, true,  320 },

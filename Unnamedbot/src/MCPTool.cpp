@@ -284,6 +284,304 @@ namespace UnnamedBot {
         return result;
     }
 
+    // ============================================================
+    // 小范围操控：挪鼠标 / 挪窗口 / 打字符
+    // ------------------------------------------------------------
+    // 都是「小动作」：位移被夹在设置给的像素内（默认鼠标 ±120px、窗口 ±80px），
+    // 键盘只接受可打印字符与少量普通键，功能键（F1~F24、Win、Alt、PrintScreen 等）
+    // 一律拒绝 —— 不给她关窗口、切桌面、触发系统快捷键的能力。
+    // ============================================================
+
+    namespace {
+        bool ClampOffset(int& dx, int& dy, int maxPx) {
+            const int limit = (std::max)(10, (std::min)(maxPx, 400));
+            dx = (std::max)(-limit, (std::min)(dx, limit));
+            dy = (std::max)(-limit, (std::min)(dy, limit));
+            return dx != 0 || dy != 0;
+        }
+
+        struct KeyStroke {
+            WORD vk = 0;
+            bool shift = false;
+            bool printable = false;
+            wchar_t wch = 0;
+        };
+
+        // 只认普通键；功能键/系统键一律返回 false
+        bool ResolveKey(const std::string& raw, KeyStroke& out) {
+            const std::string k = Utils::ToLower(Utils::Trim(raw));
+            static const std::map<std::string, WORD> special = {
+                { "enter", VK_RETURN }, { "tab", VK_TAB }, { "space", VK_SPACE },
+                { "esc", VK_ESCAPE }, { "escape", VK_ESCAPE },
+                { "backspace", VK_BACK }, { "delete", VK_DELETE }, { "del", VK_DELETE },
+                { "left", VK_LEFT }, { "right", VK_RIGHT }, { "up", VK_UP }, { "down", VK_DOWN },
+                { "home", VK_HOME }, { "end", VK_END },
+                { "pageup", VK_PRIOR }, { "pagedown", VK_NEXT },
+                { "ctrl", VK_CONTROL }, { "control", VK_CONTROL }, { "shift", VK_SHIFT },
+            };
+            auto it = special.find(k);
+            if (it != special.end()) {
+                out.vk = it->second;
+                return true;
+            }
+            // 明确拒绝：F1~F24、Win、Alt、PrintScreen 及其它系统键
+            if (k.size() >= 2 && k[0] == 'f' && std::isdigit(static_cast<unsigned char>(k[1]))) {
+                return false;
+            }
+            static const char* forbidden[] = {
+                "alt", "win", "windows", "printscreen", "prtsc", "insert", "ins", "menu",
+                "capslock", "numlock", "scrolllock", "pause", "break", "apps", "lwin", "rwin",
+            };
+            for (const char* f : forbidden) {
+                if (k == f) {
+                    return false;
+                }
+            }
+            if (k.size() == 1) {
+                const wchar_t wc = static_cast<wchar_t>(static_cast<unsigned char>(k[0]));
+                const SHORT vk = VkKeyScanW(wc);
+                if (vk == -1) {
+                    return false;
+                }
+                out.vk = static_cast<WORD>(vk & 0xFF);
+                out.shift = (vk & 0x100) != 0;
+                out.printable = true;
+                out.wch = wc;
+                return true;
+            }
+            return false;
+        }
+
+        void SendKeyDown(WORD vk, bool shift) {
+            if (shift) {
+                INPUT s[2] = {};
+                s[0].type = INPUT_KEYBOARD; s[0].ki.wVk = VK_SHIFT;
+                s[1].type = INPUT_KEYBOARD; s[1].ki.wVk = vk;
+                SendInput(2, s, sizeof(INPUT));
+            }
+            else {
+                INPUT i = {};
+                i.type = INPUT_KEYBOARD;
+                i.ki.wVk = vk;
+                SendInput(1, &i, sizeof(INPUT));
+            }
+        }
+
+        void SendKeyUp(WORD vk, bool shift) {
+            if (shift) {
+                INPUT s[2] = {};
+                s[0].type = INPUT_KEYBOARD; s[0].ki.wVk = vk; s[0].ki.dwFlags = KEYEVENTF_KEYUP;
+                s[1].type = INPUT_KEYBOARD; s[1].ki.wVk = VK_SHIFT; s[1].ki.dwFlags = KEYEVENTF_KEYUP;
+                SendInput(2, s, sizeof(INPUT));
+            }
+            else {
+                INPUT i = {};
+                i.type = INPUT_KEYBOARD;
+                i.ki.wVk = vk;
+                i.ki.dwFlags = KEYEVENTF_KEYUP;
+                SendInput(1, &i, sizeof(INPUT));
+            }
+        }
+    } // namespace
+
+    std::string NudgeMouseTool::GetName() const { return "nudge_mouse"; }
+    std::string NudgeMouseTool::GetDescription() const {
+        return "小范围挪动鼠标（位移会被限制在设置的像素内，默认 ±120）。可以让指针靠过去、或者按住拖一小段。";
+    }
+    nlohmann::json NudgeMouseTool::GetParametersSchema() const {
+        return {
+            { "dx", { { "type", "integer" }, { "description", "水平位移，正数向右" } } },
+            { "dy", { { "type", "integer" }, { "description", "垂直位移，正数向下" } } },
+            { "drag", { { "type", "boolean" }, { "description", "是否按住左键拖动，默认 false" } } },
+        };
+    }
+    MCPToolResult NudgeMouseTool::Execute(const nlohmann::json& parameters) {
+        MCPToolResult result;
+        if (!ConfigManager::Instance().GetBool(ConfigManager::KEY_TOOL_MOUSE_ENABLED, true)) {
+            result.success = false;
+            result.error = "鼠标操控已被用户关闭。";
+            return result;
+        }
+        int dx = parameters.value("dx", 0);
+        int dy = parameters.value("dy", 0);
+        const int maxPx = static_cast<int>(ConfigManager::Instance().GetInt(ConfigManager::KEY_TOOL_MOUSE_MAX_PX, 120));
+        if (!ClampOffset(dx, dy, maxPx)) {
+            result.success = false;
+            result.error = "位移为零。";
+            return result;
+        }
+        POINT p{};
+        if (!GetCursorPos(&p)) {
+            result.success = false;
+            result.error = "读不到鼠标位置。";
+            return result;
+        }
+        const bool drag = parameters.value("drag", false);
+        if (drag) {
+            INPUT down[3] = {};
+            down[0].type = INPUT_MOUSE; down[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+            down[1].type = INPUT_MOUSE; down[1].mi.dwFlags = MOUSEEVENTF_MOVE;
+            down[1].mi.dx = (dx * 65535) / GetSystemMetrics(SM_CXSCREEN);
+            down[1].mi.dy = (dy * 65535) / GetSystemMetrics(SM_CYSCREEN);
+            down[2].type = INPUT_MOUSE; down[2].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+            SendInput(3, down, sizeof(INPUT));
+        }
+        else {
+            SetCursorPos(p.x + dx, p.y + dy);
+        }
+        result.success = true;
+        result.content = std::string(drag ? "按住左键拖了" : "把鼠标挪了") + " (" + std::to_string(dx) + ", " + std::to_string(dy) + ") 像素。";
+        return result;
+    }
+
+    std::string MoveWindowTool::GetName() const { return "move_window"; }
+    std::string MoveWindowTool::GetDescription() const {
+        return "把某个窗口小范围挪一下（位移限制在设置的像素内，默认 ±80）。不传 title 就挪当前最前面的窗口。";
+    }
+    nlohmann::json MoveWindowTool::GetParametersSchema() const {
+        return {
+            { "title", { { "type", "string" }, { "description", "窗口标题的一部分，可省略" } } },
+            { "dx", { { "type", "integer" }, { "description", "水平位移" } } },
+            { "dy", { { "type", "integer" }, { "description", "垂直位移" } } },
+        };
+    }
+    MCPToolResult MoveWindowTool::Execute(const nlohmann::json& parameters) {
+        MCPToolResult result;
+        if (!ConfigManager::Instance().GetBool(ConfigManager::KEY_TOOL_WINDOW_ENABLED, true)) {
+            result.success = false;
+            result.error = "窗口移动已被用户关闭。";
+            return result;
+        }
+        int dx = parameters.value("dx", 0);
+        int dy = parameters.value("dy", 0);
+        const int maxPx = static_cast<int>(ConfigManager::Instance().GetInt(ConfigManager::KEY_TOOL_WINDOW_MAX_PX, 80));
+        if (!ClampOffset(dx, dy, maxPx)) {
+            result.success = false;
+            result.error = "位移为零。";
+            return result;
+        }
+
+        HWND target = nullptr;
+        const std::string title = Utils::Trim(parameters.value("title", std::string()));
+        if (!title.empty()) {
+            const std::wstring lower = Utils::Utf8ToWide(Utils::ToLower(title));
+            struct FindCtx {
+                std::wstring needle;
+                HWND found = nullptr;
+            } ctx{ lower, nullptr };
+
+            EnumWindows([](HWND h, LPARAM l) -> BOOL {
+                auto* c = reinterpret_cast<FindCtx*>(l);
+                if (!IsWindowVisible(h)) {
+                    return TRUE;
+                }
+                wchar_t buf[512] = {};
+                GetWindowTextW(h, buf, 512);
+                std::wstring tl(buf);
+                for (auto& ch : tl) {
+                    ch = static_cast<wchar_t>(towlower(ch));
+                }
+                if (tl.find(c->needle) != std::wstring::npos) {
+                    c->found = h;
+                    return FALSE;
+                }
+                return TRUE;
+                }, reinterpret_cast<LPARAM>(&ctx));
+            target = ctx.found;
+        }
+        if (!target) {
+            target = GetForegroundWindow();
+        }
+        if (!target) {
+            result.success = false;
+            result.error = "没找到可移动的窗口。";
+            return result;
+        }
+
+        RECT rc{};
+        if (!GetWindowRect(target, &rc)) {
+            result.success = false;
+            result.error = "读不到窗口位置。";
+            return result;
+        }
+        SetWindowPos(target, nullptr, rc.left + dx, rc.top + dy, 0, 0,
+            SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        wchar_t nameBuf[256] = {};
+        GetWindowTextW(target, nameBuf, 256);
+        result.success = true;
+        result.content = "把「" + Utils::WideToUtf8(nameBuf) + "」挪了 (" +
+            std::to_string(dx) + ", " + std::to_string(dy) + ") 像素。";
+        return result;
+    }
+
+    std::string SendKeysTool::GetName() const { return "send_keys"; }
+    std::string SendKeysTool::GetDescription() const {
+        return "敲键盘：可以按一组普通键（如 ctrl+s、enter），也可以直接打一段文字。功能键（F1~F24、Win、Alt）被禁止。";
+    }
+    nlohmann::json SendKeysTool::GetParametersSchema() const {
+        return {
+            { "keys", { { "type", "array" }, { "items", { { "type", "string" } } },
+                        { "description", "按键名数组，如 [\"ctrl\",\"s\"]；最多 12 个" } } },
+            { "text", { { "type", "string" }, { "description", "要打的文字（会逐字输入，最多 200 字）" } } },
+        };
+    }
+    MCPToolResult SendKeysTool::Execute(const nlohmann::json& parameters) {
+        MCPToolResult result;
+        if (!ConfigManager::Instance().GetBool(ConfigManager::KEY_TOOL_KEYBOARD_ENABLED, true)) {
+            result.success = false;
+            result.error = "键盘输入已被用户关闭。";
+            return result;
+        }
+
+        std::vector<KeyStroke> strokes;
+        if (parameters.contains("text") && parameters["text"].is_string()) {
+            const std::wstring text = Utils::Utf8ToWide(parameters["text"].get<std::string>());
+            for (size_t i = 0; i < text.size() && i < 200; ++i) {
+                KeyStroke ks;
+                ks.printable = false;
+                ks.wch = text[i];
+                ks.vk = 0;
+                strokes.push_back(ks);
+            }
+        }
+        else if (parameters.contains("keys") && parameters["keys"].is_array()) {
+            for (const auto& k : parameters["keys"]) {
+                if (!k.is_string() || strokes.size() >= 12) {
+                    break;
+                }
+                KeyStroke ks;
+                if (!ResolveKey(k.get<std::string>(), ks)) {
+                    result.success = false;
+                    result.error = "这个键不允许：" + k.get<std::string>() + "（功能键与系统键被禁用）";
+                    return result;
+                }
+                strokes.push_back(ks);
+            }
+        }
+        if (strokes.empty()) {
+            result.success = false;
+            result.error = "没有要发送的按键或文字。";
+            return result;
+        }
+
+        for (const auto& ks : strokes) {
+            if (!ks.printable) {
+                // 文字模式：按字符走 Unicode 输入，中文也能打
+                INPUT in[2] = {};
+                in[0].type = INPUT_KEYBOARD; in[0].ki.wScan = ks.wch; in[0].ki.dwFlags = KEYEVENTF_UNICODE;
+                in[1].type = INPUT_KEYBOARD; in[1].ki.wScan = ks.wch; in[1].ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+                SendInput(2, in, sizeof(INPUT));
+            }
+            else {
+                SendKeyDown(ks.vk, ks.shift);
+                SendKeyUp(ks.vk, ks.shift);
+            }
+        }
+        result.success = true;
+        result.content = "已发送 " + std::to_string(strokes.size()) + " 个按键/字符。";
+        return result;
+    }
+
     void MCPToolManager::RegisterDefaultTools() {
         RegisterTool(std::make_shared<GetCurrentTimeTool>());
         RegisterTool(std::make_shared<GetFrontendProcessesTool>());
@@ -299,6 +597,10 @@ namespace UnnamedBot {
         RegisterTool(std::make_shared<Live2DSetTransformTool>());
         RegisterTool(std::make_shared<Live2DSetParameterTool>());
         RegisterTool(std::make_shared<Live2DResetTool>());
+        // 小范围操控：挪鼠标、挪窗口、打字符（功能键除外）
+        RegisterTool(std::make_shared<NudgeMouseTool>());
+        RegisterTool(std::make_shared<MoveWindowTool>());
+        RegisterTool(std::make_shared<SendKeysTool>());
         LOG_INFO("MCPToolManager", "Registered default tools.");
     }
 

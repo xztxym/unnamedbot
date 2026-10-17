@@ -87,6 +87,32 @@ namespace UnnamedBot {
     // ---- Live2D：让 AI 自己决定「长什么样、在做什么」----
     // 能力来自每个模型自带的 model3.json / cdi3.json，因此任意导入的模型都能被驱动。
 
+    // ---- 小范围操控：挪鼠标 / 挪窗口 / 打字符（功能键除外）----
+
+    class NudgeMouseTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
+    class MoveWindowTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
+    class SendKeysTool : public MCPToolBase {
+    public:
+        std::string GetName() const override;
+        std::string GetDescription() const override;
+        nlohmann::json GetParametersSchema() const override;
+        MCPToolResult Execute(const nlohmann::json& parameters) override;
+    };
+
     class Live2DListModelsTool : public MCPToolBase {
     public:
         std::string GetName() const override;

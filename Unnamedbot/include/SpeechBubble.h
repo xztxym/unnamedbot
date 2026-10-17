@@ -37,6 +37,10 @@ namespace UnnamedBot {
         //   是别人的窗口 → 落在那个窗口内、靠近指针处；指针不在其中则贴它右下角。
         void ShowNearActiveWindow(const std::wstring& text);
 
+        // 按设置里的「回复吸附」决定气泡贴哪儿：
+        // ui.reply_anchor = window（默认，贴活动窗口）| cursor（贴鼠标）
+        void ShowAnchored(const std::wstring& text);
+
         void Hide();
         bool IsVisible() const;
 

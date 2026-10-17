@@ -44,7 +44,7 @@ namespace UnnamedBot {
 		// 截屏拿到的是裸像素，直接 base64 塞进请求既超限也不是模型认的图片格式；
 		// JPEG 质量 80 的 1920x1080 大约是 250 KB，base64 后约 340 KB，远低于 32 MiB 上限。
 		// 调用线程需要已初始化 COM（内部用 WIC 工厂）。
-		std::vector<uint8_t> EncodeJpegBgra(const uint8_t* pixels, int width, int height, int stride, int quality = 80);
+		std::vector<uint8_t> EncodeJpegBgra(const uint8_t* pixels, int width, int height, int stride, int quality = 80, int maxWidth = 0);
 
 		// exe 所在目录。安装之后从快捷方式、任务栏跳转列表、文件关联启动时，
 		// 工作目录并不等于 exe 目录，"data/logs/models/prompts" 这类相对路径

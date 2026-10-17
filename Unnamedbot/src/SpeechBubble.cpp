@@ -1,4 +1,6 @@
 #include "../include/SpeechBubble.h"
+#include "../include/ConfigManager.h"
+#include "../include/Utils.h"
 
 #include "../include/Logger.h"
 #include "../include/UiTheme.h"
@@ -232,6 +234,13 @@ namespace UnnamedBot {
 
     void SpeechBubble::ShowNearActiveWindow(const std::wstring& text) {
         ShowInternal(nullptr, text, 2);
+    }
+
+    void SpeechBubble::ShowAnchored(const std::wstring& text) {
+        // 贴哪儿由设置决定：吸附鼠标（1）还是吸附活动窗口（2）
+        const std::string anchor = Utils::ToLower(
+            ConfigManager::Instance().GetString(ConfigManager::KEY_UI_REPLY_ANCHOR, "window"));
+        ShowInternal(nullptr, text, anchor == "cursor" ? 1 : 2);
     }
 
     // 两种落点共用的显示流程：量文本 → 定位 → 建渲染目标 → 画 → 显示 → 重新计时

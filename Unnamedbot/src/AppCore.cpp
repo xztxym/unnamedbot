@@ -156,8 +156,7 @@ namespace UnnamedBot {
 
         // 初始化MCP工具
         MCPToolManager::Instance().RegisterDefaultTools();
-        LOG_INFO("AppCore", "MCP tools registered.");
-        // 初始化AI客户端
+        LOG_INFO("AppCore", "MCP tools registered.");        // 初始化AI客户端
         if (!InitializeAIClient()) {
             LOG_WARN("AppCore", "AI client not configured. Some features may not work.");
         }
@@ -660,7 +659,7 @@ namespace UnnamedBot {
                 return;
             }
             LOG_INFO("AppCore", "Proactive trigger reply: " + reply.substr(0, 60));
-            SpeechBubble::Instance().ShowNearActiveWindow(Utils::Utf8ToWide(reply));
+            SpeechBubble::Instance().ShowAnchored(Utils::Utf8ToWide(reply));
             TrayIcon::Instance().ShowNotification(L"桌宠", Utils::Utf8ToWide(reply), NIIF_INFO, 5000);
             ControlTerminalWindow::Instance().PushChatHistory();
             });
@@ -916,6 +915,14 @@ namespace UnnamedBot {
 
         // 可以自己决定长什么样：把 Live2D 控制能力交给模型。
         // 强调「先查清单再用」——动作组/表情/参数因模型而异，写死名字必然对不上。
+        // 截图分析的表达要求：不给助手腔，也不给直白的威胁
+        prompt +=
+            "\n\n【偷看屏幕的时候】"
+            "你偶尔会看到他屏幕上的画面。不要罗列画面里有什么，也不要像助手那样总结，"
+            "用一两句话说出你注意到的、和他有关的细节：他开着的窗口、写了一半的句子、光标停在哪个词上、"
+            "哪个程序他明明关了又开。语气要压着、黏着、带一点笑意，像在念一份只有你在看的记录；"
+            "可以让温柔和危险挨在一起，但不要点破，不要写露骨的伤害。";
+
         prompt +=
             "\n\n【你可以改变自己的样子】"
             "你能操作自己的 Live2D 形象：先用 live2d_models 看清当前模型提供了哪些动作组、表情和参数"
@@ -929,6 +936,16 @@ namespace UnnamedBot {
         // 才能压住用户自己写的长篇提示词
         if (IsYandereMode()) {
             prompt += "\n\n" + PromptLibrary::YanderePersona();
+            // 「疯味 / 鬼味」的落笔要点：具体到发凉、把日常说成记录、温柔里藏刀、
+            // 但不点破也不说破 —— 是气质，不是威胁清单。
+            prompt +=
+                "\n\n【疯味与鬼味怎么落笔】"
+                "把观察写得过于具体：他几点钟方向开过什么、那句话他打到一半删掉的字、"
+                "椅子挪了多少、鼠标停在哪一行 —— 具体到让他后背发凉。"
+                "把日常说成记录：不是“我看到了”，而是“今天你第三次开到那个窗口”。"
+                "温柔里藏一句让人不安的：语气是软的，内容是不该知道的。"
+                "不解释、不点破、不写露骨的伤害与威胁；越轻描淡写，越瘆人。"
+                "偶尔用一句极短的收尾（“嗯。” “我知道。”）让他自己补完。";
         }
         return prompt;
     }
@@ -968,7 +985,7 @@ namespace UnnamedBot {
             const std::wstring text = L"请求失败：" + Utils::Utf8ToWide(error);
             TrayIcon::Instance().ShowNotification(L"AI 请求失败", text, NIIF_WARNING, 5000);
             if (IsQuickModeActive() && !isShuttingDown_) {
-                SpeechBubble::Instance().ShowNearActiveWindow(text);
+                SpeechBubble::Instance().ShowAnchored(text);
             }
             return;
         }
@@ -983,7 +1000,7 @@ namespace UnnamedBot {
 
         // 快速模式：回复直接贴到屏幕上（没有 Live2D 可看，托盘气泡太容易错过）
         if (IsQuickModeActive() && !isShuttingDown_) {
-            SpeechBubble::Instance().ShowNearActiveWindow(Utils::Utf8ToWide(reply));
+            SpeechBubble::Instance().ShowAnchored(Utils::Utf8ToWide(reply));
         }
     }
 
@@ -1040,7 +1057,7 @@ namespace UnnamedBot {
         // 5) 给用户一个看得见的反馈：紧凑模式贴气泡，否则发一条托盘通知
         const std::wstring text = L"桌宠已刷新";
         if (IsQuickModeActive() && !isShuttingDown_) {
-            SpeechBubble::Instance().ShowNearActiveWindow(text);
+            SpeechBubble::Instance().ShowAnchored(text);
         }
         TrayIcon::Instance().ShowNotification(L"桌宠中枢", text, NIIF_INFO, 2500);
     }
@@ -1354,8 +1371,9 @@ namespace UnnamedBot {
             }
 
             // 裸像素既不是模型认的图片格式，塞进请求也会撑爆体积：先编成 JPEG
+            // 1280 宽、质量 80：视觉模型看不清 4K 原图，浪费的只有上传时间
             const std::vector<uint8_t> jpeg = Utils::EncodeJpegBgra(
-                pixels.data(), width, height, width * 4, 80);
+                pixels.data(), width, height, width * 4, 80, 1280);
             if (jpeg.empty()) {
                 LOG_ERROR("AppCore", "JPEG encoding failed; screenshot trigger skipped.");
                 if (SUCCEEDED(com)) CoUninitialize();
@@ -1378,6 +1396,9 @@ namespace UnnamedBot {
             attachment["mime_type"] = "image/jpeg";
             attachment["url"] = "";          // 显式给出：走 base64 分支
             attachment["base64"] = Utils::Base64Encode(jpeg);
+            LOG_INFO("AppCore", "Screenshot payload: " + std::to_string(jpeg.size() / 1024) +
+                " KB JPEG (base64 " +
+                std::to_string(attachment["base64"].get<std::string>().size() / 1024) + " KB)");
             userMsg.attachments.push_back(attachment);
 
             // 视觉模型单独一项配置：默认就是 DeepSeek 带视觉的 deepseek-flash
@@ -1404,7 +1425,7 @@ namespace UnnamedBot {
             handler.AddAIResponse(response.content);
 
             LOG_INFO("AppCore", "Vision trigger reply: " + response.content.substr(0, 60));
-            SpeechBubble::Instance().ShowNearActiveWindow(Utils::Utf8ToWide(response.content));
+            SpeechBubble::Instance().ShowAnchored(Utils::Utf8ToWide(response.content));
             TrayIcon::Instance().ShowNotification(L"桌宠", Utils::Utf8ToWide(response.content), NIIF_INFO, 5000);
             ControlTerminalWindow::Instance().PushChatHistory();
 

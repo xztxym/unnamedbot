@@ -203,7 +203,7 @@ namespace UnnamedBot {
             return ExecutableDirectory() / relative;
         }
 
-        std::vector<uint8_t> EncodeJpegBgra(const uint8_t* pixels, int width, int height, int stride, int quality) {
+        std::vector<uint8_t> EncodeJpegBgra(const uint8_t* pixels, int width, int height, int stride, int quality, int maxWidth) {
             if (!pixels || width <= 0 || height <= 0) {
                 return {};
             }
@@ -221,8 +221,14 @@ namespace UnnamedBot {
                 return {};
             }
 
+            // 屏幕截图降采样：视觉模型自己也会缩，先缩掉能省下大部分上传体积
+            // （4K 全屏原样 JPEG 轻松上 MB，缩到 1280 宽通常只剩一百多 KB）。
             std::vector<uint8_t> jpeg;
             IStream* stream = nullptr;
+            IWICBitmapScaler* scaler = nullptr;
+            IWICBitmap* scaled = nullptr;
+            int outWidth = width;
+            int outHeight = height;
             IWICBitmapEncoder* encoder = nullptr;
             IWICBitmapFrameEncode* frame = nullptr;
             IWICBitmap* source = nullptr;
@@ -240,11 +246,26 @@ namespace UnnamedBot {
                     const_cast<BYTE*>(pixels), &source))) {
                     break;
                 }
+                if (maxWidth > 0 && width > maxWidth) {
+                    const UINT w = static_cast<UINT>(maxWidth);
+                    const UINT h = static_cast<UINT>((static_cast<long long>(height) * maxWidth) / width);
+                    if (FAILED(factory->CreateBitmapScaler(&scaler)) || !scaler) {
+                        break;
+                    }
+                    if (FAILED(scaler->Initialize(source, w, h, WICBitmapInterpolationModeFant)) ||
+                        FAILED(scaler->QueryInterface(IID_PPV_ARGS(&scaled)))) {
+                        break;
+                    }
+                    outWidth = static_cast<int>(w);
+                    outHeight = static_cast<int>(h);
+                }
+                IWICBitmapSource* src = scaled ? static_cast<IWICBitmapSource*>(scaled)
+                                               : static_cast<IWICBitmapSource*>(source);
                 if (FAILED(factory->CreateFormatConverter(&converter))) {
                     break;
                 }
                 // JPEG 编码器吃 24bppBGR，显式转一次，别让它自己挑格式
-                if (FAILED(converter->Initialize(source, GUID_WICPixelFormat24bppBGR,
+                if (FAILED(converter->Initialize(src, GUID_WICPixelFormat24bppBGR,
                     WICBitmapDitherTypeNone, nullptr, 0.0, WICBitmapPaletteTypeCustom))) {
                     break;
                 }
@@ -273,7 +294,7 @@ namespace UnnamedBot {
                 }
 
                 WICPixelFormatGUID format = GUID_WICPixelFormat24bppBGR;
-                if (FAILED(frame->SetSize(static_cast<UINT>(width), static_cast<UINT>(height)))) {
+                if (FAILED(frame->SetSize(static_cast<UINT>(outWidth), static_cast<UINT>(outHeight)))) {
                     break;
                 }
                 if (FAILED(frame->SetPixelFormat(&format))) {

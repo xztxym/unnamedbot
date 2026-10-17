@@ -63,6 +63,13 @@ const std::string ConfigManager::KEY_LOG_CONSOLE = "logging.console";
         const std::string ConfigManager::KEY_NOTIFY_ENABLED = "notification.enabled";
         const std::string ConfigManager::KEY_NOTIFY_NEW_MESSAGE = "notification.notify_new_message";
 
+        const std::string ConfigManager::KEY_TOOL_MOUSE_ENABLED = "tool.mouse_enabled";
+        const std::string ConfigManager::KEY_TOOL_MOUSE_MAX_PX = "tool.mouse_max_pixels";
+        const std::string ConfigManager::KEY_TOOL_WINDOW_ENABLED = "tool.window_enabled";
+        const std::string ConfigManager::KEY_TOOL_WINDOW_MAX_PX = "tool.window_max_pixels";
+        const std::string ConfigManager::KEY_TOOL_KEYBOARD_ENABLED = "tool.keyboard_enabled";
+        const std::string ConfigManager::KEY_UI_REPLY_ANCHOR = "ui.reply_anchor";
+
     const std::string ConfigManager::KEY_LOGS_RETENTION_DAYS = "logs.retention_days";
 
     const std::string ConfigManager::KEY_UI_THEME = "ui.theme";
@@ -333,6 +340,13 @@ const std::string ConfigManager::KEY_LOG_CONSOLE = "logging.console";
             // 系统弹窗：默认关闭（右下角弹窗默认不打扰人）；想要的话在设置里打开
             {KEY_NOTIFY_ENABLED, "false"},
             {KEY_NOTIFY_NEW_MESSAGE, "false"},
+            // 小范围操控：默认允许，但幅度很小；不想要可以在设置里关掉
+            {KEY_TOOL_MOUSE_ENABLED, "true"},
+            {KEY_TOOL_MOUSE_MAX_PX, "120"},
+            {KEY_TOOL_WINDOW_ENABLED, "true"},
+            {KEY_TOOL_WINDOW_MAX_PX, "80"},
+            {KEY_TOOL_KEYBOARD_ENABLED, "true"},
+            {KEY_UI_REPLY_ANCHOR, "window"},
             {KEY_UI_THEME, "system"},
             {KEY_HOTKEY_TOGGLE_MESSAGEBOX, "Ctrl+Alt+M"},
             {KEY_HOTKEY_TOGGLE_TOPMOST, "Ctrl+Alt+T"},

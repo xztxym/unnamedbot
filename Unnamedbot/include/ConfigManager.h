@@ -150,6 +150,16 @@ namespace UnnamedBot {
         static const std::string KEY_NOTIFY_ENABLED;
         // 每条新消息都弹一条太吵，单独给一个开关
         static const std::string KEY_NOTIFY_NEW_MESSAGE;
+
+        // ---- 小范围操控（鼠标 / 窗口 / 键盘）----
+        // 都是「小动作」：位移被限制在设定像素内，键盘不含功能键
+        static const std::string KEY_TOOL_MOUSE_ENABLED;
+        static const std::string KEY_TOOL_MOUSE_MAX_PX;
+        static const std::string KEY_TOOL_WINDOW_ENABLED;
+        static const std::string KEY_TOOL_WINDOW_MAX_PX;
+        static const std::string KEY_TOOL_KEYBOARD_ENABLED;
+        // 回复气泡贴哪儿：window=吸附活动窗口（默认）, cursor=吸附鼠标
+        static const std::string KEY_UI_REPLY_ANCHOR;
         static const std::string KEY_UI_THEME;  // "light", "dark", "system"
         static const std::string KEY_HOTKEY_TOGGLE_MESSAGEBOX;
         static const std::string KEY_HOTKEY_TOGGLE_TOPMOST;
