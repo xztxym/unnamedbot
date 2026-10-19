@@ -491,6 +491,10 @@ namespace UnnamedBot {
         onWebViewFailed_ = std::move(callback);
     }
 
+    void ControlTerminalWindow::OnPetSlot(std::function<void(bool, int, int, int, int)> callback) {
+        onPetSlot_ = std::move(callback);
+    }
+
     void ControlTerminalWindow::NotifyWebViewFailed(const char* reason) {
         // 只通知一次：环境失败、控制器失败、看门狗可能先后都触发，降级只该做一次。
         if (webViewFailed_) return;
@@ -536,6 +540,7 @@ namespace UnnamedBot {
     }
 
     void ControlTerminalWindow::Hide() {
+        if (onPetSlot_) onPetSlot_(false, 0, 0, 0, 0);
         if (!hwnd_) return;
         ShowWindow(hwnd_, SW_HIDE);
         visible_ = false;
@@ -576,8 +581,14 @@ namespace UnnamedBot {
     }
 
     bool ControlTerminalWindow::CreateTerminalWindow(HINSTANCE hInstance) {
-        const int width = Scale(kWinW);
-        const int height = Scale(kWinH);
+        // 窗口尺寸可拖动调整：上次的尺寸记在配置里（CSS px），并夹进合理范围，
+        // 免得某些历史值把窗口开成一条缝。
+        int cssWidth = ConfigManager::Instance().GetInt("window.control_width", kWinW);
+        int cssHeight = ConfigManager::Instance().GetInt("window.control_height", kWinH);
+        cssWidth = std::clamp(cssWidth, 960, 2200);
+        cssHeight = std::clamp(cssHeight, 640, 1600);
+        const int width = Scale(cssWidth);
+        const int height = Scale(cssHeight);
 
         int x = 0, y = 0;
         RECT workArea = { 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
@@ -593,7 +604,8 @@ namespace UnnamedBot {
             0,
             WINDOW_CLASS_NAME,
             L"控制终端",
-            WS_POPUP | WS_CLIPCHILDREN,
+            // WS_THICKFRAME：四边/四角可拖动改变窗口大小（无标题栏风格保持不变）
+            WS_POPUP | WS_CLIPCHILDREN | WS_THICKFRAME,
             x, y, width, height,
             nullptr, nullptr, hInstance, this);
 
@@ -635,6 +647,13 @@ namespace UnnamedBot {
             return 0;
 
         case WM_NCHITTEST: {
+            // 先交给系统判非客户区：WS_THICKFRAME 的四边/四角拉伸热区靠它。
+            const LRESULT sysHit = DefWindowProcW(hwnd, msg, wParam, lParam);
+            if (sysHit == HTLEFT || sysHit == HTRIGHT || sysHit == HTTOP || sysHit == HTBOTTOM ||
+                sysHit == HTTOPLEFT || sysHit == HTTOPRIGHT || sysHit == HTBOTTOMLEFT ||
+                sysHit == HTBOTTOMRIGHT || sysHit == HTBORDER) {
+                return sysHit;
+            }
             // WebView2 占满客户区，页面内的顶栏拖动由页面通知宿主（见 HandleWebMessage）。
             // 页面尚未就绪时留一条原生拖动路径，避免窗口完全无法移动。
             if (!webviewReady_) {
@@ -643,6 +662,30 @@ namespace UnnamedBot {
                 if (pt.y >= 0 && pt.y < Scale(104)) return HTCAPTION;
             }
             return HTCLIENT;
+        }
+
+        case WM_GETMINMAXINFO: {
+            // 最小尺寸：再小页面就没法看了
+            auto* mmi = reinterpret_cast<MINMAXINFO*>(lParam);
+            if (mmi) {
+                mmi->ptMinTrackSize.x = Scale(960);
+                mmi->ptMinTrackSize.y = Scale(640);
+            }
+            return 0;
+        }
+
+        case WM_EXITSIZEMOVE: {
+            // 拖完就记下来，下次开窗直接是这个尺寸
+            RECT rc = {};
+            if (GetWindowRect(hwnd, &rc)) {
+                // dpi_ 是物理 DPI（96 = 100%），换回逻辑像素再存
+                int cssW = MulDiv(rc.right - rc.left, 96, dpi_);
+                int cssH = MulDiv(rc.bottom - rc.top, 96, dpi_);
+                ConfigManager::Instance().SetInt("window.control_width", cssW);
+                ConfigManager::Instance().SetInt("window.control_height", cssH);
+            }
+            ResizeWebView();
+            return 0;
         }
 
         case WM_CLOSE:
@@ -1325,10 +1368,74 @@ namespace UnnamedBot {
             return;
         }
 
+        if (type == "petSlot") {
+            // 页面把对话区宠物舞台的位置（CSS px，窗口客户区坐标）报上来。
+            // 转成屏幕物理像素后交给 AppCore，把桌宠窗口摆进去。
+            if (!onPetSlot_) return;
+            const bool visible = message.value("visible", false);
+            if (!visible) { onPetSlot_(false, 0, 0, 0, 0); return; }
+            const int cx = message.value("x", 0);
+            const int cy = message.value("y", 0);
+            const int cw = message.value("w", 0);
+            const int ch = message.value("h", 0);
+            if (cw < 24 || ch < 24) { onPetSlot_(false, 0, 0, 0, 0); return; }
+            // WebView 的 CSS px 与窗口的 DPI 缩放一致；先取窗口 DPI 比例，
+            // 再把客户区原点换算到屏幕坐标。
+            double scale = 1.0;
+            if (hwnd_) {
+                const UINT dpi = GetDpiForWindow(hwnd_);
+                if (dpi > 0) scale = static_cast<double>(dpi) / 96.0;
+            }
+            POINT origin = { 0, 0 };
+            if (hwnd_) ClientToScreen(hwnd_, &origin);
+            const int sx = origin.x + static_cast<int>(std::lround(cx * scale));
+            LOG_INFO("ControlTerminal", "petSlot: css=(" + std::to_string(cx) + "," + std::to_string(cy) +
+                                         "," + std::to_string(cw) + "," + std::to_string(ch) +
+                                         ") scale=" + std::to_string(scale) +
+                                         " origin=(" + std::to_string(origin.x) + "," + std::to_string(origin.y) + ")");
+            const int sy = origin.y + static_cast<int>(std::lround(cy * scale));
+            const int sw = static_cast<int>(std::lround(cw * scale));
+            const int sh = static_cast<int>(std::lround(ch * scale));
+            onPetSlot_(true, sx, sy, sw, sh);
+            return;
+        }
+
         if (type == "drag") {
             // 页面顶栏按下时通知宿主，用系统移动循环拖动无标题栏窗口。
             ReleaseCapture();
             SendMessageW(hwnd_, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+            return;
+        }
+
+        if (type == "min") {
+            // 最小化到任务栏（不要 Hide：隐藏后就没有任务栏入口了）
+            if (hwnd_) ShowWindow(hwnd_, SW_MINIMIZE);
+            return;
+        }
+
+        if (type == "toggleMax") {
+            // 顶栏双击 / 右上角方块：最大化到当前显示器工作区，再点还原。
+            // WS_POPUP 窗口用 SW_MAXIMIZE + IsZoomed 不可靠，自己记状态更稳。
+            if (hwnd_) {
+                if (!maximized_) {
+                    GetWindowRect(hwnd_, &maxRestore_);
+                    MONITORINFO mi = {};
+                    mi.cbSize = sizeof(MONITORINFO);
+                    const HMONITOR mon = MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST);
+                    if (GetMonitorInfoW(mon, &mi)) {
+                        SetWindowPos(hwnd_, HWND_TOP, mi.rcWork.left, mi.rcWork.top,
+                                     mi.rcWork.right - mi.rcWork.left, mi.rcWork.bottom - mi.rcWork.top,
+                                     SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                        maximized_ = true;
+                    }
+                } else {
+                    SetWindowPos(hwnd_, HWND_TOP, maxRestore_.left, maxRestore_.top,
+                                 maxRestore_.right - maxRestore_.left, maxRestore_.bottom - maxRestore_.top,
+                                 SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                    maximized_ = false;
+                }
+                ResizeWebView();
+            }
             return;
         }
 

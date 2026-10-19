@@ -197,7 +197,13 @@ namespace UnnamedBot {
 
         // WebView2 配置界面不可用时的降级：本机 msedgewebview2.exe 一被拉起就崩，
         // 界面永远空白、用户也无从点「保存」。此时别让用户干等，直接把桌宠放出来。
-        ControlTerminalWindow::Instance().OnWebViewFailed([this]() {
+        // 对话区的宠物舞台：真正的桌宠窗口会被摆到这个矩形里（Live2D 或快速模式圆点）
+    ControlTerminalWindow::Instance().OnPetSlot(
+        [this](bool visible, int x, int y, int w, int h) {
+            DockPetToSlot(visible, x, y, w, h);
+        });
+
+    ControlTerminalWindow::Instance().OnWebViewFailed([this]() {
             fallbackPetPending_ = true;
             if (initializationDone_) FallbackShowPet();
         });
@@ -303,7 +309,55 @@ namespace UnnamedBot {
         LOG_INFO("AppCore", "Fallback: pet-only mode enabled, pet window shown.");
     }
 
-    namespace {
+    void AppCore::DockPetToSlot(bool visible, int x, int y, int w, int h) {
+    if (!mainWindow_) return;
+    HWND hwnd = mainWindow_->GetHandle();
+    if (!hwnd || !IsWindow(hwnd)) return;
+
+    const LONG_PTR ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+
+    if (visible) {
+        if (w < 24 || h < 24) return;
+        if (!petDocked_) {
+            // 第一次嵌进去：记住桌面上的矩形与可见性，离开对话页时原样还回去。
+            GetWindowRect(hwnd, &petDockRestore_);
+            petDockWasVisible_ = mainWindow_->IsVisible();
+            petDocked_ = true;
+        }
+        // 嵌进去时鼠标要能穿透到页面（别挡住对话区的滚动/点击），也不抢焦点。
+        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE);
+        mainWindow_->Show(true);
+        // 模型按窗口高度等比画，直接铺满整个舞台会显得又瘦又小；
+        // 取舞台的短边做正方形、水平居中、底边对齐，模型就站在舞台地面上。
+        int side = w < h ? w : h;
+        if (side < 160) side = 160;
+        const int dockX = x + (w - side) / 2;
+        const int dockY = y + h - side;
+        SetWindowPos(hwnd, HWND_TOPMOST, dockX, dockY, side, side,
+            SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        // 舞台里没加载模型时也让它先出点东西：交给更新循环去载模型，
+        // 载好之前渲染循环会画一个圆点兜底。
+        pendingModelLoad_ = true;
+        if (!petDockLogged_) {
+            petDockLogged_ = true;
+            LOG_INFO("AppCore", "Pet docked into hub chat stage.");
+        }
+        return;
+    }
+
+    if (!petDocked_) return;
+    petDocked_ = false;
+    petDockLogged_ = false;
+    SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex & ~(WS_EX_TRANSPARENT | WS_EX_NOACTIVATE));
+    const int rw = petDockRestore_.right - petDockRestore_.left;
+    const int rh = petDockRestore_.bottom - petDockRestore_.top;
+    SetWindowPos(hwnd, HWND_TOPMOST, petDockRestore_.left, petDockRestore_.top,
+        rw > 0 ? rw : 400, rh > 0 ? rh : 400, SWP_NOACTIVATE);
+    if (!petDockWasVisible_) mainWindow_->Show(false);
+    LOG_INFO("AppCore", "Pet returned to desktop from hub chat stage.");
+}
+
+namespace {
         // 当前「有可见窗口的前端进程」清单（名字用 | 连起来，便于比较）。
         // 启动时先记一份当基线，第一次巡检就能发现变化，而不是先空转一个间隔。
         std::string CurrentFrontendProcessList() {
@@ -1219,7 +1273,12 @@ namespace UnnamedBot {
             // 渲染（桌宠隐藏时不必绘制，避免无谓占用 GPU）
             if (petVisible) {
                 renderer_.BeginFrame();
-                if (IsQuickModeActive()) {
+                // 模型还没载好（或快速模式）就先画圆点：桌宠窗口/对话区舞台里
+                // 都不能是一片空白。Live2D 渲染就绪后自动接管。
+                const std::string currentModelId = Live2DManager::Instance().GetCurrentModelId();
+                const bool modelReady = !currentModelId.empty() &&
+                    Live2DManager::Instance().IsModelLoaded(currentModelId);
+                if (IsQuickModeActive() || !modelReady) {
                     // 快速模式：完全不进 Live2D，只在窗口中心画一个圆点。
                     // 窗口尺寸不改：不透明区域靠命中判定控制，改尺寸反而会
                     // 把 window.width/height 写进配置（SaveState 会存当前尺寸）。
@@ -1523,8 +1582,8 @@ namespace UnnamedBot {
     }
 
     void AppCore::SaveState() {
-        // 保存窗口状态
-        mainWindow_->SaveState();
+        // 保存窗口状态（嵌在对话区时窗口尺寸是舞台尺寸，不能写回配置）
+        if (!petDocked_) mainWindow_->SaveState();
 
         // 保存模型状态
         Live2DManager::Instance().SaveModelState();

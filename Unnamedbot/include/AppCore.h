@@ -153,6 +153,9 @@ namespace UnnamedBot {
 
         // WebView2 配置界面不可用时的降级：直接显示桌宠窗口（隐藏空白配置窗口）。
         void FallbackShowPet();
+    // 把桌宠窗口嵌进配置界面「对话区」的宠物舞台：visible=false 时恢复桌面位置。
+    // 由 ControlTerminalWindow 从 WebView 消息转发过来（物理像素屏幕坐标）。
+    void DockPetToSlot(bool visible, int x, int y, int w, int h);
 
         // 应用状态
         std::atomic<bool> isRunning_ = false;
@@ -206,6 +209,11 @@ namespace UnnamedBot {
         // 降级只做一次：环境创建失败、控制器失败、看门狗超时会依次上报，
         // 不能每报一次就把桌宠窗口重摆一遍。
         std::atomic<bool> fallbackPetShown_ = false;
+    // 桌宠窗口是否被嵌进对话区；嵌进去时窗口尺寸是舞台尺寸，不能写回配置
+    bool petDocked_ = false;
+    RECT petDockRestore_ = {};      // 嵌入前的桌面矩形
+    bool petDockWasVisible_ = false;
+    bool petDockLogged_ = false;
         bool initializationDone_ = false;
 
         std::chrono::steady_clock::time_point nextProcessCheck_{};

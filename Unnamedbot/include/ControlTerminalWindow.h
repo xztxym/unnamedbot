@@ -49,6 +49,9 @@ namespace UnnamedBot {
         // AppCore 用它做降级：直接把桌宠窗口放出来，别让用户对着空白配置窗口发呆。
         // 只会触发一次，且在 UI 线程上。
         void OnWebViewFailed(std::function<void()> callback);
+    // 对话区宠物舞台的屏幕矩形（物理像素）：宿主把桌宠窗口摆到这个矩形里。
+    // visible=false 表示离开对话页，桌宠恢复桌面位置。
+    void OnPetSlot(std::function<void(bool visible, int x, int y, int w, int h)> callback);
 
         // 是否已判定 WebView2 不可用（AppCore 用它检测「回调注册前就已失败」的同步路径）
         bool IsWebViewFailed() const { return webViewFailed_; }
@@ -179,6 +182,10 @@ namespace UnnamedBot {
         bool visible_ = false;
 
         // DPI
+    // 最大化状态（本窗口是 WS_POPUP，IsZoomed 不可靠，自己记）
+    bool maximized_ = false;
+    RECT maxRestore_ = {};
+
         int dpi_ = 96;
 
         // WebView2 对象
@@ -205,6 +212,7 @@ namespace UnnamedBot {
 
         std::function<void()> onSaved_;
         std::function<void()> onWebViewFailed_;
+    std::function<void(bool, int, int, int, int)> onPetSlot_;
         bool webViewFailed_ = false;   // WebView2 已判定不可用（降级回调只发一次）
         int webViewAttempt_ = 0;       // 当前是第几次尝试（重试时用来换用户数据目录）
         bool webViewProfileIsProgram_ = false;  // 本次用的是程序目录下的 profile

@@ -483,6 +483,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
              rgba(1,26,72,.5)}
 .petstage .tag{position:absolute;left:var(--s3);top:var(--s2);font-family:var(--ff-mono);
   font-size:var(--fs-meta);color:var(--ink-c)}
+/* 对话区的宠物是「真窗口」摆上去的（见 reportPetSlot），页面里的占位文字会让位 */
+#petModel{display:none}
 .petstage img{height:100%;width:auto;max-width:100%;object-fit:contain;object-position:50% 100%;
   margin-bottom:-4%;filter:drop-shadow(0 12px 26px rgba(0,0,0,.5))}
 .slots{border-top:1px solid var(--panel-line)}
@@ -717,13 +719,16 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* ---- 顶栏：拖动带 + 右上角隐藏按钮 ---- */
 .topbar .sp{flex:1}
-.topbar .hstat{display:flex;align-items:center;gap:var(--s3);margin-right:var(--s5);
+.topbar .hstat{display:flex;align-items:center;gap:var(--s3);margin-right:128px;
   font-family:var(--ff-mono);font-size:var(--fs-meta);color:var(--tx-3);letter-spacing:.08em}
-.dragzone{position:fixed;top:0;left:var(--rail);right:64px;height:var(--topbar);z-index:22;cursor:default}
-.xbtn{position:fixed;top:14px;right:16px;width:30px;height:30px;display:flex;align-items:center;
-  justify-content:center;border:1px solid var(--panel-line);background:var(--panel);color:var(--tx-2);
-  z-index:24;transition:background var(--t-hover),color var(--t-hover),transform var(--t-tap)}
-.xbtn:hover{background:var(--pink);color:#fff;transform:rotate(90deg)}
+
+.dragzone{position:fixed;top:0;left:var(--rail);right:130px;height:var(--topbar);z-index:22;cursor:default}
+.wctl{position:fixed;top:14px;right:16px;display:flex;gap:8px;z-index:24}
+.wbtn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--panel-line);background:var(--panel);color:var(--tx-2);
+  transition:background var(--t-hover),color var(--t-hover),transform var(--t-tap)}
+.wbtn:hover{background:rgba(255,255,255,.12);color:var(--tx-hi)}
+.wbtn.close:hover{background:var(--pink);color:#fff;transform:rotate(90deg)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--slate);display:inline-block;
   box-shadow:0 0 0 1px rgba(255,255,255,.25) inset}
 .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
@@ -1669,7 +1674,7 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
         <div class="chatwrap">
           <aside class="petcol">
             <div class="pcap"><span>Live2D · 模型</span><b id="petSlot">Slot 00</b></div>
-            <div class="petstage">
+            <div class="petstage" id="petStage">
               <span class="tag" id="petTag">IDLE</span>
               <div class="mdl" id="petModel">—</div>
             </div>
@@ -1716,11 +1721,23 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
   <!-- 全局窗体装饰：顶部拖动带 + 右上角隐藏按钮。
        每个屏幕的顶栏几何一致，所以做成一层，省得逐屏维护。 -->
   <div class="dragzone" data-drag title="拖动窗口"></div>
-  <button class="xbtn" type="button" data-act="close" title="隐藏窗口（托盘可再打开）" aria-label="隐藏窗口">
-    <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true">
-      <path d="M1 1 13 13M13 1 1 13" fill="none" stroke="currentColor" stroke-width="1.4"/>
-    </svg>
-  </button>
+  <div class="wctl">
+    <button class="wbtn" type="button" data-win="min" title="最小化" aria-label="最小化">
+      <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true">
+        <path d="M2.6 7h8.8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </button>
+    <button class="wbtn" type="button" data-win="max" title="最大化 / 还原（也可双击顶栏）" aria-label="最大化或还原">
+      <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true">
+        <rect x="2.8" y="2.8" width="8.4" height="8.4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+      </svg>
+    </button>
+    <button class="wbtn close" type="button" data-win="close" title="关闭窗口（桌宠继续运行）" aria-label="关闭窗口">
+      <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true">
+        <path d="M2.4 2.4 11.6 11.6M11.6 2.4 2.4 11.6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </button>
+  </div>
 </div>
 
 <!-- 退出确认 -->
@@ -1940,6 +1957,30 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
     if (fxTimer) clearTimeout(fxTimer);
     fxTimer = setTimeout(function () { fx.className = "fx"; }, 1240);
   }
+
+  // ============================================================
+  // 对话区的宠物舞台：把它的屏幕矩形报给宿主，宿主把真正的桌宠窗口
+  // （Live2D 或快速模式圆点）摆到这个矩形上 —— 页面里只留一个占位框。
+  // ============================================================
+  var lastPetSlot = "";
+  function reportPetSlot() {
+    var st = $("petStage");
+    if (!st) return;
+    var r = st.getBoundingClientRect();
+    var vis = (current === "chat") && r.width > 40 && r.height > 40;
+    var payload = {
+      type: "petSlot",
+      visible: !!vis,
+      x: Math.round(r.left), y: Math.round(r.top),
+      w: Math.round(r.width), h: Math.round(r.height)
+    };
+    var key = JSON.stringify(payload);
+    if (key === lastPetSlot) return;
+    lastPetSlot = key;
+    post(payload);
+  }
+  setInterval(reportPetSlot, 350);
+  window.addEventListener("resize", reportPetSlot);
 
   // ============================================================
   // 今日：时间每秒刷新，天气/日程由宿主随 state 下发（没有就显示占位）
@@ -2201,8 +2242,17 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
       for (var n = 0; n < open0.length; n++) open0[n].classList.remove("on");
       return;
     }
+    var winBtn = t.closest ? t.closest("[data-win]") : null;
+    if (winBtn) {
+      ev.preventDefault();
+      // 宿主认的是 "min" / "toggleMax" / "close"
+      var winKind = winBtn.getAttribute("data-win");
+      post({ type: winKind === "max" ? "toggleMax" : winKind });
+      return;
+    }
     if (t.closest && t.closest("[data-drag]")) {
-      // 窗口没有标题栏：交给宿主进系统移动循环
+      // 窗口没有标题栏：单击交给宿主进系统移动循环，双击则是最大化/还原
+      if (ev.detail >= 2) { post({ type: "toggleMax" }); return; }
       post({ type: "drag" });
       return;
     }
