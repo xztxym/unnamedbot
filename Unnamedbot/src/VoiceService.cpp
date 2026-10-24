@@ -9,6 +9,8 @@
 #include <nlohmann/json.hpp>
 
 #include "../include/AudioPlayer.h"
+#include "../include/KokoroTts.h"
+#include "../include/VoiceTranslator.h"
 #include "../include/ConfigManager.h"
 #include "../include/Logger.h"
 #include "../include/Utils.h"
@@ -35,6 +37,31 @@ namespace UnnamedBot {
             { L"雨晴はう",    10 },
         };
         const int kSpeakerCount = static_cast<int>(sizeof(kSpeakers) / sizeof(kSpeakers[0]));
+
+        // 本地 Kokoro（英文）音色：标签 → voices\<file>.bin
+        struct LocalVoiceDef {
+            const wchar_t* label;
+            const char* file;
+        };
+
+        const LocalVoiceDef kLocalVoices[] = {
+            { L"Kokoro · af_heart（女）",   "af_heart" },
+            { L"Kokoro · af_bella（女）",   "af_bella" },
+            { L"Kokoro · af_nicole（女）",  "af_nicole" },
+            { L"Kokoro · am_michael（男）", "am_michael" },
+        };
+        const int kLocalVoiceCount = static_cast<int>(sizeof(kLocalVoices) / sizeof(kLocalVoices[0]));
+
+        bool IsLocalBackend(const std::string& backend) {
+            return backend.find("Kokoro") != std::string::npos || backend == "本地 Kokoro（英文）";
+        }
+
+        std::string LocalVoiceFile(const std::wstring& label) {
+            for (int i = 0; i < kLocalVoiceCount; ++i) {
+                if (label == kLocalVoices[i].label) return kLocalVoices[i].file;
+            }
+            return "af_heart";
+        }
 
         // 情绪 → styleId。VOICEVOX 的情绪就是「风格（style）」：
         // ずんだもん: 3 ノーマル / 1 あまあま / 7 ツンツン / 23 ささやき / 25 ヒソヒソ
@@ -128,7 +155,10 @@ namespace UnnamedBot {
 
     std::vector<std::wstring> VoiceService::SpeakerLabels() {
         std::vector<std::wstring> labels;
-        labels.reserve(kSpeakerCount);
+        labels.reserve(kSpeakerCount + kLocalVoiceCount);
+        for (int i = 0; i < kLocalVoiceCount; ++i) {
+            labels.emplace_back(kLocalVoices[i].label);   // 本地英文音色排最前，选中概率高
+        }
         for (int i = 0; i < kSpeakerCount; ++i) {
             labels.emplace_back(kSpeakers[i].label);
         }
@@ -182,14 +212,26 @@ namespace UnnamedBot {
             testText_ = "你好，我是桌宠。";
         }
         maxChars_ = std::clamp(ConfigManager::Instance().GetInt("voice.max_chars", 120), 20, 400);
+        translate_ = ConfigManager::Instance().GetBool("voice.translate", true);
         lipSync_ = ConfigManager::Instance().GetBool("voice.lip_sync", true);
         lipGain_ = static_cast<float>(std::clamp(ConfigManager::Instance().GetDouble("voice.lip_sync_gain", 1.6), 0.2, 4.0));
 
         AudioPlayer::Instance().SetGain(lipGain_);
 
-        // 设置页里存的是中文值（在线 VOICEVOX / ElevenLabs / 关闭），旧配置的英文值也兼容
+        // 设置页里存的是中文值（在线 VOICEVOX / ElevenLabs / 本地 Kokoro（英文）/ 关闭），旧配置的英文值也兼容
+        localBackend_ = IsLocalBackend(backend_);
+        if (localBackend_) {
+            const std::wstring engineDir = Utils::ResolveAppRelative(L"voice_engine\\kokoro");
+            if (!KokoroTts::Instance().Initialize(engineDir)) {
+                LOG_WARN("Voice", "Local Kokoro engine unavailable, falling back to online backend.");
+                localBackend_ = false;
+                backend_ = "在线 VOICEVOX";
+            } else {
+                localVoice_ = LocalVoiceFile(speaker_);
+            }
+        }
         const bool backendOk = (backend_ == "在线 VOICEVOX" || backend_ == "ttsquest" ||
-            backend_ == "ElevenLabs" || backend_ == "elevenlabs");
+            backend_ == "ElevenLabs" || backend_ == "elevenlabs" || localBackend_);
         available_.store(enabled_.load() && backendOk && speakMode_ != "关闭");
     }
 
@@ -351,8 +393,31 @@ namespace UnnamedBot {
         int channels = 0;
         std::string error;
 
+        // 本地音色只认英文：中文回复先过一次翻译，失败就跳过这句（宁可不出声也不念错）
+        std::string speakText = job.text;
+        if (localBackend_ && translate_ && VoiceTranslator::NeedsTranslation(speakText)) {
+            const auto t0 = std::chrono::steady_clock::now();
+            std::string english;
+            std::string terr;
+            if (!VoiceTranslator::Instance().Translate(speakText, english, terr)) {
+                LOG_WARN("Voice", "Translate failed, sentence skipped: " + terr);
+                return false;
+            }
+            const auto tms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - t0).count();
+            LOG_INFO("Voice", "Translated in " + std::to_string(tms) + " ms: " + english);
+            speakText = english;
+        }
+
         const auto started = std::chrono::steady_clock::now();
-        if (!SynthesizeOnline(job.text, job.baseStyle, pcm, sampleRate, channels, error)) {
+        if (localBackend_) {
+            channels = 1;
+            if (!KokoroTts::Instance().Synthesize(speakText, localVoice_,
+                static_cast<float>(speed_), pcm, sampleRate, error)) {
+                LOG_WARN("Voice", "Local synthesis failed: " + error);
+                return false;
+            }
+        } else if (!SynthesizeOnline(job.text, job.baseStyle, pcm, sampleRate, channels, error)) {
             LOG_WARN("Voice", "Synthesis failed: " + error);
             return false;
         }

@@ -83,6 +83,9 @@ namespace UnnamedBot {
         // 配置快照（ReloadConfig 时整体替换，避免每句都查库）
         std::atomic<bool> enabled_{ false };
         std::string backend_ = "ttsquest";
+        bool localBackend_ = false;      // 本地 Kokoro（英文）
+        bool translate_ = true;          // 朗读前把中文翻成英文（本地音色只认英文）
+        std::string localVoice_ = "af_heart";
         std::wstring speaker_ = L"ずんだもん";
         int baseStyle_ = 3;
         double speed_ = 1.0;

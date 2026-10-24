@@ -23,6 +23,7 @@
 #include "../include/TaskScheduler.h"
 #include "../include/UpdateManager.h"
 #include "../include/VoiceService.h"
+#include "../include/VoiceTranslator.h"
 
 #include <chrono>
 #include <iomanip>
@@ -717,6 +718,7 @@ namespace {
         }
 
         aiClient_.SetConfig(config);
+    VoiceTranslator::Instance().SetClient(&aiClient_);   // 朗读前翻译复用同一个 AI 客户端
         LOG_INFO("AppCore", "AI client initialized with model: " + config.model);
         return true;
     }
