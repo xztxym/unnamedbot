@@ -1747,9 +1747,7 @@ body.yandere .field::before{background-size:100% 8px;animation:scanDrift 6s line
         <span class="sp"></span>
         <span class="statline" id="apiSrc">模型 · 未探测</span>
         <span style="width:var(--s4)"></span>
-<button class="btn" type="button" data-act="importZip" title="从 zip 导入 Live2D 模型">导入模型 zip</button>
-        <button class="btn" type="button" data-act="importFolder" title="从文件夹导入 Live2D 模型">导入模型 文件夹</button>
-                <button class="btn sm" type="button" data-act="save">保存</button>
+        <button class="btn sm" type="button" data-act="save">保存</button>
         <span style="width:var(--s3)"></span>
         <button class="btn sm outline" type="button" data-act="reload">重载</button>
       </footer>
@@ -1783,6 +1781,10 @@ body.yandere .field::before{background-size:100% 8px;animation:scanDrift 6s line
         <button class="btn" type="button" data-act="reload">重载</button>
         <span style="width:var(--s3)"></span>
         <button class="btn outline" type="button" data-act="restore">恢复默认</button>
+        <span style="width:var(--s3)"></span>
+        <button class="btn" type="button" data-act="importZip" title="从 zip 压缩包导入 Live2D 模型">导入模型 zip</button>
+        <span style="width:var(--s2)"></span>
+        <button class="btn" type="button" data-act="importFolder" title="从文件夹导入 Live2D 模型">导入模型 文件夹</button>
         <span class="sp"></span>
         <span class="bm" id="setStatus"></span>
       </footer>
@@ -3101,7 +3103,7 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
       { id: 104, role: "tool", tag: "tool_calls", text: "get_weather(q=\"今天 天气\")" },
       { id: 105, role: "ai", who: "Assistant", text: "北京今天晴，24°C，湿度 38%。已把结果写入备忘录。删除按钮在气泡右上角，鼠标悬停时出现。" }
     ];
-    applyTheme({ yandere: false });   // ？？？ 模式已移除，永远走冷蓝主题
+    applyTheme({ yandere: false });   // 无宿主预览默认冷蓝；真实主题由宿主 theme.yandere 决定
     render();
     updateHome();
     renderChat();
