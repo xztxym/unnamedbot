@@ -176,6 +176,9 @@ namespace UnnamedBot {
 
         // AI客户端
         AIClient aiClient_;
+    // 朗读前翻译用独立的客户端：它跑在语音线程上，和聊天共用同一个 AIClient 会抢 mutex，
+    // 一句翻译最长能占住 30~60 秒，聊天请求就被堵住，表现就是「卡死」。
+    AIClient translateClient_;
 
         // 更新线程
         std::thread updateThread_;
@@ -217,6 +220,7 @@ namespace UnnamedBot {
     RECT petDockRestore_ = {};      // 嵌入前的桌面矩形
     bool petDockWasVisible_ = false;
     bool petDockLogged_ = false;
+    RECT petDockLast_ = {};
         bool initializationDone_ = false;
 
         std::chrono::steady_clock::time_point nextProcessCheck_{};

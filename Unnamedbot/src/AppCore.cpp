@@ -353,8 +353,17 @@ namespace UnnamedBot {
         if (side < 320) side = 320;
         const int dockX = x + (w - side) / 2;
         const int dockY = y + h - side;
-        SetWindowPos(hwnd, HWND_TOPMOST, dockX, dockY, side, side,
-            SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        // 页面每 350ms 会上报一次舞台矩形；位置尺寸没变就别再 SetWindowPos，
+        // 否则每次都触发 WM_SIZE -> 渲染器重建，CPU 和闪烁都白费。
+        if (petDockLast_.left != dockX || petDockLast_.top != dockY ||
+            petDockLast_.right != dockX + side || petDockLast_.bottom != dockY + side) {
+            petDockLast_.left = dockX;
+            petDockLast_.top = dockY;
+            petDockLast_.right = dockX + side;
+            petDockLast_.bottom = dockY + side;
+            SetWindowPos(hwnd, HWND_TOPMOST, dockX, dockY, side, side,
+                SWP_NOACTIVATE | SWP_SHOWWINDOW);
+        }
         // 舞台里没加载模型时也让它先出点东西：交给更新循环去载模型，
         // 载好之前渲染循环会画一个圆点兜底。
         pendingModelLoad_ = true;
@@ -368,6 +377,7 @@ namespace UnnamedBot {
     if (!petDocked_) return;
     petDocked_ = false;
     petDockLogged_ = false;
+    petDockLast_ = {};
     SetWindowLongPtrW(hwnd, GWL_EXSTYLE, ex & ~(WS_EX_TRANSPARENT | WS_EX_NOACTIVATE));
     const int rw = petDockRestore_.right - petDockRestore_.left;
     const int rh = petDockRestore_.bottom - petDockRestore_.top;
@@ -731,7 +741,13 @@ namespace {
         }
 
         aiClient_.SetConfig(config);
-    VoiceTranslator::Instance().SetClient(&aiClient_);   // 朗读前翻译复用同一个 AI 客户端
+        // 翻译请求要短平快：超时压到 12s 以内、输出上限 256 token，
+        // 万一网络抽风也不会把语音线程吊在那里一分多钟。
+        AIClientConfig translateConfig = config;
+        translateConfig.timeoutSeconds = (config.timeoutSeconds > 12) ? 12 : config.timeoutSeconds;
+        translateConfig.maxTokens = 256;
+        translateClient_.SetConfig(translateConfig);
+    VoiceTranslator::Instance().SetClient(&translateClient_);   // 朗读前翻译复用同一个 AI 客户端
         LOG_INFO("AppCore", "AI client initialized with model: " + config.model);
         return true;
     }
