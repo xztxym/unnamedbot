@@ -357,10 +357,18 @@ namespace UnnamedBot {
             LOG_WARN("Voice", "Test skipped: voice is disabled.");
             return;
         }
+        // 试听也要按句切：这样听到的就是真实回复的节奏（逐句翻译 + 逐句合成）
+        const std::vector<std::string> sentences = SplitSentences(testText_);
         EnsureWorker();
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            queue_.push_back(Job{ testText_, "calm", baseStyle_ });
+            if (sentences.empty()) {
+                queue_.push_back(Job{ testText_, "calm", baseStyle_ });
+            } else {
+                for (const auto& s : sentences) {
+                    queue_.push_back(Job{ s, "calm", baseStyle_ });
+                }
+            }
         }
         stopRequested_.store(false);
         cv_.notify_one();

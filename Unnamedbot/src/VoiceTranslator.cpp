@@ -167,6 +167,7 @@ namespace UnnamedBot {
                 "Translate the user's text into natural spoken English. "
                 "Rules: output ONLY the translation, no quotes, no notes, no markdown, no explanation. "
                 "Keep the original meaning and roughly the same length. "
+                "Glossary: 桌宠 = desktop pet, 中枢 = hub, 会话 = session. "
                 "If the text is already English, output it unchanged.";
             Message user;
             user.role = MessageRole::User;
