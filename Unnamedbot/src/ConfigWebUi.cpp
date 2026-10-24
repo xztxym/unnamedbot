@@ -2493,7 +2493,9 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
       hit.textContent = "合成中…";
       // 水波纹：让按钮看起来在动
       hit.classList.add("busy");
-      post({ type: "fieldAction", key: key || "" });
+      // 必须把页面上当前的 values 一起带上：宿主收到后先 ApplyPostedValues 再 Save，
+      // 否则试听念的还是上一次存进库里的旧文本（改了文字也还是同一句）。
+      post({ type: "fieldAction", key: key || "", values: values });
       setTimeout(function () {
         hit.disabled = false;
         hit.textContent = label;
