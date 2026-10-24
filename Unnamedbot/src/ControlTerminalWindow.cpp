@@ -16,6 +16,7 @@
 #include "../include/TaskScheduler.h"
 #include "../include/ResourceIds.h"
 #include "../include/Utils.h"
+#include "../include/SecurityUtils.h"
 
 #include <wrl.h>
 
@@ -1276,7 +1277,7 @@ namespace UnnamedBot {
     // 用户刚改完还没保存时，「测一下」应该测的是他刚填的东西。
     void ControlTerminalWindow::StartProbe() {
         const std::string baseUrl = draft_[ConfigManager::KEY_API_BASE_URL];
-        const std::string apiKey = draft_[ConfigManager::KEY_API_KEY];
+        const std::string apiKey = SecretPlain(ConfigManager::KEY_API_KEY);
 
         {
             std::lock_guard<std::mutex> lock(probeMutex_);
@@ -1419,7 +1420,7 @@ namespace UnnamedBot {
             SendState(true);
             // 「可用模型」要显示服务商真实提供的那份，不能等用户手点：
             // 页面就绪时先问一次（没配密钥就不问，免得白挨一个 401）。
-            if (!draft_[ConfigManager::KEY_API_KEY].empty()) {
+            if (!SecretPlain(ConfigManager::KEY_API_KEY).empty()) {
                 StartProbe();
             }
             return;
@@ -1696,7 +1697,11 @@ namespace UnnamedBot {
             const std::string key = it.key();
             if (draft_.find(key) == draft_.end()) continue;
             if (!it->is_string()) continue;
-            draft_[key] = it->get<std::string>();
+            const std::string posted = it->get<std::string>();
+            // 密钥类字段：页面在未展开/未改动时会回传空串，那是「没动」而不是「要清空」。
+            // 否则任何一次保存都会把已存的密钥擦掉——AI 从此不再回复。
+            if (posted.empty() && IsSecretKey(key)) continue;
+            draft_[key] = posted;
         }
     }
 
@@ -1725,11 +1730,33 @@ namespace UnnamedBot {
                     && Utils::Utf8ToWide(raw) == L"？？？"
                     && !PromptLibrary::Instance().HasYandereSentinel();
                 const std::string value = yandereGone ? std::string("关闭") : raw;
-                draft_[def.key] = value;
+                // 密钥类字段：库里存的是 DPAPI+Base64 密文，绝不能回填给页面（会当明文显示/回写）
+                draft_[def.key] = def.secret ? std::string() : value;
                 loaded_[def.key] = value;
             }
         }
         restoreArmedAt_ = 0;
+    }
+
+    bool ControlTerminalWindow::IsSecretKey(const std::string& key) const {
+        for (int s = 0; s < kSectionCount; ++s) {
+            const SectionDef& sec = kSections[s];
+            for (int i = 0; i < sec.fieldCount; ++i) {
+                const FieldDef& def = sec.fields[i];
+                if (def.secret && key == def.key) return true;
+            }
+        }
+        return false;
+    }
+
+    // 明文密钥：优先用草稿（用户刚输入的），否则把库里的密文解出来。
+    // 「测试连接」「就绪即探测」都要用它，否则只有点过输入框才有值。
+    std::string ControlTerminalWindow::SecretPlain(const std::string& key) const {
+        const auto it = draft_.find(key);
+        if (it != draft_.end() && !it->second.empty()) return it->second;
+        const std::string stored = ConfigManager::Instance().GetString(key, "");
+        if (stored.empty()) return std::string();
+        return SecurityUtils::Instance().Decrypt(stored);
     }
 
     std::wstring ControlTerminalWindow::CurrentValueText(const char* key) const {
@@ -1900,6 +1927,23 @@ namespace UnnamedBot {
                 }
 
                 const std::string narrow = Utils::Trim(Utils::WideToUtf8(value));
+                if (def.secret) {
+                    if (narrow.empty()) {
+                        // 留空 = 不改：把库里原来的密文原样写回
+                        auto prev = loaded_.find(def.key);
+                        if (prev != loaded_.end() && !prev->second.empty()) {
+                            ConfigManager::Instance().SetString(def.key, prev->second);
+                        }
+                    } else {
+                        // 新输入的明文 → DPAPI 加密后再落库（页面写着「数据库加密存储」）
+                        const std::string cipher = SecurityUtils::Instance().Encrypt(narrow);
+                        ConfigManager::Instance().SetString(def.key, cipher);
+                        LOG_INFO("ControlTerminal", std::string("Secret updated: ") + def.key +
+                            " (plain=" + std::to_string(narrow.size()) + "B, stored=" +
+                            std::to_string(cipher.size()) + "B)");
+                    }
+                    continue;
+                }
                 switch (def.kind) {
                 case FieldKind::Int:
                     ConfigManager::Instance().SetInt(def.key, std::atoi(narrow.c_str()));
