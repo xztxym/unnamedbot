@@ -373,3 +373,12 @@ _*.raw
 _*.html
 P3RE官网开场动画.zip
 docs.7z
+# ---- 用户本地运行文件：聊天记录、日志、数据库备份，一律不进版本库 ----
+# （应用运行时会在 exe 旁生成 data/app.db 与 logs/*.log，属于本机数据）
+Unnamedbot/data/
+Unnamedbot/logs/
+*.db
+*.db-shm
+*.db-wal
+*.db.bak-*
+*.orig-backup

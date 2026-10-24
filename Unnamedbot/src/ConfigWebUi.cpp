@@ -1388,6 +1388,57 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
        把命中区收成一行的高度（与行距一致，上下不重叠），每一项都能碰到。 */
 .opt .hit{inset:auto 0 auto 0;top:50%;height:92px;transform:translateY(-50%)}
 
+
+/* ================================================================
+   ？？？：整页配色收口（首页为重）
+   ----------------------------------------------------------------
+   之前只有令牌和零散选择器被替换，首页的大容器（field/page/bg）
+   仍吃设计稿里写死的海军蓝，于是读起来是「蓝底 ＋ 酒红字」——
+   两套体系打架。这里把大面统一压到酒红黑，再用极淡的扫描线
+   和红色描边把「被记录着」的感觉补回来。都限定在 body.yandere 下。
+   ================================================================ */
+body.yandere{background:#0E050A;background-image:
+  radial-gradient(125% 95% at 50% 120%, rgba(150,30,58,.32) 0%, transparent 60%),
+  radial-gradient(70% 55% at 84% 6%, rgba(232,138,156,.10) 0%, transparent 62%),
+  linear-gradient(180deg,#170811 0%,#0C0409 100%)}
+body.yandere .field,body.yandere .page,body.yandere .screen,
+body.yandere .bg,body.yandere .stage{
+  background:#0E050A;background-image:
+    radial-gradient(120% 95% at 50% 122%, rgba(150,30,58,.26) 0%, transparent 58%),
+    radial-gradient(66% 50% at 86% 4%, rgba(232,138,156,.08) 0%, transparent 60%),
+    linear-gradient(180deg,#170811 0%,#0A0307 100%)}
+/* 记录感：极淡的横向扫描线，只在首页大面上出现 */
+body.yandere .field::before,body.yandere .page::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(180deg,rgba(232,138,156,.045) 0 1px,transparent 1px 4px);
+  mask-image:linear-gradient(180deg,transparent 0%,#000 22%,#000 78%,transparent 100%)}
+/* 侧栏：黑酒红玻璃，选中项左侧一条血线 */
+body.yandere .rail{background:linear-gradient(180deg,rgba(24,8,14,.96),rgba(12,4,9,.98));
+  border-right:1px solid rgba(214,64,92,.20)}
+body.yandere .rail .on,body.yandere .rail .sel{background:rgba(58,14,28,.55);
+  box-shadow:inset 3px 0 0 #D6405C}
+/* 大菜单：未选中是暗玫瑰，选中是骨白 + 红光；悬停只加一层薄雾 */
+body.yandere .opt .lab .cjk,body.yandere .opt .pair{color:#F0D3DA}
+/* 选中的「开始」是白板：字必须压深色，否则整块读不出字 */
+body.yandere .opt.sel .lab .cjk{color:#1C0A11;text-shadow:none}
+body.yandere .opt.sel .en{color:#5E1B2B}
+body.yandere .opt .en{color:#C79AA5}
+body.yandere .opt:not(.sel):hover .lab .cjk{color:#FFF1F4;text-shadow:0 0 20px rgba(214,64,92,.45)}
+/* 「开始」那块白板：给它一条血红的下沿，别让它显得跟主题无关 */
+body.yandere .opt.sel .pair{border-bottom:2px solid #D6405C}
+/* 底部波浪：从青蓝染成酒红（canvas 用滤镜最快，不改结构） */
+body.yandere .waves{filter:hue-rotate(140deg) saturate(.9) brightness(.72)}
+/* 整页统一罩色：正片叠底把残余的海军蓝压成酒红黑，不改变结构、不挡点击 */
+body.yandere::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:2;
+  background:linear-gradient(180deg,rgba(96,18,42,.30) 0%,rgba(40,8,20,.38) 55%,rgba(10,3,7,.52) 100%);
+  mix-blend-mode:multiply}
+/* 文字与控件要在罩子上方，避免被一起压暗 */
+body.yandere .rail,body.yandere .top,body.yandere .opt,body.yandere .field>*,body.yandere .page>*{
+  position:relative;z-index:3}
+/* 顶部状态点、主按钮保持既有处理，只把描边统一到同一档红 */
+body.yandere .panelbox,body.yandere .bub{border-color:rgba(214,64,92,.34)}
+
 </style>
 </head>
 <body>
