@@ -418,10 +418,11 @@ namespace UnnamedBot {
         // voice.speaker 的选项由 OptionsFor 在运行时给出（VoiceService::SpeakerLabels），
         // 这里留空，避免角色表写成两份。
         const ControlTerminalWindow::FieldDef kVoiceFields[] = {
-            { "voice.enabled",       L"语音朗读", L"VOICE",       L"在线 VOICEVOX · 不占本地体积", FieldKind::Bool,   L"false", nullptr, false, 0 },
-            { "voice.backend",       L"合成后端", L"BACKEND",     L"联网，零本地模型",             FieldKind::Enum,   L"在线 VOICEVOX", L"在线 VOICEVOX|ElevenLabs|关闭", false, 0 },
-            { "voice.speaker",       L"角色",     L"SPEAKER",     L"VOICEVOX 声库",                FieldKind::Enum,   L"ずんだもん", nullptr, false, 0 },
+            { "voice.enabled",       L"语音朗读", L"VOICE",       L"本地 Kokoro · 不联网也能念",   FieldKind::Bool,   L"true", nullptr, false, 0 },
+            { "voice.backend",       L"合成后端", L"BACKEND",     L"本地引擎起不来会自动回落在线", FieldKind::Enum,   L"本地 Kokoro（英文）", L"本地 Kokoro（英文）|在线 VOICEVOX|ElevenLabs|关闭", false, 0 },
+            { "voice.speaker",       L"角色",     L"SPEAKER",     L"本地音色 / VOICEVOX 声库",     FieldKind::Enum,   L"Kokoro · af_heart（女）", nullptr, false, 0 },
             { "voice.speak_mode",    L"朗读范围", L"SPEAK MODE",  L"自动 = 每句都念",              FieldKind::Enum,   L"自动", L"自动|仅标签|关闭", false, 0 },
+    { "voice.translate",     L"朗读前翻译", L"TRANSLATE",   L"中文回复先翻成英文再念（英文音色需要）", FieldKind::Bool, L"true", L"", false, 0 },
             { "voice.speed",         L"语速",     L"SPEED",       L"1.0 = 原速",                   FieldKind::Double, L"1.0", nullptr, false, 150 },
             { "voice.pitch",         L"音高",     L"PITCH",       L"半音偏移",                     FieldKind::Double, L"0.0", nullptr, false, 150 },
             { "voice.intonation",    L"语调",     L"INTONATION",  L"情绪起伏强度",                 FieldKind::Double, L"1.0", nullptr, false, 150 },
@@ -443,7 +444,7 @@ namespace UnnamedBot {
             { L"08", L"附件与日志", L"STORAGE", L"附件配额与本地保留周期。", kStorageFields, 4 },
             { L"09", L"代理与更新", L"NETWORK", L"出网代理与自动更新检查。", kNetworkFields, 5 },
             { L"10", L"快速模式", L"QUICK MODE", L"关闭 Live2D，只在桌面上留一个可交互的圆点；「？？？」是实验性人格，仅当 prompts 目录里存在 yandere.chr 时可选。", kQuickModeFields, 3 },
-            { L"11", L"语音合成", L"VOICE", L"联网 VOICEVOX：不增加安装体积，断网静默。角色与情绪走 styleId，语速 / 音高 / 语调都由 AI 可调。", kVoiceFields, 13 },        };
+            { L"11", L"语音合成", L"VOICE", L"本地 Kokoro（英文）零网络延迟；在线 VOICEVOX 负责日语。中文回复先翻译再朗读。", kVoiceFields, 14 },        };
 
         const int kSectionCount = static_cast<int>(sizeof(kSections) / sizeof(kSections[0]));
 

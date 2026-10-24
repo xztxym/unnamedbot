@@ -382,3 +382,15 @@ Unnamedbot/logs/
 *.db-wal
 *.db.bak-*
 *.orig-backup
+
+# ---- 语音实验/临时（2026-10 追加）----
+_dl_test/
+_kokoro/
+_tmp/
+_*.wav
+kokoro_*.wav
+*.png
+!docs/**/*.pngpip-build-*/
+pip-install-*/
+pip-metadata-*/
+pip-unpack-*/

@@ -98,7 +98,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"&#xD;&#xA;xcopy /Y /E /I /D "$(ProjectDir)runtime\voice_engine" "$(OutDir)voice_engine"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -123,7 +123,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"&#xD;&#xA;xcopy /Y /E /I /D "$(ProjectDir)runtime\voice_engine" "$(OutDir)voice_engine"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -146,7 +146,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"&#xD;&#xA;xcopy /Y /E /I /D "$(ProjectDir)runtime\voice_engine" "$(OutDir)voice_engine"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -171,7 +171,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"</Command>
+      <Command>copy /Y "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Core\dll\windows\x86_64\Live2DCubismCore.dll" "$(OutDir)"&#xD;&#xA;xcopy /Y /I "$(ProjectDir)ThirdParty\CubismSdkForNative-5-r.5\Framework\src\Rendering\D3D11\Shaders\*.fx" "$(OutDir)FrameworkShaders"&#xD;&#xA;xcopy /Y /E /I "$(ProjectDir)webui" "$(OutDir)webui"&#xD;&#xA;xcopy /Y /E /I /D "$(ProjectDir)runtime\voice_engine" "$(OutDir)voice_engine"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- WebView2：自实现 HTML 前端的宿主。用静态加载器，无需额外部署 DLL；
@@ -199,6 +199,8 @@
     <ClCompile Include="src\AppCore.cpp" />
     <ClCompile Include="src\AttachmentManager.cpp" />
     <ClCompile Include="src\AudioPlayer.cpp" />
+    <ClCompile Include="src\KokoroTts.cpp" />
+    <ClCompile Include="src\VoiceTranslator.cpp" />
     <ClCompile Include="src\ConfigManager.cpp" />
     <ClCompile Include="src\ConfigWebUi.cpp" />
     <ClCompile Include="src\ControlTerminalWindow.cpp" />
@@ -286,6 +288,8 @@
     <ClInclude Include="include\AIClient.h" />
     <ClInclude Include="include\AppCore.h" />
     <ClInclude Include="include\AudioPlayer.h" />
+    <ClInclude Include="include\KokoroTts.h" />
+    <ClInclude Include="include\VoiceTranslator.h" />
     <ClInclude Include="include\AttachmentManager.h" />
     <ClInclude Include="include\ConfigManager.h" />
     <ClInclude Include="include\ConfigWebUi.h" />
