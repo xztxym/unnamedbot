@@ -451,9 +451,9 @@ namespace UnnamedBot {
         int x = ConfigManager::Instance().GetInt("window.position_x", 100);
         int y = ConfigManager::Instance().GetInt("window.position_y", 100);
         // 配置里的尺寸不可信（历史版本可能写入过垃圾值），应用前先收敛。
-        int width = std::clamp(ConfigManager::Instance().GetInt("window.width", 400),
+        int width = std::clamp(ConfigManager::Instance().GetInt("window.width", 800),
             MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
-        int height = std::clamp(ConfigManager::Instance().GetInt("window.height", 400),
+        int height = std::clamp(ConfigManager::Instance().GetInt("window.height", 800),
             MIN_WINDOW_SIZE, MAX_WINDOW_SIZE);
         bool topmost = ConfigManager::Instance().GetBool("window.always_on_top", true);
         float opacity = static_cast<float>(ConfigManager::Instance().GetDouble("window.opacity", 1.0));

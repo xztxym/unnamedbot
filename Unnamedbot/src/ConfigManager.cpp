@@ -323,6 +323,13 @@ const std::string ConfigManager::KEY_LOG_CONSOLE = "logging.console";
             {KEY_QUICK_MODE, "关闭"},
             {KEY_PROMPT_ENABLED, ""},
             {KEY_MODEL_DEFAULT_ID, "Haru"},
+            // 语音默认走本地 Kokoro（英文）：引擎随包提供，首次启动就能念
+            {"voice.enabled", "true"},
+            {"voice.backend", "本地 Kokoro（英文）"},
+            {"voice.speaker", "Kokoro · af_heart（女）"},
+            {"voice.translate", "true"},
+            {"voice.speak_mode", "自动"},
+            {"voice.lip_sync", "true"},
             {KEY_MODEL_DEFAULT_SCALE, "1.0"},
             {KEY_MODEL_DEFAULT_OPACITY, "1.0"},
             {KEY_CONTEXT_MAX_TOKENS, "4096"},

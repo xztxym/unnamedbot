@@ -375,7 +375,7 @@ namespace UnnamedBot {
         // ===== 卡片 06：模型与外观 =====
         const ControlTerminalWindow::FieldDef kModelFields[] = {
             { "model.default_id",      L"默认模型", L"MODEL", L"从已导入的模型里选", FieldKind::Preset, L"Haru", nullptr, false, 0 },
-            { "model.default_scale",   L"缩放",     L"SCALE",    L"倍",          FieldKind::Double, L"1.0",  nullptr, false, 150 },
+            { "model.default_scale",   L"缩放",     L"SCALE",    L"倍（默认 2.0 = 满格）", FieldKind::Double, L"2.0",  nullptr, false, 150 },
             { "model.default_opacity", L"不透明度", L"OPACITY",  L"0 – 1",       FieldKind::Double, L"1.0",  nullptr, false, 150 },
         };
 
@@ -1619,7 +1619,9 @@ namespace UnnamedBot {
 
         if (type == "probe") {
             // 「测试连接」：先把页面上的草稿并进来，再拿这份草稿去问服务商。
+            // 顺手落库：以前只测试不保存，用户以为「测通了就能用」，重启后又报密钥为空。
             ApplyPostedValues(message);
+            Save();
             StartProbe();
             return;
         }

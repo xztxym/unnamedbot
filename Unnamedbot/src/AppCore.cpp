@@ -346,8 +346,11 @@ namespace UnnamedBot {
         mainWindow_->Show(true);
         // 模型按窗口高度等比画，直接铺满整个舞台会显得又瘦又小；
         // 取舞台的短边做正方形、水平居中、底边对齐，模型就站在舞台地面上。
-        int side = w < h ? w : h;
-        if (side < 160) side = 160;
+        // 舞台里想看得清楚，就别按短边缩：按舞台高度放大 1.5 倍，允许向上溢出到舞台外面
+        // （窗口是置顶的，溢出部分照样能看见），底边仍然站在舞台上。
+        int side = h * 3 / 2;
+        if (side > w * 2) side = w * 2;
+        if (side < 320) side = 320;
         const int dockX = x + (w - side) / 2;
         const int dockY = y + h - side;
         SetWindowPos(hwnd, HWND_TOPMOST, dockX, dockY, side, side,
@@ -575,8 +578,8 @@ namespace {
         // 从配置恢复窗口状态
         int x = ConfigManager::Instance().GetInt("window.position_x", 100);
         int y = ConfigManager::Instance().GetInt("window.position_y", 100);
-        int width = ConfigManager::Instance().GetInt("window.width", 400);
-        int height = ConfigManager::Instance().GetInt("window.height", 400);
+        int width = ConfigManager::Instance().GetInt("window.width", 800);
+        int height = ConfigManager::Instance().GetInt("window.height", 800);
 
         if (!mainWindow_->Create(L"UnnamedBot", width, height, x, y)) {
             LOG_ERROR("AppCore", "Failed to create main window.");

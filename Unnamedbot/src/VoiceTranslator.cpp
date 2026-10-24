@@ -185,6 +185,10 @@ namespace UnnamedBot {
                 }
             } else {
                 error = client->LastRequestError();
+                if (error.empty()) {
+                    error = "empty reply";
+                }
+                LOG_WARN("Voice", "AI translation failed: " + error);
             }
         } else {
             error = "ai client not ready";
@@ -193,7 +197,7 @@ namespace UnnamedBot {
         // 2) 兜底：不需要 key 的公共翻译
         std::string fallbackError;
         if (TranslateMyMemory(source, out, fallbackError)) {
-            LOG_INFO("Voice", "Translated by public fallback (no API key).");
+            LOG_INFO("Voice", "Translated by public fallback (MyMemory online).");
             CachePut(source, out);
             return true;
         }
