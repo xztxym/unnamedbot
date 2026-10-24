@@ -72,6 +72,12 @@ namespace UnnamedBot {
             std::vector<int16_t>& pcm, int& sampleRate, int& channels, std::string& error);
         std::vector<std::string> SplitSentences(const std::string& text) const;
 
+        // 磁盘缓存：同一句话（同角色同参数）再念时不走网络。
+        // 免费第三方合成一次要 5~17s，而 AI 回复里重复的短句很多，缓存命中就是 0ms。
+        std::string MakeCacheKey(const std::string& sentence, int styleId) const;
+        bool ReadCache(const std::string& key, std::string& bytes) const;
+        void WriteCache(const std::string& key, const std::string& bytes) const;
+
         std::thread worker_;
         std::mutex mutex_;
         std::condition_variable cv_;
@@ -94,6 +100,8 @@ namespace UnnamedBot {
         int maxChars_ = 120;
         bool lipSync_ = true;
         float lipGain_ = 1.6f;
+        bool cacheEnabled_ = true;
+        std::wstring cacheDir_;
     };
 
 } // namespace UnnamedBot

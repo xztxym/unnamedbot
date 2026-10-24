@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
@@ -151,6 +154,9 @@ namespace UnnamedBot {
     void VoiceService::Initialize() {
         ReloadConfig();
         AudioPlayer::Instance().SetGain(lipGain_);
+
+        cacheEnabled_ = ConfigManager::Instance().GetBool("voice.cache_enabled", true);
+        cacheDir_ = Utils::ResolveAppRelative(L"data/voice_cache");
         EnsureWorker();
         LOG_INFO("Voice", available_.load()
             ? ("Voice service ready (backend=" + backend_ + ", lipSync=" + (lipSync_ ? "on" : "off") + ").")
@@ -186,6 +192,11 @@ namespace UnnamedBot {
         lipGain_ = static_cast<float>(std::clamp(ConfigManager::Instance().GetDouble("voice.lip_sync_gain", 1.6), 0.2, 4.0));
 
         AudioPlayer::Instance().SetGain(lipGain_);
+
+        // 磁盘缓存：同一句话（同角色同参数）再念时不走网络。免费接口一次合成 5~17s，
+        // 命中缓存就是 0ms。
+        cacheEnabled_ = ConfigManager::Instance().GetBool("voice.cache_enabled", true);
+        cacheDir_ = Utils::ResolveAppRelative(L"data/voice_cache");
 
         // 设置页里存的是中文值（在线 VOICEVOX / ElevenLabs / 关闭），旧配置的英文值也兼容
         const bool backendOk = (backend_ == "在线 VOICEVOX" || backend_ == "ttsquest" ||
@@ -256,11 +267,17 @@ namespace UnnamedBot {
                     current.compare(current.size() - 3, 3, "？") == 0);
             const bool isAsciiBreak = (len == 1 && (c == '.' || c == '!' || c == '?' || c == '\n'));
 
-            if (isBreak || isAsciiBreak || current.size() >= maxBytes) {
+            // 合并短句：免费接口每次请求都有 2~4 秒固定开销，把几句凑到 40 字以上再发，
+            // 一次请求要回来的音频长一点，但总等待从「句数 × 单次」变成「次数 × 单次」。
+            // 第一句单独发（最短，先出声），后面的句子再按 40 字合并，减少请求次数
+            const size_t softBytes = 120;
+            const bool softBreak = !out.empty() && current.size() >= softBytes;
+            const bool hardBreak = current.size() >= maxBytes;
+            if ((isBreak || isAsciiBreak) && (softBreak || hardBreak) || hardBreak) {
                 // 去掉动作/括号标记（如（小声））与首尾空白，避免念出来
                 std::string sentence = current;
-                const size_t open = sentence.find('（');
-                const size_t close = sentence.find('）');
+                const size_t open = sentence.find("\xEF\xBC\x88");   // 全角左括号
+                const size_t close = sentence.find("\xEF\xBC\x89");  // 全角右括号
                 if (open != std::string::npos && close != std::string::npos && close > open) {
                     sentence.erase(open, close - open + 3);
                 }
@@ -367,8 +384,79 @@ namespace UnnamedBot {
         return true;
     }
 
+    std::string VoiceService::MakeCacheKey(const std::string& sentence, int styleId) const {
+        // 角色 / 语速 / 音高 / 语调 / 音量 任一不同都算另一条（否则改了参数还会放旧音）
+        std::string raw;
+        raw += std::to_string(styleId);
+        raw += '|';
+        raw += std::to_string(static_cast<int>(speed_ * 1000));
+        raw += '|';
+        raw += std::to_string(static_cast<int>(pitch_ * 1000));
+        raw += '|';
+        raw += std::to_string(static_cast<int>(intonation_ * 1000));
+        raw += '|';
+        raw += std::to_string(static_cast<int>(volume_ * 1000));
+        raw += '|';
+        raw += sentence;
+
+        uint64_t hash = 1469598103934665603ull;   // FNV-1a 64
+        for (unsigned char ch : raw) {
+            hash ^= ch;
+            hash *= 1099511628211ull;
+        }
+        char buf[32] = {};
+        std::snprintf(buf, sizeof(buf), "%016llx", static_cast<unsigned long long>(hash));
+        return std::string(buf);
+    }
+
+    bool VoiceService::ReadCache(const std::string& key, std::string& bytes) const {
+        if (cacheDir_.empty() || key.empty()) {
+            return false;
+        }
+        const std::filesystem::path file = std::filesystem::path(cacheDir_) / (Utils::Utf8ToWide(key) + L".wav");
+        std::error_code ec;
+        if (!std::filesystem::exists(file, ec) || ec) {
+            return false;
+        }
+        std::ifstream in(file, std::ios::binary);
+        if (!in) {
+            return false;
+        }
+        bytes.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+        return bytes.size() > 44;
+    }
+
+    void VoiceService::WriteCache(const std::string& key, const std::string& bytes) const {
+        if (cacheDir_.empty() || key.empty() || bytes.size() <= 44) {
+            return;
+        }
+        std::error_code ec;
+        std::filesystem::create_directories(cacheDir_, ec);
+        if (ec) {
+            return;
+        }
+        const std::filesystem::path file = std::filesystem::path(cacheDir_) / (Utils::Utf8ToWide(key) + L".wav");
+        std::ofstream out(file, std::ios::binary | std::ios::trunc);
+        if (!out) {
+            return;
+        }
+        out.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+    }
     bool VoiceService::SynthesizeOnline(const std::string& sentence, int styleId,
         std::vector<int16_t>& pcm, int& sampleRate, int& channels, std::string& error) {
+
+        const auto started = std::chrono::steady_clock::now();
+
+        // 缓存键：文本 + 角色 + 语速/音高/语调/音量，任何一项变了都算另一条
+        const std::string cacheKey = MakeCacheKey(sentence, styleId);
+        if (cacheEnabled_) {
+            std::string cached;
+            if (ReadCache(cacheKey, cached) && ParseWav(cached, pcm, sampleRate, channels)) {
+                LOG_INFO("Voice", "Cache hit: " + sentence.substr(0, 24) + " (" +
+                    std::to_string(cached.size()) + " bytes)");
+                return true;
+            }
+        }
 
         // 1) 提交合成请求
         cpr::Response resp = cpr::Get(
@@ -383,6 +471,8 @@ namespace UnnamedBot {
             },
             cpr::Timeout{ 20000 });
 
+        const auto submitDone = std::chrono::steady_clock::now();
+        const auto submitMs = std::chrono::duration_cast<std::chrono::milliseconds>(submitDone - started).count();
         if (resp.status_code != 200) {
             error = "http " + std::to_string(resp.status_code);
             return false;
@@ -410,7 +500,9 @@ namespace UnnamedBot {
 
         // 2) 轮询状态（服务端异步合成，通常 <1s 完成）
         bool ready = false;
-        for (int i = 0; i < 25 && !stopRequested_.load(); ++i) {
+        int polls = 0;
+        for (int i = 0; i < 80 && !stopRequested_.load(); ++i) {
+            ++polls;
             cpr::Response st = cpr::Get(cpr::Url{ statusUrl }, cpr::Timeout{ 8000 });
             if (st.status_code == 200) {
                 try {
@@ -427,8 +519,10 @@ namespace UnnamedBot {
                 } catch (...) {
                 }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(120));
         }
+        const auto waitDone = std::chrono::steady_clock::now();
+        const auto waitMs = std::chrono::duration_cast<std::chrono::milliseconds>(waitDone - submitDone).count();
         if (!ready) {
             error = "status timeout";
             return false;
@@ -440,10 +534,21 @@ namespace UnnamedBot {
             error = "wav download failed";
             return false;
         }
+        const auto dlDone = std::chrono::steady_clock::now();
 
         if (!ParseWav(wav.text, pcm, sampleRate, channels)) {
             error = "wav parse failed";
             return false;
+        }
+
+        LOG_INFO("Voice", "Timing: submit " + std::to_string(submitMs) + "ms, wait " +
+            std::to_string(waitMs) + "ms, download " +
+            std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(dlDone - waitDone).count()) +
+            "ms (polls=" + std::to_string(polls) + ")");
+
+        // 4) 落盘缓存：同一句话（同角色同参数）下次直接播，不再等网络
+        if (cacheEnabled_) {
+            WriteCache(cacheKey, wav.text);
         }
         return true;
     }
