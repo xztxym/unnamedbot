@@ -1,4 +1,5 @@
 #include "../include/ControlTerminalWindow.h"
+#include "../include/Live2DManager.h"
 
 #include "../include/UiTheme.h"
 
@@ -208,6 +209,10 @@ namespace UnnamedBot {
         // Preset 行本身不入库：它只是写入口。服务商行写 api.base_url，
         // 模型行写 api.model_default。
         const char* PresetTargetKeyFor(const ControlTerminalWindow::FieldDef& def) {
+            // Live2D 模型下拉：选项直接写回 model.default_id 本身
+            if (def.key != nullptr && std::strcmp(def.key, "model.default_id") == 0) {
+                return def.key;
+            }
             if (def.key != nullptr && std::strcmp(def.key, kModelPresetKey) == 0) {
                 return ConfigManager::KEY_API_MODEL_DEFAULT.c_str();
             }
@@ -247,6 +252,21 @@ namespace UnnamedBot {
             if (key == kProviderPresetKey) {
                 for (const ProviderPreset& provider : kProviders) {
                     result.push_back({ provider.label, provider.baseUrl });
+                }
+                return result;
+            }
+
+            // Live2D 模型：列出 models 目录里实际导入的模型，供下拉选择
+            // （以前这里是手写模型名，换模型得自己敲对文件夹名）
+            if (key == "model.default_id") {
+                const auto caps = Live2DManager::Instance().ListModelCapabilities();
+                for (const auto& cap : caps) {
+                    const std::wstring label = Utils::Utf8ToWide(cap.id) +
+                        (cap.current ? L" · 当前" : L"");
+                    result.push_back({ label, Utils::Utf8ToWide(cap.id) });
+                }
+                if (result.empty()) {
+                    result.push_back({ L"（models 目录里还没有模型）", L"" });
                 }
                 return result;
             }
@@ -344,7 +364,7 @@ namespace UnnamedBot {
 
         // ===== 卡片 06：模型与外观 =====
         const ControlTerminalWindow::FieldDef kModelFields[] = {
-            { "model.default_id",      L"默认模型", L"MODEL ID", L"Live2D 名称", FieldKind::Text,   L"Haru", nullptr, false, 240 },
+            { "model.default_id",      L"默认模型", L"MODEL", L"从已导入的模型里选", FieldKind::Preset, L"Haru", nullptr, false, 0 },
             { "model.default_scale",   L"缩放",     L"SCALE",    L"倍",          FieldKind::Double, L"1.0",  nullptr, false, 150 },
             { "model.default_opacity", L"不透明度", L"OPACITY",  L"0 – 1",       FieldKind::Double, L"1.0",  nullptr, false, 150 },
         };

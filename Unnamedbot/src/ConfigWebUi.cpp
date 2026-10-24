@@ -1439,6 +1439,60 @@ body.yandere .rail,body.yandere .top,body.yandere .opt,body.yandere .field>*,bod
 /* 顶部状态点、主按钮保持既有处理，只把描边统一到同一档红 */
 body.yandere .panelbox,body.yandere .bub{border-color:rgba(214,64,92,.34)}
 
+
+/* ================================================================
+   动效：让中枢「活」起来（全部限定在动效可关的前提下）
+   ----------------------------------------------------------------
+   * 进场：主菜单逐行抬头，其余面板错开淡入；
+   * 常驻：选中项的骨白板缓慢呼吸一圈红光，扫描线极慢漂移；
+   * 交互：悬停有回弹，切换屏幕有轻微推入感；
+   * prefers-reduced-motion 时全部关掉（系统里关了动画就不该动）。
+   ================================================================ */
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 0 0 rgba(214,64,92,0), inset 0 0 0 0 rgba(214,64,92,0)}
+  50%{box-shadow:0 0 26px 2px rgba(214,64,92,.28), inset 0 0 18px 0 rgba(214,64,92,.16)}
+}
+@keyframes scanDrift{from{background-position:0 0}to{background-position:0 32px}}
+@keyframes dotPulse{
+  0%,100%{box-shadow:0 0 6px currentColor}
+  50%{box-shadow:0 0 14px 2px currentColor}
+}
+@keyframes barPulse{
+  0%,100%{box-shadow:inset 3px 0 0 #D6405C}
+  50%{box-shadow:inset 3px 0 0 #F26A84, inset 0 0 18px rgba(214,64,92,.25)}
+}
+@keyframes plateSettle{from{transform:translateX(-8px) rotate(-1deg)}to{transform:none}}
+
+/* 进场：屏幕容器淡入，主菜单逐行抬头 */
+.screen,.page{animation:fadeIn 260ms var(--e-out) both}
+.opt{animation:riseIn 340ms var(--e-out) both}
+.opt:nth-child(1){animation-delay:40ms}
+.opt:nth-child(2){animation-delay:90ms}
+.opt:nth-child(3){animation-delay:140ms}
+.opt:nth-child(4){animation-delay:190ms}
+.opt:nth-child(5){animation-delay:240ms}
+.opt .pair{transition:transform 180ms var(--e-out), border-color 180ms var(--e-out)}
+.panelbox,.pset,.bub{animation:fadeIn 220ms var(--e-out) both}
+/* 选中项的骨白板：缓慢呼吸一圈红光 */
+body.yandere .opt.sel .pair{animation:plateSettle 420ms var(--e-out) both, breathe 4.2s ease-in-out 600ms infinite}
+/* 扫描线极慢漂移（.field 上那层） */
+body.yandere .field::before{background-size:100% 8px;animation:scanDrift 6s linear infinite}
+/* 顶部状态点、侧栏选中的血线：轻微脉动 */
+.dot.on,.dot.warn{animation:dotPulse 2.6s ease-in-out infinite}
+.rail .on,.rail .sel{animation:barPulse 3.4s ease-in-out infinite}
+/* 悬停回弹（只给主菜单，避免整页乱动） */
+.opt .pair:hover{transform:translateX(4px)}
+/* 屏幕切换：轻微推入 */
+.screen{will-change:opacity}
+
+@media (prefers-reduced-motion: reduce){
+  .screen,.page,.opt,.panelbox,.pset,.bub,.dot.on,.dot.warn,.rail .on,.rail .sel,
+  body.yandere .opt.sel .pair, body.yandere .field::before{
+    animation:none !important; transition:none !important}
+}
+
 </style>
 </head>
 <body>
