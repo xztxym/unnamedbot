@@ -185,6 +185,11 @@ namespace UnnamedBot {
         TaskScheduler::Instance().Initialize();
         LOG_INFO("AppCore", "Task scheduler initialized.");
 
+        // AI 客户端必须在启动时按已存的配置建好：它原先只在 ReloadConfig（保存设置后）
+        // 里初始化，于是「填过密钥但没点保存过」或者「重启后没再点保存」时，
+        // aiClient_ 永远是空密钥，聊天一律返回 API Key not configured。
+        InitializeAIClient();
+
         // 初始化更新管理器
         UpdateManager::Instance().Initialize();
         LOG_INFO("AppCore", "Update manager initialized.");
