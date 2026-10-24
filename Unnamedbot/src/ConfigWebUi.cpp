@@ -2487,7 +2487,18 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
     if (role === "reveal") { revealed[key] = !revealed[key]; render(); return; }
     if (role === "dd") { cyclePreset(key); return; }
     if (role === "action") {
+      // 试听要等合成（3–10s），按钮先改成「合成中…」给个明确反馈，超时再复原
+      var label = hit.textContent;
+      hit.disabled = true;
+      hit.textContent = "合成中…";
+      // 水波纹：让按钮看起来在动
+      hit.classList.add("busy");
       post({ type: "fieldAction", key: key || "" });
+      setTimeout(function () {
+        hit.disabled = false;
+        hit.textContent = label;
+        hit.classList.remove("busy");
+      }, 15000);
       return;
     }
 

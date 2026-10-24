@@ -242,6 +242,8 @@ namespace UnnamedBot {
         static constexpr UINT IDM_TOGGLE_PET = 40002;
         static constexpr UINT IDM_TOGGLE_TOPMOST = 40003;
         static constexpr UINT IDM_EXIT = 40004;
+        static constexpr UINT IDM_QUICK_INPUT = 40005;
+        static constexpr UINT IDM_TOGGLE_VOICE = 40006;
 
         // 冷却控制
         std::atomic<bool> triggerCooling_ = false;

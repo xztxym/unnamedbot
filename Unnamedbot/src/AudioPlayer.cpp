@@ -15,8 +15,11 @@
 #include <audioclient.h>
 #include <objbase.h>
 #include <wrl/client.h>
+#include <propsys.h>
+#include <functiondiscoverykeys_devpkey.h>
 
 #include "../include/Logger.h"
+#include "../include/Utils.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -205,9 +208,26 @@ namespace UnnamedBot {
         }
 
         ComPtr<IMMDevice> device;
-        if (FAILED(enumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device))) {
+        // eMultimedia 是用户实际听声音用的端点；取不到再退回 eConsole
+        if (FAILED(enumerator->GetDefaultAudioEndpoint(eRender, eMultimedia, &device)) &&
+            FAILED(enumerator->GetDefaultAudioEndpoint(eRender, eConsole, &device))) {
             LOG_WARN("Audio", "No default render device.");
             return;
+        }
+        {
+            // 打日志用设备友好名：出问题时一眼能看出声音被送去了哪个端点
+            std::string name = "(unknown)";
+            ComPtr<IPropertyStore> props;
+            if (SUCCEEDED(device->OpenPropertyStore(STGM_READ, &props)) && props) {
+                PROPVARIANT value;
+                PropVariantInit(&value);
+                if (SUCCEEDED(props->GetValue(PKEY_Device_FriendlyName, &value)) &&
+                    value.vt == VT_LPWSTR && value.pwszVal) {
+                    name = Utils::WideToUtf8(value.pwszVal);
+                }
+                PropVariantClear(&value);
+            }
+            LOG_INFO("Audio", "Render endpoint: " + name);
         }
 
         ComPtr<IAudioClient> client;
@@ -243,12 +263,32 @@ namespace UnnamedBot {
 
         ComPtr<IAudioRenderClient> render;
         if (FAILED(client->GetService(IID_PPV_ARGS(&render)))) {
+            LOG_WARN("Audio", "GetService(IAudioRenderClient) failed.");
             return;
         }
 
         const std::vector<uint8_t> pcm = ConvertToMixFormat(buffer.samples, buffer.sampleRate, buffer.channels, mix);
+        {
+            // 自检：转换后是不是静音（声音送出去了但没人听见时，先确认数据不为 0）
+            double peak = 0.0;
+            if (mix.isFloat) {
+                const float* f = reinterpret_cast<const float*>(pcm.data());
+                const size_t n = pcm.size() / sizeof(float);
+                for (size_t i = 0; i < n; ++i) peak = std::max(peak, std::fabs(static_cast<double>(f[i])));
+            } else if (mix.bytesPerSample == 2) {
+                const int16_t* s = reinterpret_cast<const int16_t*>(pcm.data());
+                const size_t n = pcm.size() / sizeof(int16_t);
+                for (size_t i = 0; i < n; ++i) peak = std::max(peak, std::fabs(static_cast<double>(s[i])) / 32768.0);
+            }
+            LOG_INFO("Audio", "Converted peak amplitude: " + std::to_string(peak));
+        }
         const size_t frameBytes = static_cast<size_t>(mix.channels) * static_cast<size_t>(mix.bytesPerSample);
         const UINT32 totalFrames = static_cast<UINT32>(pcm.size() / frameBytes);
+
+        LOG_INFO("Audio", "Playback start: " + std::to_string(totalFrames) + " frames @ " +
+            std::to_string(mix.sampleRate) + " Hz, " + std::to_string(mix.channels) + " ch, " +
+            std::to_string(mix.bytesPerSample * 8) + "-bit " + (mix.isFloat ? "float" : "pcm") +
+            ", buffer=" + std::to_string(bufferFrames) + " frames");
 
         if (FAILED(client->Start())) {
             LOG_WARN("Audio", "IAudioClient::Start failed.");
@@ -322,6 +362,7 @@ namespace UnnamedBot {
             Sleep(25);
         }
         client->Stop();
+        LOG_INFO("Audio", "Playback done: " + std::to_string(written) + "/" + std::to_string(totalFrames) + " frames");
     }
 
 } // namespace UnnamedBot

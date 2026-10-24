@@ -585,9 +585,9 @@ namespace {
         mainWindow_->SetHitTestProvider([this](int x, int y) { return HitTestClient(x, y); });
 
         // 设置窗口回调
-        // 鼠标约定（两种模式统一）：右键 = 输入，左键 = 拖动/不拦截。
-        // 快速模式原来左右键各弹一个输入条（左=面板式、右=下划线式），
-        // 等于同一件事有两个入口；现在只留右键，弹的是原来左键那条面板式输入条。
+        // 鼠标约定（两种模式统一）：左键 = 拖动/不拦截；右键 = 上下文菜单。
+        // 菜单里第一项是「对话输入」，所以原来「右键直接弹输入条」的入口没有丢，
+        // 同时「怎么退出」在桌宠上右键就能看到，不用记快捷键。
         mainWindow_->OnMouseClick([this](int x, int y, bool isLeftDown) {
             if (isLeftDown) {
                 LOG_DEBUG("AppCore", "Left click at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
@@ -595,27 +595,7 @@ namespace {
             }
 
             LOG_DEBUG("AppCore", "Right click at (" + std::to_string(x) + ", " + std::to_string(y) + ")");
-            // Ctrl+右键 保留原来那套上下文菜单（配置终端 / 隐藏 / 总在最前 / 退出）。
-            // 托盘右键也有同一套，这里留着只是为了不改变老习惯。
-            if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
-                ShowContextMenu();
-                return;
-            }
-
-            if (IsQuickModeActive()) {
-                // 快速模式（圆点）：面板式输入条，贴着圆点弹出
-                QuickInputBar::Instance().Popup(GetMainWindow(), [this](const std::string& text) {
-                    // 发起网络请求前先脱离 UI 线程：否则请求期间窗口会卡住，
-                    // 输入条也会弹不回来
-                    std::thread([this, text]() { ProcessAIMessage(text); }).detach();
-                    });
-            }
-            else {
-                // 常规模式（模型）：极简输入条，整条透明，只剩一条下划线（？？？时是血红）。
-                QuickInputBar::Instance().PopupUnderline(GetMainWindow(), [this](const std::string& text) {
-                    std::thread([this, text]() { ProcessAIMessage(text); }).detach();
-                    });
-            }
+            ShowContextMenu();
             });
 
         // 拖拽与移动窗口都不设置「模型位置」：模型就画在窗口里，窗口动模型自然跟着动。
@@ -995,10 +975,14 @@ namespace {
         }
 
         const bool petVisible = mainWindow_ && mainWindow_->IsVisible();
+        AppendMenuW(menu, MF_STRING, IDM_QUICK_INPUT, L"对话输入(&I)");
         AppendMenuW(menu, MF_STRING, IDM_OPEN_CONFIG, L"配置终端(&C)");
+        AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
         AppendMenuW(menu, MF_STRING, IDM_TOGGLE_PET, petVisible ? L"隐藏桌宠(&H)" : L"显示桌宠(&S)");
         AppendMenuW(menu, MF_STRING | (mainWindow_ && mainWindow_->IsAlwaysOnTop() ? MF_CHECKED : 0),
             IDM_TOGGLE_TOPMOST, L"总在最前(&T)");
+        const bool voiceOn = ConfigManager::Instance().GetBool("voice.enabled", false);
+        AppendMenuW(menu, MF_STRING | (voiceOn ? MF_CHECKED : 0), IDM_TOGGLE_VOICE, L"语音朗读(&V)");
         AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
         AppendMenuW(menu, MF_STRING, IDM_EXIT, L"退出(&X)");
 
@@ -1014,6 +998,24 @@ namespace {
         DestroyMenu(menu);
 
         switch (command) {
+        case IDM_QUICK_INPUT:
+            QuickInputBar::Instance().Popup(GetMainWindow(), [this](const std::string& text) {
+                std::thread([this, text]() { ProcessAIMessage(text); }).detach();
+            });
+            break;
+
+        case IDM_TOGGLE_VOICE: {
+            const bool next = !ConfigManager::Instance().GetBool("voice.enabled", false);
+            ConfigManager::Instance().SetBool("voice.enabled", next);
+            VoiceService::Instance().ReloadConfig();
+            // 语音开关变了：开着中枢就让它重新读一遍配置（关着就不用管）
+            if (ControlTerminalWindow::Instance().IsVisible()) {
+                ControlTerminalWindow::Instance().Hide();
+                ControlTerminalWindow::Instance().Show(true);
+            }
+            break;
+        }
+
         case IDM_OPEN_CONFIG:
             ControlTerminalWindow::Instance().Show(true);
             break;
