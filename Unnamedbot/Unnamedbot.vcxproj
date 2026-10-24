@@ -198,6 +198,7 @@
     <ClCompile Include="src\AIClient.cpp" />
     <ClCompile Include="src\AppCore.cpp" />
     <ClCompile Include="src\AttachmentManager.cpp" />
+    <ClCompile Include="src\AudioPlayer.cpp" />
     <ClCompile Include="src\ConfigManager.cpp" />
     <ClCompile Include="src\ConfigWebUi.cpp" />
     <ClCompile Include="src\ControlTerminalWindow.cpp" />
@@ -219,6 +220,7 @@
     <ClCompile Include="src\TrayIcon.cpp" />
     <ClCompile Include="src\UiTheme.cpp" />
     <ClCompile Include="src\UpdateManager.cpp" />
+    <ClCompile Include="src\VoiceService.cpp" />
     <ClCompile Include="src\Utils.cpp" />
     <ClCompile Include="src\Window.cpp" />
     <ClCompile Include="Unnamedbot.cpp" />
@@ -283,6 +285,7 @@
   <ItemGroup>
     <ClInclude Include="include\AIClient.h" />
     <ClInclude Include="include\AppCore.h" />
+    <ClInclude Include="include\AudioPlayer.h" />
     <ClInclude Include="include\AttachmentManager.h" />
     <ClInclude Include="include\ConfigManager.h" />
     <ClInclude Include="include\ConfigWebUi.h" />
@@ -308,6 +311,7 @@
     <ClInclude Include="include\UpdateManager.h" />
     <ClInclude Include="include\Utils.h" />
     <ClInclude Include="include\Window.h" />
+    <ClInclude Include="include\VoiceService.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Unnamedbot.rc" />

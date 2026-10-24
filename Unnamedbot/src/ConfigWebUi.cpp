@@ -2251,6 +2251,13 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
       return grid + '</span>';
     }
 
+    // action：只发消息不落库的按钮（试听 / 启动引擎 / 刷新角色…）
+    if (f.kind === "action") {
+      return '<span class="ctl grow" style="border:0;background:none;padding:0">' +
+        '<button class="btn outline" type="button" data-key="' + esc(f.key) + '" data-role="action">' +
+        esc(f.label || "执行") + '</button></span>';
+    }
+
     if (f.kind === "multi") {
       var all = presets[f.key] || [];
       if (!all.length) return '<span class="tiny">—</span>';
@@ -2479,6 +2486,11 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
     }
     if (role === "reveal") { revealed[key] = !revealed[key]; render(); return; }
     if (role === "dd") { cyclePreset(key); return; }
+    if (role === "action") {
+      post({ type: "fieldAction", key: key || "" });
+      return;
+    }
+
     if (role === "preset") {
       var f = findField(key);
       if (f && f.presetTarget) setValue(f.presetTarget, hit.getAttribute("data-value"));

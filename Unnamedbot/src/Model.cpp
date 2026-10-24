@@ -15,6 +15,7 @@
 #include <Physics/CubismPhysics.hpp>
 #include <CubismDefaultParameterId.hpp>
 #include <Id/CubismIdManager.hpp>
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -159,6 +160,14 @@ namespace {
 
         if (autoBlink_ && _eyeBlink) {
             _eyeBlink->UpdateParameters(model, deltaTime);
+        }
+
+        // 嘴型：语音电平（0..1）直接写 ParamMouthOpenY。
+        // 放在物理之前，才能让口部物理跟随嘴型，否则物理会把参数拉回默认值。
+        if (lipSync_ && mouthOpen_ > 0.001f) {
+            if (CubismIdHandle mouthId = CubismFramework::GetIdManager()->GetId(DefaultParameterId::ParamMouthOpenY)) {
+                model->SetParameterValue(mouthId, mouthOpen_);
+            }
         }
 
         if (_physics) {
@@ -376,6 +385,10 @@ namespace {
         _breath->SetParameters(parameters);
     }
 
+    void Model::SetMouthOpen(float value) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        mouthOpen_ = std::clamp(value, 0.0f, 1.0f);
+    }
     void Model::SetLipSync(bool enabled) {
         std::lock_guard<std::mutex> lock(mutex_);
         lipSync_ = enabled;

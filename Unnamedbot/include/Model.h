@@ -56,6 +56,8 @@ namespace UnnamedBot {
 
         // 设置唇形同步
         void SetLipSync(bool enabled);
+        // 嘴型开合（0..1），由语音电平驱动；只在 lipSync 开启时生效
+        void SetMouthOpen(float value);
 
         // 设置位置
         void SetPosition(float x, float y);
@@ -140,6 +142,7 @@ namespace UnnamedBot {
         bool autoBlink_ = true;
         bool breathEffect_ = true;
         bool lipSync_ = false;
+        float mouthOpen_ = 0.0f;          // 0..1，语音电平 → ParamMouthOpenY
 
         // 表情列表
         std::vector<std::string> expressionNames_;

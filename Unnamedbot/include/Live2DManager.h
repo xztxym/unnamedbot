@@ -111,6 +111,9 @@ namespace UnnamedBot {
         // 设置唇形同步
         void SetLipSync(bool enabled);
 
+        // 语音嘴型：0..1 开合度（由 VoiceService 的电平驱动）
+        void SetMouthOpen(float value);
+
         // 保存当前模型状态
         void SaveModelState();
 

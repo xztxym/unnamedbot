@@ -65,7 +65,8 @@ namespace UnnamedBot {
         // ---------- 配置项描述（终端展示的全部字段） ----------
 
         // 字段类型决定控件形态：文本框 / 整数 / 浮点 / 开关 / 单选项 / 预设网格 / 多选清单
-        enum class FieldKind { Text, Int, Double, Bool, Enum, Preset, Multi };
+        // Action：不落库的按钮行（试听 / 启动引擎 / 刷新角色），点击发 fieldAction
+        enum class FieldKind { Text, Int, Double, Bool, Enum, Preset, Multi, Action };
 
         struct FieldDef {
             const char* key;            // ConfigManager 键名

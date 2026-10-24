@@ -22,6 +22,7 @@
 #include "../include/AttachmentManager.h"
 #include "../include/TaskScheduler.h"
 #include "../include/UpdateManager.h"
+#include "../include/VoiceService.h"
 
 #include <chrono>
 #include <iomanip>
@@ -168,6 +169,9 @@ namespace UnnamedBot {
 
         // 初始化消息处理器
         MessageHandler::Instance().Initialize();
+
+        // 语音：联网 TTS（tts.quest 的 VOICEVOX 兼容接口），不出声时只是一个空线程
+        VoiceService::Instance().Initialize();
         LOG_INFO("AppCore", "Message handler initialized.");
 
         // 初始化任务调度器
@@ -415,6 +419,9 @@ namespace {
         // 正常路径下配置界面出现时加载界面已撤销；这里兜底处理（例如初始化中途失败）。
         SplashScreen::Instance().Shutdown();
         LOG_INFO("AppCore", "Shutting down application...");
+
+        // 先停语音：音频线程还在跑的时候拆 WASAPI 会卡住退出
+        VoiceService::Instance().Shutdown();
 
         // 停止更新线程
         updateThreadRunning_ = false;
@@ -777,6 +784,11 @@ namespace {
                     NIIF_INFO,
                     3000
                 );
+            }
+
+            // 语音朗读：只念助手的话（用户自己说的没必要再念一遍）。
+            if (msg.role == MessageRole::Assistant && !msg.content.empty()) {
+                VoiceService::Instance().Speak(msg.content, "calm");
             }
             });
 
@@ -1250,6 +1262,10 @@ namespace {
             // deltaTime 仍然夹一下，避免重新显示时物理一步跳太远。
             if (petVisible) {
                 Live2DManager::Instance().Update((std::min)(deltaTime, 0.25f));
+
+                // 语音嘴型：Level 自带 attack/release，Tick 负责松手回落
+                VoiceService::Instance().Tick();
+                Live2DManager::Instance().SetMouthOpen(VoiceService::Instance().Level());
             }
 
             // 更新任务调度器

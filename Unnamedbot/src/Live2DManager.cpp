@@ -515,6 +515,13 @@ namespace {
         }
     }
 
+    void Live2DManager::SetMouthOpen(float value) {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+
+        if (currentModel_) {
+            currentModel_->SetMouthOpen(value);
+        }
+    }
     void Live2DManager::SaveModelState() {
         std::lock_guard<std::recursive_mutex> lock(mutex_);
 

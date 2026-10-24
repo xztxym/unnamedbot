@@ -9,6 +9,7 @@
 #include "../include/Logger.h"
 #include "../include/MessageHandler.h"
 #include "../include/PromptLibrary.h"
+#include "../include/VoiceService.h"
 #include "../include/TaskScheduler.h"
 #include "../include/ResourceIds.h"
 #include "../include/Utils.h"
@@ -138,6 +139,10 @@ namespace UnnamedBot {
                     options.push_back(L"？？？");
                 }
                 return options;
+            }
+            // 语音角色：选项来自 VoiceService 的角色表（tts.quest 的 styleId 一一对应）
+            if (KeyIs(def, "voice.speaker")) {
+                return VoiceService::SpeakerLabels();
             }
             return SplitOptions(def.options);
         }
@@ -404,6 +409,24 @@ namespace UnnamedBot {
             { "prompt.enabled", L"启用提示词", L"PROMPTS",    L"prompts 目录 · 可多选",   FieldKind::Multi, L"",      nullptr, false, 0 },
         };
 
+        // ===== 卡片 11：语音合成（联网 TTS，零本地模型） =====
+        // voice.speaker 的选项由 OptionsFor 在运行时给出（VoiceService::SpeakerLabels），
+        // 这里留空，避免角色表写成两份。
+        const ControlTerminalWindow::FieldDef kVoiceFields[] = {
+            { "voice.enabled",       L"语音朗读", L"VOICE",       L"在线 VOICEVOX · 不占本地体积", FieldKind::Bool,   L"false", nullptr, false, 0 },
+            { "voice.backend",       L"合成后端", L"BACKEND",     L"联网，零本地模型",             FieldKind::Enum,   L"在线 VOICEVOX", L"在线 VOICEVOX|ElevenLabs|关闭", false, 0 },
+            { "voice.speaker",       L"角色",     L"SPEAKER",     L"VOICEVOX 声库",                FieldKind::Enum,   L"ずんだもん", nullptr, false, 0 },
+            { "voice.speak_mode",    L"朗读范围", L"SPEAK MODE",  L"自动 = 每句都念",              FieldKind::Enum,   L"自动", L"自动|仅标签|关闭", false, 0 },
+            { "voice.speed",         L"语速",     L"SPEED",       L"1.0 = 原速",                   FieldKind::Double, L"1.0", nullptr, false, 150 },
+            { "voice.pitch",         L"音高",     L"PITCH",       L"半音偏移",                     FieldKind::Double, L"0.0", nullptr, false, 150 },
+            { "voice.intonation",    L"语调",     L"INTONATION",  L"情绪起伏强度",                 FieldKind::Double, L"1.0", nullptr, false, 150 },
+            { "voice.volume",        L"音量",     L"VOLUME",      L"合成侧增益",                   FieldKind::Double, L"1.0", nullptr, false, 150 },
+            { "voice.lip_sync",      L"口型同步", L"LIP SYNC",    L"随语音开合嘴巴",               FieldKind::Bool,   L"true", nullptr, false, 0 },
+            { "voice.lip_sync_gain", L"口型幅度", L"LIP GAIN",    L"越大嘴张越开",                 FieldKind::Double, L"1.6", nullptr, false, 150 },
+            { "voice.max_chars",     L"单句上限", L"MAX CHARS",   L"超过自动断句",                 FieldKind::Int,    L"120", nullptr, false, 150 },
+            { "voice.test_text",     L"试听文本", L"TEST TEXT",   L"点下面按钮试听",               FieldKind::Text,   L"你好，我是桌宠。", nullptr, false, 240 },
+            { "voice.test",          L"试听",     L"TEST",        L"合成一句听听",                 FieldKind::Action, L"", nullptr, false, 0 },
+        };
         const ControlTerminalWindow::SectionDef kSections[] = {
             { L"01", L"AI · 接口与鉴权", L"ENDPOINT", L"点选服务商预设填入地址，可用模型随服务商刷新；密钥写入本地数据库。", kApiFields, 6 },
             { L"02", L"生成 · 采样参数", L"SAMPLING", L"温度与惩罚项直接决定回复的稳定度与发散度。", kSamplingFields, 4 },
@@ -415,7 +438,7 @@ namespace UnnamedBot {
             { L"08", L"附件与日志", L"STORAGE", L"附件配额与本地保留周期。", kStorageFields, 4 },
             { L"09", L"代理与更新", L"NETWORK", L"出网代理与自动更新检查。", kNetworkFields, 5 },
             { L"10", L"快速模式", L"QUICK MODE", L"关闭 Live2D，只在桌面上留一个可交互的圆点；「？？？」是实验性人格，仅当 prompts 目录里存在 yandere.chr 时可选。", kQuickModeFields, 3 },
-        };
+            { L"11", L"语音合成", L"VOICE", L"联网 VOICEVOX：不增加安装体积，断网静默。角色与情绪走 styleId，语速 / 音高 / 语调都由 AI 可调。", kVoiceFields, 13 },        };
 
         const int kSectionCount = static_cast<int>(sizeof(kSections) / sizeof(kSections[0]));
 
@@ -456,6 +479,7 @@ namespace UnnamedBot {
             case FieldKind::Bool:   return "bool";
             case FieldKind::Enum:   return "enum";
             case FieldKind::Preset: return "preset";
+        case FieldKind::Action: return "action";
             case FieldKind::Multi:  return "multi";
             default:                return "text";
             }
@@ -1409,7 +1433,7 @@ namespace UnnamedBot {
             POINT origin = { 0, 0 };
             if (hwnd_) ClientToScreen(hwnd_, &origin);
             const int sx = origin.x + static_cast<int>(std::lround(cx * scale));
-            LOG_INFO("ControlTerminal", "petSlot: css=(" + std::to_string(cx) + "," + std::to_string(cy) +
+            LOG_DEBUG("ControlTerminal", "petSlot: css=(" + std::to_string(cx) + "," + std::to_string(cy) +
                                          "," + std::to_string(cw) + "," + std::to_string(ch) +
                                          ") scale=" + std::to_string(scale) +
                                          " origin=(" + std::to_string(origin.x) + "," + std::to_string(origin.y) + ")");
@@ -1539,14 +1563,29 @@ namespace UnnamedBot {
             return;
         }
 
+        if (type == "fieldAction") {
+            // Action 行（试听 / 启动引擎 / 刷新角色）：只触发动作，不写配置
+            ApplyPostedValues(message);
+            const std::string actionKey = message.value("key", std::string());
+            if (actionKey == "voice.test") {
+                // 试听按「当前页面上的参数」走：先落库再重读，保证听到的就是看到的
+                Save();
+                VoiceService::Instance().ReloadConfig();
+                VoiceService::Instance().TestSpeak();
+            }
+            return;
+        }
+
         if (type == "save") {
             ApplyPostedValues(message);
             Save();
+            VoiceService::Instance().ReloadConfig();       // 语音参数改完立即生效
             return;
         }
 
         if (type == "reload") {
             Reload();
+            VoiceService::Instance().ReloadConfig();
             return;
         }
 
@@ -1616,7 +1655,7 @@ namespace UnnamedBot {
             for (int i = 0; i < sec.fieldCount; ++i) {
                 const FieldDef& def = sec.fields[i];
                 // Preset 只是写入口，不对应任何配置键
-                if (def.kind == FieldKind::Preset) continue;
+                if (def.kind == FieldKind::Preset || def.kind == FieldKind::Action) continue;
                 const std::string raw = ConfigManager::Instance().GetString(def.key, Utils::WideToUtf8(def.dflt));
                 // Multi（逗号分隔清单）与 Enum 一样只是字符串，直接进草稿。
                 // 唯一的例外：quick.mode 存着「？？？」而哨兵文件已被删掉时，
@@ -1684,7 +1723,7 @@ namespace UnnamedBot {
 
     bool ControlTerminalWindow::ValidateValue(const FieldDef& def, const std::wstring& value, std::wstring& error) const {
         // Preset 不对应配置键，写入前已被跳过，无需校验
-        if (def.kind == FieldKind::Preset) {
+        if (def.kind == FieldKind::Preset || def.kind == FieldKind::Action) {
             return true;
         }
 
@@ -1791,7 +1830,7 @@ namespace UnnamedBot {
             const SectionDef& sec = kSections[s];
             for (int i = 0; i < sec.fieldCount; ++i) {
                 const FieldDef& def = sec.fields[i];
-                if (def.kind == FieldKind::Preset) continue;
+                if (def.kind == FieldKind::Preset || def.kind == FieldKind::Action) continue;
                 const std::wstring value = CurrentValueText(def.key);
                 std::wstring error;
                 if (!ValidateValue(def, value, error)) {
@@ -1844,7 +1883,7 @@ namespace UnnamedBot {
             const SectionDef& sec = kSections[s];
             for (int i = 0; i < sec.fieldCount; ++i) {
                 const FieldDef& def = sec.fields[i];
-                if (def.kind == FieldKind::Preset) continue;
+                if (def.kind == FieldKind::Preset || def.kind == FieldKind::Action) continue;
                 const std::string value = Utils::Trim(Utils::WideToUtf8(CurrentValueText(def.key)));
                 draft_[def.key] = value;
                 loaded_[def.key] = value;
