@@ -1493,6 +1493,37 @@ body.yandere .field::before{background-size:100% 8px;animation:scanDrift 6s line
     animation:none !important; transition:none !important}
 }
 
+
+/* ================================================================
+   屏幕切换动效：一道斜扫光幕
+   ----------------------------------------------------------------
+   原来只有 58px 的位移 + 淡入，快是快，但「翻页感」太弱。
+   这里在每次 show() 时扫过一道斜向光幕（骨白 + 血红），
+   像把旧页面擦掉再写上新的；480ms 内结束，不打断点击。
+   ================================================================ */
+.view-veil{
+  position:fixed;inset:-10% -15%;pointer-events:none;z-index:70;opacity:0;
+  background:linear-gradient(100deg,
+    rgba(214,64,92,0) 0%, rgba(214,64,92,.42) 42%,
+    rgba(247,233,236,.92) 50%, rgba(214,64,92,.42) 58%, rgba(214,64,92,0) 100%);
+  transform:translate3d(-120%,0,0) skewX(-12deg);
+  mix-blend-mode:screen;
+}
+.view-veil.on{animation:veilSweep 480ms cubic-bezier(.22,1,.36,1) both}
+@keyframes veilSweep{
+  0%{opacity:0;transform:translate3d(-120%,0,0) skewX(-12deg)}
+  18%{opacity:.95}
+  70%{opacity:.9}
+  100%{opacity:0;transform:translate3d(120%,0,0) skewX(-12deg)}
+}
+/* 标题跟着轻微推入，让「换页」在文字上也看得出来 */
+.view .shead{transition:transform 320ms cubic-bezier(.22,1,.36,1), opacity 320ms}
+.view.enter-fwd .shead,.view.enter-back .shead{opacity:.4;transform:translateY(-6px)}
+@media (prefers-reduced-motion: reduce){
+  .view-veil.on{animation:none !important}
+  .view .shead{transition:none}
+}
+
 </style>
 </head>
 <body>
@@ -1917,6 +1948,20 @@ body.yandere .field::before{background-size:100% 8px;animation:scanDrift 6s line
     }
     var previous = current;
     current = screen;
+
+    // 切换动效：扫一道斜向光幕（元素按需创建；reduced-motion 时媒体查询会关掉动画）
+    try {
+      var veil = document.getElementById("viewVeil");
+      if (!veil) {
+        veil = document.createElement("div");
+        veil.id = "viewVeil";
+        veil.className = "view-veil";
+        document.body.appendChild(veil);
+      }
+      veil.classList.remove("on");
+      void veil.offsetWidth;
+      veil.classList.add("on");
+    } catch (e) { }
 
     var dir = isBack ? "back" : "fwd";
     var old = previous ? $("v-" + previous) : null;

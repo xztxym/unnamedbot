@@ -7,10 +7,10 @@
 namespace UnnamedBot {
 
     // 界面主题：输入条、气泡、配置终端共用同一套取值。
-    // 现在只有一套「冷冰蓝」主题；「？？？」人格模式已移除，
-    // 结构保留是为了各组件拿颜色的接口不变。
+    // 抽出来的目的是「？？？」人格启用时只改这一处，整套 UI 就一起换色换字体，
+    // 不必在每个窗口里各写一份 if (yandere)。
     struct UiTheme {
-        // 恒为 false（仅为兼容各处 theme.yandere 判断；不再有第二种主题）
+        // 是不是「？？？」主题。各组件据此决定要不要加额外装饰（斜体、更硬的描边等）
         bool yandere = false;
 
         // ---- 配色（默认 = 原来的冷冰蓝深色主题，与配置终端一致）----
@@ -31,7 +31,8 @@ namespace UnnamedBot {
         bool italic = false;
     };
 
-    // 「？？？」模式已移除，恒返回 false（实现见 UiTheme.cpp）。
+    // 是否处于「？？？」：快速模式开启，且 quick.mode 选中了它。
+    // 与 AppCore::IsYandereMode 同一判据，抽到这里供各 UI 组件共用（单一事实来源）。
     bool IsYandereModeActive();
 
     // 当前主题。每次调用都重新判定，改完配置立刻生效，不需要重启。
