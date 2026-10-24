@@ -64,6 +64,17 @@ namespace UnnamedBot {
         // 初始化日志系统（首先初始化）
         // 日志与数据库都按「工作目录优先、否则 exe 目录」解析：
         // 装好之后从快捷方式启动时工作目录不可控，否则 data/logs 会散落到随机位置。
+        // 先把工作目录切到 exe 目录：下面所有相对路径（prompts/、models/、logs/、data/）
+        // 都假定「exe 旁边」。用户从快捷方式启动时工作目录可能是任意位置，
+        // 之前 prompts/yandere.chr 与 models 认不出来就是栽在这里。
+        {
+            std::error_code ec;
+            const std::filesystem::path exeDir = Utils::ExecutableDirectory();
+            if (!exeDir.empty() && std::filesystem::exists(exeDir, ec)) {
+                SetCurrentDirectoryW(exeDir.wstring().c_str());
+            }
+        }
+
         Logger::Instance().Initialize(Utils::ResolveAppRelative(L"logs").wstring().c_str(), 30);
         LOG_INFO("AppCore", "Logger initialized.");
 
@@ -162,11 +173,7 @@ namespace UnnamedBot {
 
         // 初始化MCP工具
         MCPToolManager::Instance().RegisterDefaultTools();
-        LOG_INFO("AppCore", "MCP tools registered.");        // 初始化AI客户端
-        if (!InitializeAIClient()) {
-            LOG_WARN("AppCore", "AI client not configured. Some features may not work.");
-        }
-
+        LOG_INFO("AppCore", "MCP tools registered.");
         // 初始化消息处理器
         MessageHandler::Instance().Initialize();
 

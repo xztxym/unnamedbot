@@ -73,7 +73,9 @@ const wchar_t* const kPromptFolder = L"prompts";
 
     bool PromptLibrary::HasYandereSentinel() const {
         std::error_code error;
-        const std::filesystem::path sentinel = std::filesystem::path(kPromptFolder) / kYandereSentinel;
+        // 必须走 ResolveFolder()（exe 目录回退），不能用裸相对路径：
+        // 工作目录不是 exe 目录时，prompts/yandere.chr 明明在，却检测不到。
+        const std::filesystem::path sentinel = ResolveFolder() / kYandereSentinel;
         return std::filesystem::exists(sentinel, error);
     }
 
@@ -81,7 +83,7 @@ const wchar_t* const kPromptFolder = L"prompts";
         std::vector<PromptFile> files;
 
         std::error_code error;
-        const std::filesystem::path folder(kPromptFolder);
+        const std::filesystem::path folder = ResolveFolder();
         if (!std::filesystem::exists(folder, error)) {
             return files;
         }
