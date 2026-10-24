@@ -696,9 +696,14 @@ namespace {
     bool AppCore::InitializeAIClient() {
         AIClientConfig config;
         config.baseUrl = ConfigManager::Instance().GetString(ConfigManager::KEY_API_BASE_URL, "https://api.openai.com/v1");
-        config.apiKey = SecurityUtils::Instance().Decrypt(
-            ConfigManager::Instance().GetString(ConfigManager::KEY_API_KEY, "")
-        );
+        // 库里正常存的是 DPAPI+Base64 密文；但早期版本/手工写入可能是明文，
+        // 解不出来就按明文用，免得「明明填了密钥却一直说 API Key is empty」。
+        const std::string storedApiKey = ConfigManager::Instance().GetString(ConfigManager::KEY_API_KEY, "");
+        config.apiKey = SecurityUtils::Instance().Decrypt(storedApiKey);
+        if (config.apiKey.empty() && !storedApiKey.empty()) {
+            config.apiKey = storedApiKey;
+            LOG_WARN("AppCore", "API key is stored as plain text (legacy); using it directly.");
+        }
         config.organization = ConfigManager::Instance().GetString(ConfigManager::KEY_API_ORG_ID, "");
         config.model = ConfigManager::Instance().GetString(ConfigManager::KEY_API_MODEL_DEFAULT, "gpt-4o");
         config.temperature = ConfigManager::Instance().GetDouble(ConfigManager::KEY_SAMPLING_TEMPERATURE, 1.0);

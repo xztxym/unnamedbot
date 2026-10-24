@@ -122,6 +122,10 @@ namespace UnnamedBot {
         // ---- 配置读写（与原实现一致） ----
         void LoadFromConfig();
         std::wstring CurrentValueText(const char* key) const;
+        // 密钥类字段（api.key / amap.api_key）：库里存密文，草稿里是明文，
+        // 页面回传空串表示「没改」，保存时不能拿空串把它擦掉。
+        bool IsSecretKey(const std::string& key) const;
+        std::string SecretPlain(const std::string& key) const;
         // 服务地址对应内置服务商、而当前模型不在该服务商列表里时，把默认模型
         // 收敛到该服务商的第一个模型（返回是否改过）。服务商与模型不匹配时
         // 服务端会对每次请求回 HTTP 400。
