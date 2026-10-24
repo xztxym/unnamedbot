@@ -17,6 +17,9 @@ namespace UnnamedBot {
     // 应用核心控制器（单例）
     class AppCore {
     public:
+        // 统一的「把回复给他看」：按 ui.reply_channel 走桌宠气泡或右下角系统弹窗，
+        // 二选一（以前两条路一起发，同一句话既进气泡又进弹窗）。
+        void ShowReplyToUser(const std::string& utf8Text, const wchar_t* title);
         static AppCore& Instance();
 
         // 初始化应用

@@ -1,7 +1,8 @@
 #include "../include/ControlTerminalWindow.h"
 #include "../include/Live2DManager.h"
 #include <shlobj.h>       // SHBrowseForFolderW / SHGetPathFromIDListW（导入模型-文件夹）
-#include <commdlg.h>      // GetOpenFileNameW（导入模型-zip）
+#include <commdlg.h>
+#include <dwmapi.h>      // DWM 边框/标题栏配色（去白边）      // GetOpenFileNameW（导入模型-zip）
 
 #include "../include/UiTheme.h"
 
@@ -364,6 +365,7 @@ namespace UnnamedBot {
             { "tool.window_max_pixels",L"窗口幅度", L"WINDOW RANGE", L"像素 · 单次最大位移", FieldKind::Int,  L"80",   nullptr, false, 120 },
             { "tool.keyboard_enabled", L"键盘输入", L"KEY INPUT",    L"允许她打字符（功能键除外）", FieldKind::Bool, L"true", nullptr, false, 0 },
             { "ui.reply_anchor",       L"回复吸附", L"REPLY ANCHOR", L"气泡贴到哪儿", FieldKind::Preset, L"window", L"吸附窗口=window|吸附鼠标=cursor", false, 160 },
+            { "ui.reply_channel", L"回复渠道", L"REPLY CHANNEL", L"气泡回话 或 右下角系统弹窗", FieldKind::Preset, L"bubble", L"气泡回话=bubble|系统弹窗回话=system", false, 200 },
             { "active.cooldown_seconds",    L"全局冷却",     L"COOLDOWN",    L"秒",           FieldKind::Int,  L"480",  nullptr, false, 150 },
             { "active.ip_check_on_start",   L"启动时查 IP",  L"IP ON START", L"联网检测",     FieldKind::Bool, L"true", nullptr, false, 0 },
             { "amap.api_key",               L"高德密钥",     L"AMAP KEY",    L"天气服务",     FieldKind::Text, L"",     nullptr, true,  320 },
@@ -885,6 +887,14 @@ namespace UnnamedBot {
 
                                 // 窗口底色与应用一致，避免初始化瞬间闪白。
                                 ComPtr<ICoreWebView2Controller2> controller2;
+        // 窗口顶部那条白边：Win11 会给标准窗口画一圈系统色边框，
+        // 深色界面下就是一条亮线。把 DWM 边框与标题栏压成暗色（Win10 上是空操作）。
+        {
+            const COLORREF darkBorder = RGB(10, 3, 6);
+            DwmSetWindowAttribute(hwnd_, 34 /* DWMWA_BORDER_COLOR */, &darkBorder, sizeof(darkBorder));
+            DwmSetWindowAttribute(hwnd_, 35 /* DWMWA_CAPTION_COLOR */, &darkBorder, sizeof(darkBorder));
+        }
+
                                 if (SUCCEEDED(controller_.As(&controller2)) && controller2) {
                                     const COREWEBVIEW2_COLOR background = { 0xFF, 0x06, 0x0b, 0x19 };
                                     controller2->put_DefaultBackgroundColor(background);

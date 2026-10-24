@@ -497,9 +497,17 @@ namespace UnnamedBot {
 
             const std::wstring fileName = modelJson.filename().wstring();
             const std::wstring modelId = fileName.substr(0, fileName.size() - std::wstring(L".model3.json").size());
-            const std::filesystem::path target = modelsRoot / modelId;
-
-            std::filesystem::remove_all(target, ec);
+            // 不覆盖已有模型：同名就顺延编号（haru-2、haru-3…）。
+            // 以前是 remove_all 直接删掉重装，导错一次就把已调好的模型目录清了。
+            std::filesystem::path target = modelsRoot / modelId;
+            {
+                std::error_code existEc;
+                int suffix = 1;
+                while (std::filesystem::exists(target, existEc)) {
+                    ++suffix;
+                    target = modelsRoot / (modelId + L"-" + std::to_wstring(suffix));
+                }
+            }
             std::filesystem::path sourceDir = modelJson.parent_path();
             if (sourceDir == staging) {
                 // 模型文件直接躺在压缩包根上：把 staging 整个改名过去
@@ -522,13 +530,14 @@ namespace UnnamedBot {
             }
             std::filesystem::remove_all(staging, ec);
 
-            const std::filesystem::path expected = target / (modelId + L".model3.json");
+            const std::wstring finalId = target.filename().wstring();
+            const std::filesystem::path expected = target / (finalId + L".model3.json");
             if (!std::filesystem::exists(expected, ec)) {
                 LOG_WARN("Utils", "Import model: expected " + PathToUtf8(expected));
                 return L"";
             }
-            LOG_INFO("Utils", "Model imported as: " + PathToUtf8(modelId));
-            return modelId;
+            LOG_INFO("Utils", "Model imported as: " + PathToUtf8(finalId));
+            return finalId;
         }
 
         std::string PathToUtf8(const std::filesystem::path& path) {

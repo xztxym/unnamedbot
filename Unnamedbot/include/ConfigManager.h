@@ -160,6 +160,8 @@ namespace UnnamedBot {
         static const std::string KEY_TOOL_KEYBOARD_ENABLED;
         // 回复气泡贴哪儿：window=吸附活动窗口（默认）, cursor=吸附鼠标
         static const std::string KEY_UI_REPLY_ANCHOR;
+        // 回复走哪：bubble=桌宠气泡（默认，原有的）| system=右下角系统弹窗
+        static const std::string KEY_UI_REPLY_CHANNEL;
         static const std::string KEY_UI_THEME;  // "light", "dark", "system"
         static const std::string KEY_HOTKEY_TOGGLE_MESSAGEBOX;
         static const std::string KEY_HOTKEY_TOGGLE_TOPMOST;

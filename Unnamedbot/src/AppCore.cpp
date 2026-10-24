@@ -786,8 +786,7 @@ namespace {
                 return;
             }
             LOG_INFO("AppCore", "Proactive trigger reply: " + reply.substr(0, 60));
-            SpeechBubble::Instance().ShowAnchored(Utils::Utf8ToWide(reply));
-            TrayIcon::Instance().ShowNotification(L"桌宠", Utils::Utf8ToWide(reply), NIIF_INFO, 5000);
+            AppCore::Instance().ShowReplyToUser(reply, L"桌宠");
             ControlTerminalWindow::Instance().PushChatHistory();
             });
 
@@ -1219,6 +1218,22 @@ namespace {
         TrayIcon::Instance().ShowNotification(L"桌宠中枢", text, NIIF_INFO, 2500);
     }
 
+    void AppCore::ShowReplyToUser(const std::string& utf8Text, const wchar_t* title) {
+        if (utf8Text.empty()) {
+            return;
+        }
+        const std::string channel = Utils::ToLower(
+            ConfigManager::Instance().GetString(ConfigManager::KEY_UI_REPLY_CHANNEL, "bubble"));
+        const std::wstring wide = Utils::Utf8ToWide(utf8Text);
+        if (channel == "system") {
+            TrayIcon::Instance().ShowNotification(
+                (title != nullptr && *title != L'\0') ? title : L"桌宠", wide, NIIF_INFO, 6000);
+        }
+        else {
+            SpeechBubble::Instance().ShowAnchored(wide);
+        }
+    }
+
     void AppCore::UpdateLoop() {
         LOG_DEBUG("AppCore", "Update thread started.");
 
@@ -1599,8 +1614,7 @@ namespace {
             handler.AddAIResponse(response.content);
 
             LOG_INFO("AppCore", "Vision trigger reply: " + response.content.substr(0, 60));
-            SpeechBubble::Instance().ShowAnchored(Utils::Utf8ToWide(response.content));
-            TrayIcon::Instance().ShowNotification(L"桌宠", Utils::Utf8ToWide(response.content), NIIF_INFO, 5000);
+            ShowReplyToUser(response.content, L"桌宠");
             ControlTerminalWindow::Instance().PushChatHistory();
 
             if (SUCCEEDED(com)) CoUninitialize();

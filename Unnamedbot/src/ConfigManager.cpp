@@ -69,6 +69,7 @@ const std::string ConfigManager::KEY_LOG_CONSOLE = "logging.console";
         const std::string ConfigManager::KEY_TOOL_WINDOW_MAX_PX = "tool.window_max_pixels";
         const std::string ConfigManager::KEY_TOOL_KEYBOARD_ENABLED = "tool.keyboard_enabled";
         const std::string ConfigManager::KEY_UI_REPLY_ANCHOR = "ui.reply_anchor";
+        const std::string ConfigManager::KEY_UI_REPLY_CHANNEL = "ui.reply_channel";
 
     const std::string ConfigManager::KEY_LOGS_RETENTION_DAYS = "logs.retention_days";
 
@@ -347,6 +348,7 @@ const std::string ConfigManager::KEY_LOG_CONSOLE = "logging.console";
             {KEY_TOOL_WINDOW_MAX_PX, "80"},
             {KEY_TOOL_KEYBOARD_ENABLED, "true"},
             {KEY_UI_REPLY_ANCHOR, "window"},
+            {KEY_UI_REPLY_CHANNEL, "bubble"},
             {KEY_UI_THEME, "system"},
             {KEY_HOTKEY_TOGGLE_MESSAGEBOX, "Ctrl+Alt+M"},
             {KEY_HOTKEY_TOGGLE_TOPMOST, "Ctrl+Alt+T"},
