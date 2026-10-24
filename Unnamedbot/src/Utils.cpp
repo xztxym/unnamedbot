@@ -424,6 +424,113 @@ namespace UnnamedBot {
 
         // ============ 路径/文本编码转换 ============
 
+        std::wstring ImportLive2DModel(const std::filesystem::path& source, bool sourceIsZip) {
+            std::error_code ec;
+            if (!std::filesystem::exists(source, ec)) {
+                LOG_WARN("Utils", "Import model: source not found.");
+                return L"";
+            }
+
+            const std::filesystem::path modelsRoot = ResolveAppRelative(L"models");
+            std::filesystem::create_directories(modelsRoot, ec);
+            const std::filesystem::path staging = modelsRoot / L".importing";
+            std::filesystem::remove_all(staging, ec);
+            std::filesystem::create_directories(staging, ec);
+
+            if (sourceIsZip) {
+                // 系统自带 tar.exe（Win10 1803+）能解 zip，省得为这一件事引入解压库
+                std::wstring cmd = L"tar.exe -xf \"" + source.wstring() + L"\" -C \"" +
+                    staging.wstring() + L"\"";
+                STARTUPINFOW si{};
+                si.cb = sizeof(si);
+                PROCESS_INFORMATION pi{};
+                std::wstring mutableCmd = cmd;
+                if (!CreateProcessW(nullptr, mutableCmd.data(), nullptr, nullptr, FALSE,
+                    CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
+                    LOG_WARN("Utils", "Import model: failed to launch tar.exe.");
+                    std::filesystem::remove_all(staging, ec);
+                    return L"";
+                }
+                WaitForSingleObject(pi.hProcess, 60000);
+                DWORD code = 1;
+                GetExitCodeProcess(pi.hProcess, &code);
+                CloseHandle(pi.hProcess);
+                CloseHandle(pi.hThread);
+                if (code != 0) {
+                    LOG_WARN("Utils", "Import model: tar.exe exited with " + std::to_string(code));
+                    std::filesystem::remove_all(staging, ec);
+                    return L"";
+                }
+            }
+            else {
+                std::filesystem::copy(source, staging,
+                    std::filesystem::copy_options::recursive |
+                    std::filesystem::copy_options::overwrite_existing, ec);
+                if (ec) {
+                    LOG_WARN("Utils", "Import model: copy failed: " + ec.message());
+                    std::filesystem::remove_all(staging, ec);
+                    return L"";
+                }
+            }
+
+            // 找 *.model3.json（可能被多套了一层目录）
+            std::filesystem::path modelJson;
+            for (auto it = std::filesystem::recursive_directory_iterator(staging, ec);
+                !ec && it != std::filesystem::recursive_directory_iterator(); ++it) {
+                const std::filesystem::path& candidate = it->path();
+                if (!it->is_regular_file(ec)) {
+                    continue;
+                }
+                const std::wstring fileName = candidate.filename().wstring();
+                const std::wstring suffix = L".model3.json";
+                if (fileName.size() > suffix.size() &&
+                    fileName.compare(fileName.size() - suffix.size(), suffix.size(), suffix) == 0) {
+                    modelJson = candidate;
+                    break;
+                }
+            }
+            if (modelJson.empty()) {
+                LOG_WARN("Utils", "Import model: no *.model3.json found.");
+                std::filesystem::remove_all(staging, ec);
+                return L"";
+            }
+
+            const std::wstring fileName = modelJson.filename().wstring();
+            const std::wstring modelId = fileName.substr(0, fileName.size() - std::wstring(L".model3.json").size());
+            const std::filesystem::path target = modelsRoot / modelId;
+
+            std::filesystem::remove_all(target, ec);
+            std::filesystem::path sourceDir = modelJson.parent_path();
+            if (sourceDir == staging) {
+                // 模型文件直接躺在压缩包根上：把 staging 整个改名过去
+                std::filesystem::rename(staging, target, ec);
+                if (ec) {
+                    ec.clear();
+                    std::filesystem::copy(staging, target,
+                        std::filesystem::copy_options::recursive |
+                        std::filesystem::copy_options::overwrite_existing, ec);
+                }
+            }
+            else {
+                std::filesystem::rename(sourceDir, target, ec);
+                if (ec) {
+                    ec.clear();
+                    std::filesystem::copy(sourceDir, target,
+                        std::filesystem::copy_options::recursive |
+                        std::filesystem::copy_options::overwrite_existing, ec);
+                }
+            }
+            std::filesystem::remove_all(staging, ec);
+
+            const std::filesystem::path expected = target / (modelId + L".model3.json");
+            if (!std::filesystem::exists(expected, ec)) {
+                LOG_WARN("Utils", "Import model: expected " + PathToUtf8(expected));
+                return L"";
+            }
+            LOG_INFO("Utils", "Model imported as: " + PathToUtf8(modelId));
+            return modelId;
+        }
+
         std::string PathToUtf8(const std::filesystem::path& path) {
             const std::u8string utf8 = path.u8string();
             return std::string(utf8.begin(), utf8.end());

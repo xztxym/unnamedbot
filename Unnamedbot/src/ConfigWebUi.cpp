@@ -1397,16 +1397,16 @@ body.yandere .shead .sno{background:#E88A9C;color:#22060C}
    两套体系打架。这里把大面统一压到酒红黑，再用极淡的扫描线
    和红色描边把「被记录着」的感觉补回来。都限定在 body.yandere 下。
    ================================================================ */
-body.yandere{background:#0E050A;background-image:
-  radial-gradient(125% 95% at 50% 120%, rgba(150,30,58,.32) 0%, transparent 60%),
+body.yandere{background:#140306;background-image:
+  radial-gradient(125% 95% at 50% 120%, rgba(190,24,44,.42) 0%, transparent 62%),
   radial-gradient(70% 55% at 84% 6%, rgba(232,138,156,.10) 0%, transparent 62%),
-  linear-gradient(180deg,#170811 0%,#0C0409 100%)}
+  linear-gradient(180deg,#1C0509 0%,#0A0204 100%)}
 body.yandere .field,body.yandere .page,body.yandere .screen,
 body.yandere .bg,body.yandere .stage{
-  background:#0E050A;background-image:
-    radial-gradient(120% 95% at 50% 122%, rgba(150,30,58,.26) 0%, transparent 58%),
+  background:#140306;background-image:
+    radial-gradient(120% 95% at 50% 122%, rgba(190,24,44,.34) 0%, transparent 60%),
     radial-gradient(66% 50% at 86% 4%, rgba(232,138,156,.08) 0%, transparent 60%),
-    linear-gradient(180deg,#170811 0%,#0A0307 100%)}
+    linear-gradient(180deg,#1C0509 0%,#090103 100%)}
 /* 记录感：极淡的横向扫描线，只在首页大面上出现 */
 body.yandere .field::before,body.yandere .page::before{
   content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
@@ -1431,7 +1431,7 @@ body.yandere .waves{filter:hue-rotate(140deg) saturate(.9) brightness(.72)}
 /* 整页统一罩色：正片叠底把残余的海军蓝压成酒红黑，不改变结构、不挡点击 */
 body.yandere::after{
   content:"";position:fixed;inset:0;pointer-events:none;z-index:2;
-  background:linear-gradient(180deg,rgba(96,18,42,.30) 0%,rgba(40,8,20,.38) 55%,rgba(10,3,7,.52) 100%);
+  background:linear-gradient(180deg,rgba(150,16,34,.46) 0%,rgba(96,10,20,.52) 55%,rgba(28,4,7,.62) 100%);
   mix-blend-mode:multiply}
 /* 文字与控件要在罩子上方，避免被一起压暗 */
 body.yandere .rail,body.yandere .top,body.yandere .opt,body.yandere .field>*,body.yandere .page>*{
@@ -1747,7 +1747,9 @@ body.yandere .field::before{background-size:100% 8px;animation:scanDrift 6s line
         <span class="sp"></span>
         <span class="statline" id="apiSrc">模型 · 未探测</span>
         <span style="width:var(--s4)"></span>
-        <button class="btn sm" type="button" data-act="save">保存</button>
+<button class="btn" type="button" data-act="importZip" title="从 zip 导入 Live2D 模型">导入模型 zip</button>
+        <button class="btn" type="button" data-act="importFolder" title="从文件夹导入 Live2D 模型">导入模型 文件夹</button>
+                <button class="btn sm" type="button" data-act="save">保存</button>
         <span style="width:var(--s3)"></span>
         <button class="btn sm outline" type="button" data-act="reload">重载</button>
       </footer>
@@ -2444,6 +2446,14 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
     var delId = hit.getAttribute("data-del");
     if (delId) {
       post({ type: "chatDelete", id: parseInt(delId, 10) });
+      return;
+    }
+    if (hit.getAttribute("data-act") === "importZip") {
+      post({ type: "importModel", mode: "zip" });
+      return;
+    }
+    if (hit.getAttribute("data-act") === "importFolder") {
+      post({ type: "importModel", mode: "folder" });
       return;
     }
     if (hit.getAttribute("data-act") === "chatReset") {

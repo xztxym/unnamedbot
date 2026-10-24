@@ -59,6 +59,12 @@ namespace UnnamedBot {
 		// C++20 下 path::u8string() 返回 std::u8string，不能隐式转换为 std::string，
 		// 因此统一通过该函数获取 UTF-8 字节串（sqlite3、日志、HTTP 均需要 UTF-8）。
 		std::string PathToUtf8(const std::filesystem::path& path);
+
+        // 把一个 Live2D 模型导入到 models/ 目录。
+        // source 可以是 .zip（用系统自带 tar.exe 解压，免第三方库）或文件夹。
+        // 会在结果里找 *.model3.json，按它的文件名建目录（扫描器要求
+        // <目录名>/<目录名>.model3.json），成功返回目录名，失败返回空串。
+        std::wstring ImportLive2DModel(const std::filesystem::path& source, bool sourceIsZip);
 		std::string WideToUtf8(const std::wstring& wstr);
 		std::wstring Utf8ToWide(const std::string& str);
 

@@ -1,5 +1,7 @@
 #include "../include/ControlTerminalWindow.h"
 #include "../include/Live2DManager.h"
+#include <shlobj.h>       // SHBrowseForFolderW / SHGetPathFromIDListW（导入模型-文件夹）
+#include <commdlg.h>      // GetOpenFileNameW（导入模型-zip）
 
 #include "../include/UiTheme.h"
 
@@ -1552,6 +1554,53 @@ namespace UnnamedBot {
             LOG_INFO("ControlTerminal", "Memory bank reset from hub UI.");
             SendChatHistory();
             SetStatus(L"记忆库已重置", 1);
+            SendStatusOnly();
+            return;
+        }
+
+        if (type == "importModel") {
+            // 「导入模型」：zip 用文件对话框，文件夹用目录选择框；
+            // 实际导入逻辑在 Utils::ImportLive2DModel（tar.exe 解 zip / 递归拷贝）
+            const std::string mode = message.value("mode", std::string("zip"));
+            std::wstring picked;
+
+            if (mode == "folder") {
+                BROWSEINFOW bi{};
+                bi.lpszTitle = L"选择要导入的 Live2D 模型文件夹";
+                bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+                LPITEMIDLIST idl = SHBrowseForFolderW(&bi);
+                if (idl != nullptr) {
+                    wchar_t buf[MAX_PATH] = {};
+                    if (SHGetPathFromIDListW(idl, buf)) {
+                        picked = buf;
+                    }
+                    CoTaskMemFree(idl);
+                }
+            }
+            else {
+                wchar_t buf[32768] = {};
+                OPENFILENAMEW ofn{};
+                ofn.lStructSize = sizeof(ofn);
+                ofn.lpstrFilter = L"Live2D 模型压缩包 (*.zip)\0*.zip\0所有文件 (*.*)\0*.*\0\0";
+                ofn.lpstrFile = buf;
+                ofn.nMaxFile = 32768;
+                ofn.lpstrTitle = L"选择要导入的 Live2D 模型压缩包";
+                ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+                if (GetOpenFileNameW(&ofn)) {
+                    picked = buf;
+                }
+            }
+
+            if (picked.empty()) {
+                return;   // 用户取消
+            }
+            const std::wstring imported = Utils::ImportLive2DModel(picked, mode != "folder");
+            if (imported.empty()) {
+                SetStatus(L"导入失败：没在压缩包/文件夹里找到 *.model3.json", 4);
+            }
+            else {
+                SetStatus(L"已导入模型：" + imported + L"（重开设置页即可在下拉里选到）", 5);
+            }
             SendStatusOnly();
             return;
         }
