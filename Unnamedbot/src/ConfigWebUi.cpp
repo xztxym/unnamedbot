@@ -2887,7 +2887,7 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
       "api.api_key": "sk-xxxxxxxxxxxxxxxx", "api.model_default": "deepseek-flash", "api.timeout": "60",
       "sampling.temperature": "0.70", "sampling.top_p": "0.90", "context.max_rounds": "8",
       "stream.timeout_seconds": "60", "api.model_default": "deepseek-flash", "mcp.confirm": "true",
-      "quick.enabled": "true", "quick.mode": "？？？",
+      "quick.enabled": "false", "quick.mode": "关闭",
       "mcp.enabled_tools": "web_search,file_read", "mcp.confirm": "true",
       "model.default_id": "wuwuwu"
     };
@@ -2916,7 +2916,7 @@ var TODAY_MS = 4200;              // Memento 淡出后「今日」块浮上来�
       { id: 104, role: "tool", tag: "tool_calls", text: "get_weather(q=\"今天 天气\")" },
       { id: 105, role: "ai", who: "Assistant", text: "北京今天晴，24°C，湿度 38%。已把结果写入备忘录。删除按钮在气泡右上角，鼠标悬停时出现。" }
     ];
-    applyTheme({ yandere: !/(\\?|&)normal=1/.test(location.search) });
+    applyTheme({ yandere: false });   // ？？？ 模式已移除，永远走冷蓝主题
     render();
     updateHome();
     renderChat();
